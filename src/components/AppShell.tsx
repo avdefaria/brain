@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { 
   LayoutDashboard, 
   Users, 
+  Briefcase,
   Network, 
   Settings, 
   HelpCircle, 
@@ -120,7 +121,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               active
             />
             <SidebarItem
-              icon={Users}
+              icon={Briefcase}
               label="Clientes"
               href="/clients"
               collapsed={sidebarCollapsed}

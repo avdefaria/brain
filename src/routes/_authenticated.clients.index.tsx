@@ -8,7 +8,11 @@ import {
   MapPin,
   AlertTriangle,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Briefcase,
+  Users2,
+  TrendingUp,
+  Target
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -112,6 +116,67 @@ function ClientsOverviewPage() {
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="border-[#E4E6F0] shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-title">Contas por Líder</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[{ name: 'Líder A', value: 12 }, { name: 'Líder B', value: 8 }, { name: 'Líder C', value: 15 }]} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E4E6F0" />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" stroke="#8A8FA3" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#3D4FE8" radius={[0, 4, 4, 0]} barSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-[#E4E6F0] shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-title">Health Score por Squad</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[{ name: 'Growth', value: 88 }, { name: 'Design', value: 92 }, { name: 'Dev', value: 85 }]}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
+                <XAxis dataKey="name" stroke="#8A8FA3" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#8A8FA3" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#22C55E" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-[#E4E6F0] shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-title">Clientes Prioritários</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[
+                { name: "Urban Eats", health: 45 },
+                { name: "Global Logistics", health: 52 },
+                { name: "TechFlow Systems", health: 58 },
+              ].map((c) => (
+                <div key={c.name} className="flex items-center justify-between p-3 bg-[#F7F8FC] rounded-xl border border-[#E4E6F0]">
+                  <span className="text-sm font-medium text-[#0E0E16]">{c.name}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-16 bg-[#E4E6F0] rounded-full overflow-hidden">
+                      <div className="h-full bg-[#EF4444]" style={{ width: `${c.health}%` }} />
+                    </div>
+                    <span className="text-xs font-bold text-[#EF4444]">{c.health}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { 
   Search, 
   Filter, 
@@ -9,6 +9,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useState } from "react";
+import { ClientRegistrationModal } from "@/components/ClientRegistrationModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ const mockClients = [
 
 function ClientsManagePage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
@@ -53,7 +55,10 @@ function ClientsManagePage() {
           <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]">
             Ver todos
           </Button>
-          <Button className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full">
+          <Button 
+            className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full"
+            onClick={() => setIsModalOpen(true)}
+          >
             <UserPlus className="h-4 w-4 mr-2" />
             Cadastrar cliente
           </Button>
@@ -102,7 +107,15 @@ function ClientsManagePage() {
             <TableBody>
               {mockClients.map((client) => (
                 <TableRow key={client.id} className="border-[#E4E6F0] hover:bg-[#F7F8FC]/50">
-                  <TableCell className="font-medium text-[#0E0E16]">{client.name}</TableCell>
+                  <TableCell className="font-medium text-[#0E0E16]">
+                    <Link 
+                      to="/clients/$clientId" 
+                      params={{ clientId: String(client.id) }}
+                      className="hover:text-[#3D4FE8] transition-colors"
+                    >
+                      {client.name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-[#8A8FA3]">{client.segment}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -150,6 +163,10 @@ function ClientsManagePage() {
           </Table>
         </CardContent>
       </Card>
+      <ClientRegistrationModal 
+        open={isModalOpen} 
+        onOpenChange={setIsModalOpen} 
+      />
     </div>
   );
 }
