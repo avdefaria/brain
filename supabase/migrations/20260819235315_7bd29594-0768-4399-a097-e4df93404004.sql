@@ -1,0 +1,1 @@
+INSERT INTO squads (name, color) VALUES ('TESTE_DIAGNOSTICO', '#000000');
