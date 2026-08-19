@@ -168,13 +168,13 @@ function ProjectsPage() {
 
               <div className={cn(
                 "flex items-center gap-1 text-[10px] font-bold",
-                squad.healthScore >= 80 ? "text-[#22C55E]" : squad.healthScore >= 50 ? "text-[#F5A524]" : "text-[#EF4444]"
+                squad.healthScore >= 80 ? "text-[#22C55E]" : squad.healthScore >= 50 ? "text-[#F5A524]" : squad.healthScore > 0 ? "text-[#EF4444]" : "text-[#8A8FA3]"
               )}>
                 <div className={cn(
                   "w-1.5 h-1.5 rounded-full",
-                  squad.healthScore >= 80 ? "bg-[#22C55E]" : squad.healthScore >= 50 ? "bg-[#F5A524]" : "bg-[#EF4444]"
+                  squad.healthScore >= 80 ? "bg-[#22C55E]" : squad.healthScore >= 50 ? "bg-[#F5A524]" : squad.healthScore > 0 ? "bg-[#EF4444]" : "bg-[#8A8FA3]"
                 )} />
-                Health Score: {squad.healthScore || "N/A"}
+                Health Score: {squad.healthScore || "0"}
               </div>
 
               <div className="grid grid-cols-4 gap-2 pt-2 border-t border-[#F7F8FC]">
