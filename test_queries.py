@@ -38,7 +38,7 @@ async def main():
                             id,
                             current_count,
                             target_count,
-                            status
+                            
                           )
                         )
                       )
