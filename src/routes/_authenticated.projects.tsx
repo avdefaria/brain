@@ -258,7 +258,7 @@ function ProjectsPage() {
             <h3 className="font-bold text-[#0E0E16]">Timeline de projetos especiais</h3>
             <div className="flex items-center gap-2 bg-[#F7F8FC] p-1 rounded-full">
               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full"><ChevronLeft className="h-3.5 w-3.5" /></Button>
-              <span className="text-[10px] font-bold px-2">Semana de 17 de Ago</span>
+              <span className="text-[10px] font-bold px-2">Semana de {new Date().getDate()} de {new Date().toLocaleDateString('pt-BR', { month: 'short' })}</span>
               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full"><ChevronRight className="h-3.5 w-3.5" /></Button>
             </div>
           </div>
