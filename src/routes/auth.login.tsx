@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Lock, Mail, Loader2 } from "lucide-react";
+import { Lock, Mail, Loader2, Sparkles } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { createInitialAdmin } from "@/lib/setup.functions";
 
 export const Route = createFileRoute("/auth/login")({
   beforeLoad: async () => {
@@ -24,6 +26,21 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isSettingUp, setIsSettingUp] = useState(false);
+  const setupAdmin = useServerFn(createInitialAdmin);
+
+  useEffect(() => {
+    // Run setup on mount to ensure the requested admin exists
+    const runSetup = async () => {
+      try {
+        await setupAdmin();
+        console.log("Initial setup completed");
+      } catch (e) {
+        console.error("Setup error:", e);
+      }
+    };
+    runSetup();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +171,13 @@ function LoginPage() {
             )}
             Google
           </Button>
+
+          <div className="pt-4 text-center">
+            <p className="text-[10px] text-[#8A8FA3] flex items-center justify-center gap-1">
+              <Sparkles className="h-3 w-3 text-[#3D4FE8]" />
+              Protótipo: Login administrador configurado.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
