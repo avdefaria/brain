@@ -46,6 +46,36 @@ export type Database = {
           },
         ]
       }
+      client_sales_channels: {
+        Row: {
+          client_id: string
+          sales_channel_id: string
+        }
+        Insert: {
+          client_id: string
+          sales_channel_id: string
+        }
+        Update: {
+          client_id?: string
+          sales_channel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_sales_channels_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_sales_channels_sales_channel_id_fkey"
+            columns: ["sales_channel_id"]
+            isOneToOne: false
+            referencedRelation: "sales_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -360,6 +390,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sales_channels: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       squads: {
         Row: {
