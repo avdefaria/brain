@@ -122,18 +122,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               collapsed={sidebarCollapsed}
               active
             />
-            <SidebarItem
-              icon={Briefcase}
-              label="Clientes"
-              href="/clients"
-              collapsed={sidebarCollapsed}
-              children={[
-                { label: "Visão Geral", href: "/clients" },
-                { label: "Gestão", href: "/clients/manage" },
-                { label: "Churn", href: "/clients/churn" },
-                { label: "Contratos", href: "/clients/contracts" },
-              ]}
-            />
+        <SidebarItem
+                icon={Briefcase}
+                label="Clientes"
+                href="/clients/manage"
+                collapsed={sidebarCollapsed}
+                children={[
+                  { label: "Gestão de clientes", href: "/clients/manage" },
+                  { label: "Análise de churn", href: "/clients/churn" },
+                  { label: "Contratos", href: "/clients/contracts" },
+                ]}
+              />
             <SidebarItem
               icon={Layers}
               label="Projetos"
