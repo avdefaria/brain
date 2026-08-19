@@ -78,12 +78,13 @@ function TasksPage() {
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    const newTasks = Array.from(tasks);
-    const taskIndex = newTasks.findIndex(t => t.id === draggableId);
-    if (taskIndex !== -1 && destination.droppableId) {
-      newTasks[taskIndex].stage = destination.droppableId as any;
-      setTasks(newTasks);
-    }
+    const newTasks = tasks.map(t => {
+      if (t.id === draggableId) {
+        return { ...t, stage: destination.droppableId };
+      }
+      return t;
+    });
+    setTasks(newTasks);
   };
 
   const kpis = [
