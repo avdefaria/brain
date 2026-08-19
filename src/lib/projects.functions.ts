@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { logSecurityEvent } from "./security-logger";
 
 export const getProjectsOverviewData = createServerFn({ method: "GET" })
   .handler(async () => {
