@@ -14,6 +14,145 @@ export type Database = {
   }
   public: {
     Tables: {
+      clients: {
+        Row: {
+          address: string | null
+          city: string | null
+          cnpj_cpf: string | null
+          contact_name: string | null
+          contact_whatsapp: string | null
+          corporate_email: string | null
+          country: string | null
+          created_at: string
+          end_date_expected: string | null
+          extra_comments: string | null
+          health_score: number | null
+          id: string
+          name: string
+          risk_level: Database["public"]["Enums"]["risk_level"] | null
+          scope_details: string | null
+          segment: string | null
+          squad_id: string | null
+          start_date: string
+          state: string | null
+          status: Database["public"]["Enums"]["client_status"] | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          cnpj_cpf?: string | null
+          contact_name?: string | null
+          contact_whatsapp?: string | null
+          corporate_email?: string | null
+          country?: string | null
+          created_at?: string
+          end_date_expected?: string | null
+          extra_comments?: string | null
+          health_score?: number | null
+          id?: string
+          name: string
+          risk_level?: Database["public"]["Enums"]["risk_level"] | null
+          scope_details?: string | null
+          segment?: string | null
+          squad_id?: string | null
+          start_date?: string
+          state?: string | null
+          status?: Database["public"]["Enums"]["client_status"] | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          cnpj_cpf?: string | null
+          contact_name?: string | null
+          contact_whatsapp?: string | null
+          corporate_email?: string | null
+          country?: string | null
+          created_at?: string
+          end_date_expected?: string | null
+          extra_comments?: string | null
+          health_score?: number | null
+          id?: string
+          name?: string
+          risk_level?: Database["public"]["Enums"]["risk_level"] | null
+          scope_details?: string | null
+          segment?: string | null
+          squad_id?: string | null
+          start_date?: string
+          state?: string | null
+          status?: Database["public"]["Enums"]["client_status"] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_squad_id_fkey"
+            columns: ["squad_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contracts: {
+        Row: {
+          auto_renewal: boolean | null
+          client_id: string
+          contract_number: string | null
+          created_at: string
+          id: string
+          monthly_value: number | null
+          payment_day: number | null
+          payment_method: string | null
+          renewal_date: string | null
+          start_date: string
+          status: string | null
+          total_value: number | null
+          type: Database["public"]["Enums"]["contract_type"]
+          updated_at: string
+        }
+        Insert: {
+          auto_renewal?: boolean | null
+          client_id: string
+          contract_number?: string | null
+          created_at?: string
+          id?: string
+          monthly_value?: number | null
+          payment_day?: number | null
+          payment_method?: string | null
+          renewal_date?: string | null
+          start_date?: string
+          status?: string | null
+          total_value?: number | null
+          type?: Database["public"]["Enums"]["contract_type"]
+          updated_at?: string
+        }
+        Update: {
+          auto_renewal?: boolean | null
+          client_id?: string
+          contract_number?: string | null
+          created_at?: string
+          id?: string
+          monthly_value?: number | null
+          payment_day?: number | null
+          payment_method?: string | null
+          renewal_date?: string | null
+          start_date?: string
+          status?: string | null
+          total_value?: number | null
+          type?: Database["public"]["Enums"]["contract_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -112,7 +251,10 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "leader" | "collaborator"
+      client_status: "active" | "inactive" | "churn"
+      contract_type: "recurring" | "one-off"
       employment_type: "CLT" | "PJ" | "Estágio"
+      risk_level: "low" | "medium" | "high"
       user_function:
         | "Designer"
         | "Copywriter"
@@ -248,7 +390,10 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "leader", "collaborator"],
+      client_status: ["active", "inactive", "churn"],
+      contract_type: ["recurring", "one-off"],
       employment_type: ["CLT", "PJ", "Estágio"],
+      risk_level: ["low", "medium", "high"],
       user_function: [
         "Designer",
         "Copywriter",
