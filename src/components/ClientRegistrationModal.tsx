@@ -51,7 +51,7 @@ const clientSchema = z.object({
   squad_id: z.string().nullable(),
   segment: z.string().min(2, "Segmento é obrigatório"),
   contract_type: z.enum(["recurring", "one-off"]),
-  start_date: z.string().min(1, "Data de início é obrigatória"),
+  start_date: z.string(),
   end_date_expected: z.string().min(1, "Data de encerramento é obrigatória"),
   scope_details: z.string().nullable(),
   extra_comments: z.string().nullable(),
