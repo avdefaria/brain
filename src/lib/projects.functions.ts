@@ -9,7 +9,6 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
       .from('squads')
       .select(`
         *,
-        leader:leader_id(id, full_name, function, avatar_url),
         clients (
           id,
           health_score,
@@ -53,7 +52,7 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
     // 3. Process Squads
     const processedSquads = squadsData.map(s => {
       const squadProfiles = profiles.filter(p => p.squad_id === s.id);
-      const leader = s.leader || squadProfiles[0] || null;
+      const leader = profiles.find(p => p.id === (s as any).leader_id) || squadProfiles[0] || null;
       const squadClients = s.clients || [];
       const squadClientIds = squadClients.map(c => c.id);
       
