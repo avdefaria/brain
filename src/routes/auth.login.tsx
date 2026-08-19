@@ -70,9 +70,12 @@ function LoginPage() {
       console.log("Login successful, session:", data.session);
       toast.success("Bem-vindo de volta!");
       
-      // Force a full page reload to the dashboard to ensure AppShell and Auth context hydrate correctly
-      console.log("Forcing redirection to /dashboard...");
-      window.location.replace("/dashboard");
+      // Using a short timeout to ensure the session is persisted in localStorage
+      // before redirecting, which helps TanStack Router's beforeLoad see it.
+      setTimeout(() => {
+        console.log("Redirecting to dashboard...");
+        window.location.replace("/dashboard");
+      }, 100);
     } catch (error: any) {
       console.error("Unexpected login error:", error);
       toast.error("Ocorreu um erro inesperado.");
