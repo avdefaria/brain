@@ -129,8 +129,8 @@ function ClientsOverviewPage() {
         </Card>
         <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
           <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
-            <div className="bg-[#3D4FE8]/8 p-2 rounded-lg mr-4">
-              <TrendingUp className="h-5 w-5 text-[#3D4FE8]" />
+            <div className="bg-[#22C55E]/8 p-2 rounded-lg mr-4">
+              <TrendingUp className="h-5 w-5 text-[#22C55E]" />
             </div>
             <CardTitle className="text-lg font-title font-semibold">LTV por mês (em meses)</CardTitle>
           </CardHeader>
