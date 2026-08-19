@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -38,6 +38,8 @@ import { IMaskInput } from "react-imask";
 import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { MultiSelectSalesChannels } from "./MultiSelectSalesChannels";
+import { getSalesChannels, addSalesChannel } from "@/lib/sales-channels.functions";
 
 const clientSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
