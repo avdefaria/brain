@@ -1,0 +1,162 @@
+import * as React from "react";
+import { Check, ChevronsUpDown, X, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+
+interface SalesChannel {
+  id: string;
+  name: string;
+}
+
+interface MultiSelectSalesChannelsProps {
+  selected: string[];
+  options: SalesChannel[];
+  onChange: (selected: string[]) => void;
+  onAddChannel: (name: string) => Promise<void>;
+}
+
+export function MultiSelectSalesChannels({
+  selected,
+  options,
+  onChange,
+  onAddChannel,
+}: MultiSelectSalesChannelsProps) {
+  const [open, setOpen] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState("");
+
+  const handleUnselect = (channelName: string) => {
+    onChange(selected.filter((s) => s !== channelName));
+  };
+
+  const handleSelect = (channelName: string) => {
+    if (selected.includes(channelName)) {
+      handleUnselect(channelName);
+    } else {
+      onChange([...selected, channelName]);
+    }
+  };
+
+  const filteredOptions = options.filter((opt) =>
+    opt.name.toLowerCase().includes(inputValue.toLowerCase())
+  );
+
+  const isExactMatch = options.some(
+    (opt) => opt.name.toLowerCase() === inputValue.toLowerCase().trim()
+  );
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {selected.length > 0 ? (
+          selected.map((channel) => (
+            <Badge
+              key={channel}
+              variant="secondary"
+              className="bg-[#3D4FE8]/10 text-[#3D4FE8] hover:bg-[#3D4FE8]/20 border-none px-3 py-1 rounded-full flex items-center gap-1 transition-colors"
+            >
+              {channel}
+              <button
+                type="button"
+                className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleUnselect(channel);
+                  }
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onClick={() => handleUnselect(channel)}
+              >
+                <X className="h-3 w-3 text-[#3D4FE8] hover:text-red-500 transition-colors" />
+              </button>
+            </Badge>
+          ))
+        ) : (
+          <span className="text-sm text-[#8A8FA3]">Nenhum canal selecionado</span>
+        )}
+      </div>
+
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between bg-white dark:bg-[#1A1A24] border-[#E4E6F0] dark:border-[#2A2A36] h-10 px-3 hover:bg-white"
+          >
+            <span className="text-[#8A8FA3] font-normal">
+              {selected.length > 0
+                ? `${selected.length} selecionado(s)`
+                : "Selecionar canais..."}
+            </span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-[#E4E6F0] dark:border-[#2A2A36] rounded-xl shadow-xl">
+          <Command className="dark:bg-[#1A1A24]">
+            <CommandInput
+              placeholder="Buscar canal..."
+              value={inputValue}
+              onValueChange={setInputValue}
+              className="h-9"
+            />
+            <CommandList>
+              <CommandEmpty className="p-2">
+                {!isExactMatch && inputValue.trim().length > 0 ? (
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-[#3D4FE8] hover:bg-[#3D4FE8]/5 gap-2 h-8 text-xs font-bold"
+                    onClick={async () => {
+                      await onAddChannel(inputValue);
+                      setInputValue("");
+                    }}
+                  >
+                    <Plus className="h-3 w-3" /> Adicionar "{inputValue}"
+                  </Button>
+                ) : (
+                  <span className="text-xs text-[#8A8FA3] px-2">Nenhum canal encontrado</span>
+                )}
+              </CommandEmpty>
+              <CommandGroup>
+                {options.map((option) => (
+                  <CommandItem
+                    key={option.id}
+                    value={option.name}
+                    onSelect={() => handleSelect(option.name)}
+                    className="cursor-pointer hover:bg-[#F7F8FC] dark:hover:bg-[#2A2A36] transition-colors"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4 text-[#3D4FE8]",
+                        selected.includes(option.name)
+                          ? "opacity-100"
+                          : "opacity-0"
+                      )}
+                    />
+                    {option.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
