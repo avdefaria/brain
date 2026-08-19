@@ -300,7 +300,9 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
       if (onSuccess) onSuccess();
     } catch (error: any) {
       console.error("Detailed registration error:", error);
-      toast.error(error.message || "Erro inesperado ao salvar cliente");
+      // Capture literal database error if available
+      const dbError = error.details || error.hint || error.message;
+      toast.error(`Erro: ${dbError}`);
     }
   };
 
