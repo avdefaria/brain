@@ -6,12 +6,39 @@ import {
   Users, 
   BarChart3,
   Calendar,
-  Plus
+  Plus,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  TrendingUp,
+  Layout
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { getProjectsOverviewData } from "@/lib/projects.functions";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { SquadManagementDialog } from "@/components/SquadManagementDialog";
+import { DeleteSquadDialog } from "@/components/DeleteSquadDialog";
+import { ProjectCalendar } from "@/components/ProjectCalendar";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/projects")({
   component: ProjectsPage,
