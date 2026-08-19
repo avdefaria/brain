@@ -43,32 +43,32 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
     const avgMRR = totalMRR / (activeClients || 1);
     
     // Map data for Brazil Map (group by state)
-    const clientsByState = clients.reduce((acc: any, c) => {
+    const clientsByState = clients.reduce((acc: Record<string, number>, c) => {
       const state = c.state || 'Unknown';
       acc[state] = (acc[state] || 0) + 1;
       return acc;
     }, {});
 
     // Top Channels
-    const channelCounts = clients.flatMap(c => c.sales_channels || []).reduce((acc: any, ch) => {
+    const channelCounts = clients.flatMap(c => c.sales_channels || []).reduce((acc: Record<string, number>, ch) => {
       acc[ch] = (acc[ch] || 0) + 1;
       return acc;
     }, {});
     const topChannels = Object.entries(channelCounts)
-      .sort((a: any, b: any) => b[1] - a[1])
+      .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
-      .map(([name, count]) => ({ name, count }));
+      .map(([name, count]) => ({ name, count: count as number }));
 
     // Top Cities
-    const cityCounts = clients.reduce((acc: any, c) => {
+    const cityCounts = clients.reduce((acc: Record<string, number>, c) => {
       const city = c.city || 'Unknown';
       acc[city] = (acc[city] || 0) + 1;
       return acc;
     }, {});
     const topCities = Object.entries(cityCounts)
-      .sort((a: any, b: any) => b[1] - a[1])
+      .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
-      .map(([name, count]) => ({ name, count }));
+      .map(([name, count]) => ({ name, count: count as number }));
 
     // Accounts per Leader
     const leaderStats = profiles.map(p => {
