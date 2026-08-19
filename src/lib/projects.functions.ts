@@ -5,19 +5,24 @@ import { logSecurityEvent } from "./security-logger";
 
 export const getProjectsOverviewData = createServerFn({ method: "GET" })
   .handler(async () => {
-    // 1. Get Squads with leader info and clients
+    // 1. Get Squads with leader info and accounts linked via account_squads
     const { data: squadsData, error: squadsError } = await supabase
       .from('squads')
       .select(`
         *,
-        clients (
-          id,
-          health_score,
-          project_deliveries (
+        account_squads (
+          accounts (
             id,
-            current_count,
-            target_count,
-            status
+            health_score,
+            clients (
+              id,
+              name,
+              project_deliveries (
+                id,
+                current_count,
+                target_count
+              )
+            )
           )
         )
       `);
@@ -51,19 +56,23 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
       .order('start_date');
 
     // 3. Process Squads
-    const processedSquads = squadsData.map(s => {
+    const processedSquads = (squadsData || []).map(s => {
       const squadProfiles = profiles.filter(p => p.squad_id === s.id);
       const leader = profiles.find(p => p.id === (s as any).leader_id) || squadProfiles[0] || null;
-      const squadClients = s.clients || [];
-      const squadClientIds = squadClients.map(c => c.id);
       
-      const totalHealth = squadClients.reduce((acc: number, curr: any) => acc + (curr.health_score || 0), 0);
-      const avgHealth = squadClients.length > 0 ? Math.round(totalHealth / squadClients.length) : null;
+      // Get all accounts linked to this squad via account_squads
+      const squadAccounts = (s.account_squads || []).map((as: any) => as.accounts).filter(Boolean);
+      const squadClientIds = squadAccounts.map((a: any) => a.clients?.id).filter(Boolean);
+      
+      const totalHealth = squadAccounts.reduce((acc: number, curr: any) => acc + (curr.health_score || 0), 0);
+      const avgHealth = squadAccounts.length > 0 ? Math.round(totalHealth / squadAccounts.length) : null;
       
       let totalDeliveries = 0;
       let completedDeliveries = 0;
-      squadClients.forEach((c: any) => {
-        (c.project_deliveries || []).forEach((d: any) => {
+      squadAccounts.forEach((acc: any) => {
+        const client = acc.clients;
+        if (!client) return;
+        (client.project_deliveries || []).forEach((d: any) => {
           totalDeliveries += d.target_count || 0;
           completedDeliveries += d.current_count || 0;
         });
@@ -83,9 +92,9 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
           avatar: leader.avatar_url
         } : null,
         membersCount: squadProfiles.length,
-        accountsCount: squadClients.length,
+        accountsCount: squadAccounts.length,
         healthScore: avgHealth || 0,
-        progress: totalDeliveries > 0 ? Math.round((completedDeliveries / totalDeliveries) * 100) : (squadClients.length > 0 ? 100 : 0),
+        progress: totalDeliveries > 0 ? Math.round((completedDeliveries / totalDeliveries) * 100) : (squadAccounts.length > 0 ? 100 : 0),
         deliveries: completedDeliveries,
         totalDeliveries: totalDeliveries,
         pending: squadTasks.filter(t => t.stage !== 'done').length,
@@ -99,9 +108,13 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
     
     let totalTarget = 0;
     let totalCurrent = 0;
-    squadsData.forEach(s => {
-      s.clients?.forEach((c: any) => {
-        c.project_deliveries?.forEach((d: any) => {
+    (squadsData || []).forEach(s => {
+      (s.account_squads || []).forEach((as: any) => {
+        const acc = as.accounts;
+        if (!acc) return;
+        const client = acc.clients;
+        if (!client) return;
+        client.project_deliveries?.forEach((d: any) => {
           totalTarget += d.target_count || 0;
           totalCurrent += d.current_count || 0;
         });
