@@ -45,13 +45,15 @@ function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log("Attempting login for:", email);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error("Login error:", error);
         toast.error("Erro ao entrar", {
           description: error.message === "Invalid login credentials" 
             ? "E-mail ou senha incorretos." 
@@ -60,8 +62,13 @@ function LoginPage() {
         return;
       }
 
+      console.log("Login successful, session:", data.session);
       toast.success("Bem-vindo de volta!");
+      
+      // Explicitly redirect to dashboard after successful login
+      window.location.href = "/dashboard";
     } catch (error: any) {
+      console.error("Unexpected login error:", error);
       toast.error("Ocorreu um erro inesperado.");
     } finally {
       setIsLoading(false);
