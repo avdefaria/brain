@@ -390,9 +390,14 @@ function ProjectsPage() {
                 
                 // Check if project overlaps with current interval
                 if (timelineDays.length === 0) return null;
-                const interval = { start: timelineDays[0], end: timelineDays[timelineDays.length - 1] };
+                const intervalStart = timelineDays[0];
+                const intervalEnd = timelineDays[timelineDays.length - 1];
+                
+                if (intervalStart === undefined || intervalEnd === undefined) return null;
+                
+                const interval = { start: intervalStart, end: intervalEnd };
                 if (!isWithinInterval(start, interval) && !isWithinInterval(end, interval) && 
-                    !(start < timelineDays[0] && end > timelineDays[timelineDays.length - 1])) {
+                    !(start < intervalStart && end > intervalEnd)) {
                   return null;
                 }
 
