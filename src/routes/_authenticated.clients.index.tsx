@@ -272,66 +272,106 @@ function ClientsOverviewPage() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6 border-[#E4E6F0] shadow-sm">
-          <CardTitle className="text-lg font-title mb-6">Novos clientes por mês</CardTitle>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={[{ name: 'Jan', value: 10 }, { name: 'Fev', value: 20 }, { name: 'Mar', value: 15 }]}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="value" stroke="#3D4FE8" fill="#3D4FE8" fillOpacity={0.1} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
+          <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
+            <div className="bg-[#3D4FE8]/8 p-2 rounded-lg mr-4">
+              <TrendingUp className="h-5 w-5 text-[#3D4FE8]" />
+            </div>
+            <CardTitle className="text-lg font-title font-semibold">Novos clientes por mês</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 pt-0">
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={[{ name: 'Jan', value: 10 }, { name: 'Fev', value: 20 }, { name: 'Mar', value: 15 }]}>
+                  <defs>
+                    <linearGradient id="colorNewClients" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3D4FE8" stopOpacity={0.12}/>
+                      <stop offset="95%" stopColor="#3D4FE8" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} cursor={{ stroke: '#3D4FE8', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Area type="monotone" dataKey="value" stroke="#3D4FE8" strokeWidth={2} fill="url(#colorNewClients)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
         </Card>
-        <Card className="p-6 border-[#E4E6F0] shadow-sm">
-          <CardTitle className="text-lg font-title mb-6">CAC médio por mês</CardTitle>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={[{ name: 'Jan', value: 800 }, { name: 'Fev', value: 750 }, { name: 'Mar', value: 850 }]}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="value" stroke="#3D4FE8" strokeWidth={3} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+        <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
+          <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
+            <div className="bg-[#3D4FE8]/8 p-2 rounded-lg mr-4">
+              <TrendingUp className="h-5 w-5 text-[#3D4FE8]" />
+            </div>
+            <CardTitle className="text-lg font-title font-semibold">CAC médio por mês</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 pt-0">
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={[{ name: 'Jan', value: 800 }, { name: 'Fev', value: 750 }, { name: 'Mar', value: 850 }]}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} cursor={{ stroke: '#F5A524', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Line type="monotone" dataKey="value" stroke="#F5A524" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#F5A524', stroke: '#fff', strokeWidth: 2 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
         </Card>
       </div>
 
-      {/* Gráficos Linha 3 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6 border-[#E4E6F0] shadow-sm">
-          <CardTitle className="text-lg font-title mb-6">Churn por mês</CardTitle>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={[{ name: 'Jan', value: 2 }, { name: 'Fev', value: 1 }, { name: 'Mar', value: 3 }]}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="value" stroke="#EF4444" strokeWidth={3} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+        <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
+          <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
+            <div className="bg-[#3D4FE8]/8 p-2 rounded-lg mr-4">
+              <TrendingDown className="h-5 w-5 text-[#3D4FE8]" />
+            </div>
+            <CardTitle className="text-lg font-title font-semibold">Churn por mês</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 pt-0">
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={[{ name: 'Jan', value: 2 }, { name: 'Fev', value: 1 }, { name: 'Mar', value: 3 }]}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} cursor={{ stroke: '#EF4444', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Line type="monotone" dataKey="value" stroke="#EF4444" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#EF4444', stroke: '#fff', strokeWidth: 2 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
         </Card>
-        <Card className="p-6 border-[#E4E6F0] shadow-sm">
-          <CardTitle className="text-lg font-title mb-6">Distribuição de risco</CardTitle>
-          <div className="h-[250px] flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={[{ name: 'Baixo', value: 70 }, { name: 'Médio', value: 20 }, { name: 'Alto', value: 10 }]} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                  <Cell fill="#22C55E" />
-                  <Cell fill="#F5A524" />
-                  <Cell fill="#EF4444" />
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+        <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
+          <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
+            <div className="bg-[#3D4FE8]/8 p-2 rounded-lg mr-4">
+              <AlertTriangle className="h-5 w-5 text-[#3D4FE8]" />
+            </div>
+            <CardTitle className="text-lg font-title font-semibold">Distribuição de risco</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 pt-0">
+            <div className="h-[250px] flex items-center justify-center">
+              {data.kpis.active > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={[{ name: 'Baixo', value: 70 }, { name: 'Médio', value: 20 }, { name: 'Alto', value: 10 }]} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                      <Cell fill="#22C55E" />
+                      <Cell fill="#F5A524" />
+                      <Cell fill="#EF4444" />
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center opacity-40">
+                  <AlertTriangle className="h-10 w-10 text-[#F5A524] mb-2" />
+                  <p className="text-xs font-bold text-[#8A8FA3]">Nenhum cliente ativo para análise</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
         </Card>
       </div>
       {/* Cards Linha 4 */}
