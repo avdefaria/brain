@@ -24,6 +24,7 @@ import { Route as AuthenticatedClientsManageRouteImport } from './routes/_authen
 import { Route as AuthenticatedProjectsContentApprovalRouteImport } from './routes/_authenticated.projects.content-approval'
 import { Route as AuthenticatedProjectsDeliveriesRouteImport } from './routes/_authenticated.projects.deliveries'
 import { Route as AuthenticatedProjectsTasksRouteImport } from './routes/_authenticated.projects.tasks'
+import { Route as PublicApprovalTokenRouteImport } from './routes/public.approval.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -107,6 +108,11 @@ const AuthenticatedProjectsTasksRoute =
     path: '/projects/tasks',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const PublicApprovalTokenRoute = PublicApprovalTokenRouteImport.update({
+  id: '/public/approval/$token',
+  path: '/public/approval/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliveries': typeof AuthenticatedProjectsDeliveriesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
+  '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliveries': typeof AuthenticatedProjectsDeliveriesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
+  '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRoutesById {
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/_authenticated/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/_authenticated/projects/deliveries': typeof AuthenticatedProjectsDeliveriesRoute
   '/_authenticated/projects/tasks': typeof AuthenticatedProjectsTasksRoute
+  '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRouteTypes {
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/projects/content-approval'
     | '/projects/deliveries'
     | '/projects/tasks'
+    | '/public/approval/$token'
     | '/clients/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/projects/content-approval'
     | '/projects/deliveries'
     | '/projects/tasks'
+    | '/public/approval/$token'
     | '/clients'
   id:
     | '__root__'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/_authenticated/projects/content-approval'
     | '/_authenticated/projects/deliveries'
     | '/_authenticated/projects/tasks'
+    | '/public/approval/$token'
     | '/_authenticated/clients/'
   fileRoutesById: FileRoutesById
 }
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthLoginRoute: typeof AuthLoginRoute
+  PublicApprovalTokenRoute: typeof PublicApprovalTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -323,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsTasksRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/public/approval/$token': {
+      id: '/public/approval/$token'
+      path: '/public/approval/$token'
+      fullPath: '/public/approval/$token'
+      preLoaderRoute: typeof PublicApprovalTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -365,6 +385,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthLoginRoute: AuthLoginRoute,
+  PublicApprovalTokenRoute: PublicApprovalTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
