@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CreateTaskModal } from "@/components/CreateTaskModal";
 import { 
   Plus, 
   Search, 
@@ -71,6 +72,7 @@ const mockTasks = [
 function TasksPage() {
   const [tasks, setTasks] = useState(mockTasks);
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const onDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
