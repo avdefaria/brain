@@ -122,7 +122,10 @@ function TasksPage() {
               <ListIcon className="h-4 w-4" />
             </Button>
           </div>
-          <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 gap-2 font-bold">
+          <Button 
+            className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 gap-2 font-bold"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
             <Plus className="h-4 w-4" /> Criar Tarefa
           </Button>
         </div>
@@ -253,6 +256,11 @@ function TasksPage() {
           ))}
         </div>
       </DragDropContext>
+
+      <CreateTaskModal 
+        isOpen={isCreateModalOpen} 
+        onOpenChange={setIsCreateModalOpen} 
+      />
     </div>
   );
 }
