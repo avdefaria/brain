@@ -110,7 +110,7 @@ function ClientsManagePage() {
                   <TableCell className="font-medium text-[#0E0E16]">
                     <Link 
                       to="/clients/$clientId" 
-                      params={{ clientId: client.id }}
+                      params={{ clientId: String(client.id) }}
                       className="hover:text-[#3D4FE8] transition-colors"
                     >
                       {client.name}
