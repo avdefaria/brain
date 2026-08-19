@@ -153,7 +153,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
               <DialogTitle className="text-xl font-title font-bold text-[#0E0E16]">
                 Cadastrar Novo Cliente
               </DialogTitle>
-              <p className="text-sm text-[#8A8FA3] mt-1">Passo {step} de {totalSteps}: {steps[step-1].title}</p>
+              <p className="text-sm text-[#8A8FA3] mt-1">Passo {step} de {totalSteps}: {steps[step-1]?.title}</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center text-[#3D4FE8] shadow-sm">
               {step === totalSteps ? <Check className="h-6 w-6" /> : <Upload className="h-6 w-6" />}
