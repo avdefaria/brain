@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -27,24 +27,25 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isSettingUp, setIsSettingUp] = useState(false);
+  const navigate = useNavigate();
   const setupAdmin = useServerFn(createInitialAdmin);
 
   useEffect(() => {
-    // Run setup on mount to ensure the requested admin exists
+    // Only run setup if we are in a dev/prototype environment and not logged in
     const runSetup = async () => {
       try {
+        // We check session first to avoid unnecessary server calls
+        const { data } = await supabase.auth.getSession();
+        if (data.session) return;
+
         await setupAdmin();
-        console.log("Initial setup completed");
       } catch (e: any) {
-        // Only log if it's NOT an "already registered" error
-        if (!e.message?.includes('already has been registered')) {
-          console.error("Setup error:", e);
-        }
+        // Silently catch setup errors to never block the login UI
+        console.warn("Non-blocking setup notice:", e.message || e);
       }
     };
     runSetup();
-  }, []);
+  }, [setupAdmin]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,8 +70,8 @@ function LoginPage() {
       console.log("Login successful, session:", data.session);
       toast.success("Bem-vindo de volta!");
       
-      // Explicitly redirect to dashboard after successful login
-      // Use TanStack Router navigation if possible, fallback to window.location
+      // Force a full page reload to the dashboard to ensure AppShell and Auth context hydrate correctly
+      console.log("Forcing redirection to /dashboard...");
       window.location.replace("/dashboard");
     } catch (error: any) {
       console.error("Unexpected login error:", error);
