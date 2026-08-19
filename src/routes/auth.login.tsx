@@ -70,12 +70,8 @@ function LoginPage() {
       console.log("Login successful, session:", data.session);
       toast.success("Bem-vindo de volta!");
       
-      // Using a short timeout to ensure the session is persisted in localStorage
-      // before redirecting, which helps TanStack Router's beforeLoad see it.
-      setTimeout(() => {
-        console.log("Redirecting to dashboard...");
-        window.location.replace("/dashboard");
-      }, 100);
+      console.log("Navigating to /dashboard...");
+      navigate({ to: "/dashboard", replace: true });
     } catch (error: any) {
       console.error("Unexpected login error:", error);
       toast.error("Ocorreu um erro inesperado.");
