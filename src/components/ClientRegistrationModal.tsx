@@ -89,7 +89,6 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
       extra_comments: "",
     }
   });
-  });
 
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles[0]) {
