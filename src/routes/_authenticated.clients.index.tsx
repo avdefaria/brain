@@ -472,7 +472,7 @@ function ClientsOverviewPage() {
             <TableHeader>
               <TableRow className="border-[#E4E6F0] hover:bg-transparent bg-[#F7F8FC]/50">
                 <TableHead className="text-[10px] font-bold text-[#8A8FA3] uppercase h-10 px-6">Cliente</TableHead>
-                <TableHead className="text-[10px] font-bold text-[#8A8FA3] uppercase h-10">Segmento</TableHead>
+                <TableHead className="text-[10px] font-bold text-[#8A8FA3] uppercase h-10">Nicho</TableHead>
                 <TableHead className="text-[10px] font-bold text-[#8A8FA3] uppercase h-10">Responsável</TableHead>
                 <TableHead className="text-[10px] font-bold text-[#8A8FA3] uppercase h-10">Risco</TableHead>
                 <TableHead className="text-[10px] font-bold text-[#8A8FA3] uppercase h-10">Score</TableHead>
@@ -486,7 +486,7 @@ function ClientsOverviewPage() {
                   <TableCell className="font-bold text-[#0E0E16] px-6 py-4">{client.name}</TableCell>
                   <TableCell>
                     <span className="bg-[#F7F8FC] text-[#8A8FA3] px-2 py-1 rounded-full text-[10px] font-bold border border-[#E4E6F0]">
-                      {client.segment}
+                      {client.niche}
                     </span>
                   </TableCell>
                   <TableCell>
