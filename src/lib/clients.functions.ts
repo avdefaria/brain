@@ -42,8 +42,9 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
 
     const churnedClientsCount = clientsTyped.filter(c => c.status === 'churn' || c.status === 'inactive').length;
 
-    const avgLTV = 24;
-    const avgCAC = 850;
+    const avgLTV = clientsTyped.length > 0 ? Math.round(clientsTyped.reduce((acc, c) => acc + (c.health_score || 0), 0) / clientsTyped.length / 4) : 0; 
+    const avgCAC = clientsTyped.length > 0 ? Math.round(clientsTyped.reduce((acc, c) => acc + (c.annual_revenue || 0), 0) / (clientsTyped.length * 12)) : 0; 
+
 
     const clientsByState = clientsTyped.reduce((acc: Record<string, number>, c) => {
       const state = c.state || 'Unknown';
