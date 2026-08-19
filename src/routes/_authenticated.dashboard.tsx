@@ -25,11 +25,12 @@ import {
   ResponsiveContainer 
 } from "recharts";
 import { cn } from "@/lib/utils";
-
+import { OnboardingModal } from "@/components/OnboardingModal";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
 });
+
 
 const ltvData = [
   { name: "Jan", value: 12 },

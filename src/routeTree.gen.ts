@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedSquadsRouteImport } from './routes/_authenticated.squads'
+import { Route as AuthenticatedStructureRouteImport } from './routes/_authenticated.structure'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated.users'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 
@@ -29,6 +31,16 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSquadsRoute = AuthenticatedSquadsRouteImport.update({
+  id: '/squads',
+  path: '/squads',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedStructureRoute = AuthenticatedStructureRouteImport.update({
+  id: '/structure',
+  path: '/structure',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -43,12 +55,16 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/squads': typeof AuthenticatedSquadsRoute
+  '/structure': typeof AuthenticatedStructureRoute
   '/users': typeof AuthenticatedUsersRoute
   '/auth/login': typeof AuthLoginRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/squads': typeof AuthenticatedSquadsRoute
+  '/structure': typeof AuthenticatedStructureRoute
   '/users': typeof AuthenticatedUsersRoute
   '/auth/login': typeof AuthLoginRoute
 }
@@ -57,19 +73,24 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/squads': typeof AuthenticatedSquadsRoute
+  '/_authenticated/structure': typeof AuthenticatedStructureRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/auth/login': typeof AuthLoginRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/users' | '/auth/login'
+  fullPaths:
+    '/' | '/dashboard' | '/squads' | '/structure' | '/users' | '/auth/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/users' | '/auth/login'
+  to: '/' | '/dashboard' | '/squads' | '/structure' | '/users' | '/auth/login'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/_authenticated/dashboard'
+    | '/_authenticated/squads'
+    | '/_authenticated/structure'
     | '/_authenticated/users'
     | '/auth/login'
   fileRoutesById: FileRoutesById
@@ -103,6 +124,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/squads': {
+      id: '/_authenticated/squads'
+      path: '/squads'
+      fullPath: '/squads'
+      preLoaderRoute: typeof AuthenticatedSquadsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/structure': {
+      id: '/_authenticated/structure'
+      path: '/structure'
+      fullPath: '/structure'
+      preLoaderRoute: typeof AuthenticatedStructureRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/users': {
       id: '/_authenticated/users'
       path: '/users'
@@ -122,11 +157,15 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedSquadsRoute: typeof AuthenticatedSquadsRoute
+  AuthenticatedStructureRoute: typeof AuthenticatedStructureRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedSquadsRoute: AuthenticatedSquadsRoute,
+  AuthenticatedStructureRoute: AuthenticatedStructureRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
 }
 
