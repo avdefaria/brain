@@ -142,7 +142,7 @@ function ClientsOverviewPage() {
           <CardContent className="p-6 pt-0">
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={[{ name: 'Jan', value: 10 }, { name: 'Fev', value: 20 }, { name: 'Mar', value: 15 }]}>
+                <AreaChart data={data.charts.clientsMonthly}>
                   <defs>
                     <linearGradient id="colorClients" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3D4FE8" stopOpacity={0.12}/>
@@ -169,7 +169,7 @@ function ClientsOverviewPage() {
           <CardContent className="p-6 pt-0">
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={[{ name: 'Jan', value: 20 }, { name: 'Fev', value: 22 }, { name: 'Mar', value: 25 }]}>
+                <AreaChart data={data.charts.ltvMonthly}>
                   <defs>
                     <linearGradient id="colorLTV" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#22C55E" stopOpacity={0.12}/>
@@ -349,7 +349,7 @@ function ClientsOverviewPage() {
           <CardContent className="p-6 pt-0">
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={[{ name: 'Jan', value: 800 }, { name: 'Fev', value: 750 }, { name: 'Mar', value: 850 }]}>
+                <LineChart data={data.charts.cacMonthly}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
@@ -373,7 +373,7 @@ function ClientsOverviewPage() {
           <CardContent className="p-6 pt-0">
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={[{ name: 'Jan', value: 2 }, { name: 'Fev', value: 1 }, { name: 'Mar', value: 3 }]}>
+                <LineChart data={data.charts.churnMonthly}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
@@ -396,10 +396,10 @@ function ClientsOverviewPage() {
               {data.kpis.active > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={[{ name: 'Baixo', value: 70 }, { name: 'Médio', value: 20 }, { name: 'Alto', value: 10 }]} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                      <Cell fill="#22C55E" />
-                      <Cell fill="#F5A524" />
-                      <Cell fill="#EF4444" />
+                    <Pie data={data.charts.riskData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                      {data.charts.riskData.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
                     </Pie>
                     <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
                   </PieChart>
