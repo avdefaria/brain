@@ -4,24 +4,31 @@ import { z } from "zod";
 
 export const getSalesChannels = createServerFn({ method: "GET" })
   .handler(async () => {
-    const { data, error } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
       .from("sales_channels" as any)
       .select("*")
       .order("name");
-    if (error) throw error;
+    
+    if (error) {
+      console.error("Error fetching sales channels:", error);
+      throw error;
+    }
     return data as any as { id: string, name: string }[];
   });
 
 export const addSalesChannel = createServerFn({ method: "POST" })
   .validator((name: string) => z.string().parse(name))
   .handler(async ({ data: name }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    
     // Normalization: trim and capitalize
     const normalized = name.trim().split(' ').map((word: string) => 
       word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
     ).join(' ');
 
     // Check for existence ignoring case/accents (simple version)
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from("sales_channels" as any)
       .select("*")
       .ilike("name", normalized)
@@ -29,7 +36,7 @@ export const addSalesChannel = createServerFn({ method: "POST" })
 
     if (existing) return existing as any as { id: string, name: string };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("sales_channels" as any)
       .insert([{ name: normalized }])
       .select("*")
@@ -41,6 +48,7 @@ export const addSalesChannel = createServerFn({ method: "POST" })
 
 export const getClientsWithChannels = createServerFn({ method: "GET" })
   .handler(async () => {
+    // For general list, we use client-side supabase to respect RLS or the caller's identity
     const { data, error } = await supabase
       .from("clients")
       .select(`
