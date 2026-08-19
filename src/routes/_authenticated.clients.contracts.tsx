@@ -5,8 +5,13 @@ import {
   Users, 
   CheckCircle2,
   Calendar,
-  DollarSign
+  DollarSign,
+  Eye,
+  Building2,
+  CreditCard,
+  Clock
 } from "lucide-react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -16,7 +21,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/clients/contracts")({
   component: ContractsPage,
