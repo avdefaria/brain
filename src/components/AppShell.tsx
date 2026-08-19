@@ -148,7 +148,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               collapsed={sidebarCollapsed}
               active={location.pathname.startsWith("/projects")}
               children={[
-                { label: "Visão Geral", href: "/projects" },
                 { label: "Gestão de Entregas", href: "/projects/deliveries" },
                 { label: "Tarefas", href: "/projects/tasks" },
                 { label: "Aprovação de Conteúdo", href: "/projects/content-approval" },
