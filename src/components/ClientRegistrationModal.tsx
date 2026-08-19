@@ -37,6 +37,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { IMaskInput } from "react-imask";
 import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const clientSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
