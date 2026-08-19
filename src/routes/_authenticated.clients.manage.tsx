@@ -83,7 +83,7 @@ function ClientsManagePage() {
 
   const filteredClients = clients?.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.corporate_email.toLowerCase().includes(searchTerm.toLowerCase());
+                         (client.corporate_email?.toLowerCase() || "").includes(searchTerm.toLowerCase());
     const matchesRisk = riskFilter === "all" || client.risk_level === riskFilter;
     return matchesSearch && matchesRisk;
   });
@@ -194,9 +194,9 @@ function ClientsManagePage() {
                           <div 
                             className={cn(
                               "h-full rounded-full",
-                              client.health_score > 80 ? "bg-[#22C55E]" : client.health_score > 50 ? "bg-[#F5A524]" : "bg-[#EF4444]"
+                              (client.health_score || 0) > 80 ? "bg-[#22C55E]" : (client.health_score || 0) > 50 ? "bg-[#F5A524]" : "bg-[#EF4444]"
                             )}
-                            style={{ width: `${client.health_score}%` }}
+                            style={{ width: `${client.health_score || 0}%` }}
                           />
                         </div>
                         <span className="text-xs font-bold text-[#0E0E16]">{client.health_score}</span>
@@ -230,7 +230,7 @@ function ClientsManagePage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56 border-[#E4E6F0] dark:border-[#2A2A36] rounded-xl shadow-lg">
                           <DropdownMenuLabel className="text-xs font-bold text-[#8A8FA3] uppercase px-3 py-2">Comunicação</DropdownMenuLabel>
-                          <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => window.open(`https://wa.me/${client.contact_whatsapp.replace(/\D/g, '')}`, '_blank')}>
+                          <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => window.open(`https://wa.me/${(client.contact_whatsapp || '').replace(/\D/g, '')}`, '_blank')}>
                             <Smartphone className="h-4 w-4 text-green-500" /> WhatsApp
                           </DropdownMenuItem>
                           <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => window.location.href = `mailto:${client.corporate_email}`}>
