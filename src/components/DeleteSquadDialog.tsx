@@ -31,8 +31,8 @@ export function DeleteSquadDialog({ squad, isOpen, onOpenChange }: DeleteSquadDi
       toast.success("Squad excluído com sucesso");
       onOpenChange(false);
     },
-    onError: () => {
-      toast.error("Erro ao excluir squad");
+    onError: (error: any) => {
+      toast.error(error?.message || "Erro ao excluir squad");
     }
   });
 

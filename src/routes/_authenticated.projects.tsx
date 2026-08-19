@@ -456,7 +456,14 @@ function ProjectsPage() {
           </TableHeader>
           <TableBody>
             {squads.length > 0 ? squads.map((squad: any) => (
-              <TableRow key={squad.id} className="border-[#F7F8FC] hover:bg-[#F7F8FC]/30 transition-colors">
+              <TableRow 
+                key={squad.id} 
+                className="group border-[#F7F8FC] hover:bg-[#F7F8FC]/30 transition-colors cursor-pointer"
+                onClick={() => {
+                  setSelectedSquad(squad);
+                  setIsEditDialogOpen(true);
+                }}
+              >
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8 rounded-xl ring-2 ring-offset-2" style={{ borderColor: squad.color } as any}>
@@ -498,6 +505,20 @@ function ProjectsPage() {
                     />
                     <span className="text-[10px] font-bold text-[#0E0E16] w-8">{squad.progress}%</span>
                   </div>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-[#8A8FA3] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedSquad(squad);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             )) : (
