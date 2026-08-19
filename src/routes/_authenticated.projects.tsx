@@ -313,7 +313,7 @@ function ProjectsPage() {
               <TableRow key={squad.id} className="border-[#F7F8FC] hover:bg-[#F7F8FC]/30 transition-colors">
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8 rounded-xl ring-2 ring-offset-2" style={{ ringColor: squad.color }}>
+                    <Avatar className="h-8 w-8 rounded-xl ring-2 ring-offset-2" style={{ borderColor: squad.color } as any}>
                       <AvatarImage src={squad.leader?.avatar} />
                       <AvatarFallback className="bg-[#F7F8FC] text-[10px] font-bold" style={{ color: squad.color }}>
                         {squad.name.substring(0, 2).toUpperCase()}
