@@ -15,7 +15,8 @@ export const Route = createFileRoute("/auth/login")({
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
     if (data.session) {
-      throw redirect({ to: "/" });
+      console.log("Session found in beforeLoad, redirecting to dashboard");
+      throw redirect({ to: "/dashboard" });
     }
   },
   component: LoginPage,
@@ -35,8 +36,11 @@ function LoginPage() {
       try {
         await setupAdmin();
         console.log("Initial setup completed");
-      } catch (e) {
-        console.error("Setup error:", e);
+      } catch (e: any) {
+        // Only log if it's NOT an "already registered" error
+        if (!e.message?.includes('already has been registered')) {
+          console.error("Setup error:", e);
+        }
       }
     };
     runSetup();
