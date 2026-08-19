@@ -72,7 +72,12 @@ function ClientsManagePage() {
           client_sales_channels (
             sales_channels (name)
           ),
-          niches (name)
+          niches (name),
+          accounts (
+            id,
+            account_name,
+            account_squads ( squads (id, name) )
+          )
         `)
         .order('created_at', { ascending: false });
       
