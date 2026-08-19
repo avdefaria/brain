@@ -14,16 +14,112 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          employment_type: Database["public"]["Enums"]["employment_type"]
+          full_name: string
+          function: Database["public"]["Enums"]["user_function"]
+          id: string
+          squad_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          employment_type?: Database["public"]["Enums"]["employment_type"]
+          full_name: string
+          function?: Database["public"]["Enums"]["user_function"]
+          id: string
+          squad_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          employment_type?: Database["public"]["Enums"]["employment_type"]
+          full_name?: string
+          function?: Database["public"]["Enums"]["user_function"]
+          id?: string
+          squad_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_squad_id_fkey"
+            columns: ["squad_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      squads: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "leader" | "collaborator"
+      employment_type: "CLT" | "PJ" | "Estágio"
+      user_function:
+        | "Designer"
+        | "Copywriter"
+        | "Gestor de Tráfego"
+        | "Redator"
+        | "Desenvolvedor"
+        | "Administrador"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +246,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "leader", "collaborator"],
+      employment_type: ["CLT", "PJ", "Estágio"],
+      user_function: [
+        "Designer",
+        "Copywriter",
+        "Gestor de Tráfego",
+        "Redator",
+        "Desenvolvedor",
+        "Administrador",
+      ],
+    },
   },
 } as const
