@@ -21,18 +21,17 @@ async def main():
             c["url"] = "http://localhost:8080"
         await context.add_cookies(cookies)
 
-        # 1. Ir para a página de auth primeiro para estabelecer a origem do localStorage
         await page.goto("http://localhost:8080/auth", wait_until="networkidle")
         
-        # 2. Injetar localStorage
+        # Correção do evaluate
         await page.evaluate(
-            f"(key, val) => window.localStorage.setItem(key, val)", storage_key, session_json
+            "(data) => window.localStorage.setItem(data.key, data.val)", 
+            {"key": storage_key, "val": session_json}
         )
         
-        # 3. Ir para /projects
         print("Navigating to /projects...")
         await page.goto("http://localhost:8080/projects", wait_until="networkidle")
-        await asyncio.sleep(5)
+        await asyncio.sleep(8)
         
         await page.screenshot(path="/tmp/browser/debug_projects_final.png")
         
