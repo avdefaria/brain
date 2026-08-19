@@ -87,6 +87,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
       end_date_expected: "",
       scope_details: null as any,
       extra_comments: null as any,
+      sales_channels: [],
     }
   });
 
