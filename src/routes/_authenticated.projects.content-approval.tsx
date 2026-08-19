@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { AppShell } from '@/components/AppShell';
-import { Calendar, Plus, Filter, LayoutGrid, List, CheckCircle2, Clock, AlertCircle, Eye, Share2, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { Calendar, Plus, Filter, LayoutGrid, List, CheckCircle2, Clock, AlertCircle, Eye, Share2, MoreHorizontal, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { CreatePostModal } from '@/components/CreatePostModal';
+import { cn } from '@/lib/utils';
+
 
 export const Route = createFileRoute('/_authenticated/projects/content-approval')({
   component: ContentApprovalPage,
@@ -16,6 +19,8 @@ export const Route = createFileRoute('/_authenticated/projects/content-approval'
 
 function ContentApprovalPage() {
   const [view, setView] = useState<'calendar' | 'grid'>('calendar');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
 
   const statusColors = {
     pending_internal_approval: 'bg-amber-100 text-amber-700 border-amber-200',
@@ -48,12 +53,20 @@ function ContentApprovalPage() {
                 <Share2 className="h-4 w-4 mr-2" />
                 Link Público
               </Button>
-              <Button className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-white rounded-full px-6">
+              <Button 
+                onClick={() => setIsCreateModalOpen(true)}
+                className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-white rounded-full px-6"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Post
               </Button>
             </div>
           </div>
+
+          <CreatePostModal 
+            isOpen={isCreateModalOpen} 
+            onClose={() => setIsCreateModalOpen(false)} 
+          />
 
           {/* Filters & View Toggle */}
           <div className="flex items-center justify-between bg-white dark:bg-[#1A1A24] p-4 rounded-2xl border border-[#E4E6F0] dark:border-[#2A2A36]">
@@ -183,4 +196,4 @@ function cn(...inputs: any[]) {
 }
 import { twMerge } from 'tailwind-merge';
 import { clsx } from 'clsx';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+
