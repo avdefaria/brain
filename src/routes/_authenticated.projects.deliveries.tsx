@@ -180,6 +180,12 @@ function DeliveriesPage() {
           </Card>
         ))}
       </div>
+
+      <DeliveryDetailPanel 
+        client={selectedClient}
+        isOpen={!!selectedClient}
+        onOpenChange={(open) => !open && setSelectedClient(null)}
+      />
     </div>
   );
 }
