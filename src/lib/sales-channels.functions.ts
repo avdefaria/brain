@@ -9,7 +9,7 @@ export const getSalesChannels = createServerFn({ method: "GET" })
       .select("*")
       .order("name");
     if (error) throw error;
-    return data;
+    return data as { id: string, name: string }[];
   });
 
 export const addSalesChannel = createServerFn({ method: "POST" })
@@ -27,7 +27,7 @@ export const addSalesChannel = createServerFn({ method: "POST" })
       .ilike("name", normalized)
       .maybeSingle();
 
-    if (existing) return existing;
+    if (existing) return existing as { id: string, name: string };
 
     const { data, error } = await supabase
       .from("sales_channels" as any)
@@ -36,7 +36,7 @@ export const addSalesChannel = createServerFn({ method: "POST" })
       .single();
 
     if (error) throw error;
-    return data;
+    return data as { id: string, name: string };
   });
 
 export const getClientsWithChannels = createServerFn({ method: "GET" })

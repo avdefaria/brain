@@ -77,7 +77,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
     const fetchChannels = async () => {
       try {
         const channels = await getSalesChannels();
-        setAvailableChannels(channels || []);
+        setAvailableChannels(channels);
       } catch (err) {
         console.error("Erro ao carregar canais:", err);
       }
