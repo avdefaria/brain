@@ -62,6 +62,7 @@ export type Database = {
           id: string
           name: string
           risk_level: Database["public"]["Enums"]["risk_level"] | null
+          sales_channels: string[] | null
           scope_details: string | null
           segment: string | null
           squad_id: string | null
@@ -85,6 +86,7 @@ export type Database = {
           id?: string
           name: string
           risk_level?: Database["public"]["Enums"]["risk_level"] | null
+          sales_channels?: string[] | null
           scope_details?: string | null
           segment?: string | null
           squad_id?: string | null
@@ -108,6 +110,7 @@ export type Database = {
           id?: string
           name?: string
           risk_level?: Database["public"]["Enums"]["risk_level"] | null
+          sales_channels?: string[] | null
           scope_details?: string | null
           segment?: string | null
           squad_id?: string | null
