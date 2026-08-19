@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { 
   LayoutDashboard, 
   Users, 
@@ -80,6 +80,7 @@ function SidebarItem({ icon: Icon, label, href, collapsed, active, children }: S
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const location = useLocation();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -120,47 +121,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               label="Início"
               href="/dashboard"
               collapsed={sidebarCollapsed}
-              active
+              active={location.pathname === "/dashboard"}
             />
-        <SidebarItem
-                icon={Briefcase}
-                label="Clientes"
-                href="/clients"
-                collapsed={sidebarCollapsed}
-                children={[
-                  { label: "Visão Geral", href: "/clients" },
-                  { label: "Gestão de clientes", href: "/clients/manage" },
-                  { label: "Análise de churn", href: "/clients/churn" },
-                  { label: "Contratos", href: "/clients/contracts" },
-                ]}
-              />
+            <SidebarItem
+              icon={Briefcase}
+              label="Clientes"
+              href="/clients"
+              collapsed={sidebarCollapsed}
+              active={location.pathname.startsWith("/clients")}
+              children={[
+                { label: "Gestão de clientes", href: "/clients/manage" },
+                { label: "Análise de churn", href: "/clients/churn" },
+                { label: "Contratos", href: "/clients/contracts" },
+              ]}
+            />
             <SidebarItem
               icon={Layers}
               label="Projetos"
               href="/projects"
               collapsed={sidebarCollapsed}
+              active={location.pathname.startsWith("/projects")}
               children={[
                 { label: "Visão Geral", href: "/projects" },
                 { label: "Gestão de Entregas", href: "/projects/deliveries" },
                 { label: "Tarefas", href: "/projects/tasks" },
                 { label: "Aprovação de Conteúdo", href: "/projects/content-approval" },
               ]}
-            />
-            <SidebarItem
-              icon={Users}
-              label="Equipe"
-              href="/users"
-              collapsed={sidebarCollapsed}
-              children={[
-                { label: "Colaboradores", href: "/users" },
-                { label: "Squads", href: "/squads" },
-              ]}
-            />
-            <SidebarItem
-              icon={Network}
-              label="Estrutura"
-              href="/structure"
-              collapsed={sidebarCollapsed}
             />
           </nav>
 
