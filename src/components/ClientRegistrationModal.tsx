@@ -21,7 +21,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { Upload, X, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import { Upload, X, ChevronRight, ChevronLeft, Check, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
