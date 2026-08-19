@@ -212,9 +212,9 @@ function ClientsOverviewPage() {
                   </Geographies>
                 </ComposableMap>
                 <div className="absolute bottom-4 left-4 flex gap-2">
-                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full shadow-sm bg-white"><ArrowUpRight className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full shadow-sm bg-white"><ArrowDownRight className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="sm" className="rounded-full px-3 text-xs bg-white shadow-sm">Resetar</Button>
+                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full shadow-sm bg-white hover:bg-[#F7F8FC] border-[#E4E6F0] transition-colors"><Plus className="h-4 w-4 text-[#8A8FA3]" /></Button>
+                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full shadow-sm bg-white hover:bg-[#F7F8FC] border-[#E4E6F0] transition-colors"><Minus className="h-4 w-4 text-[#8A8FA3]" /></Button>
+                  <Button variant="outline" size="sm" className="rounded-full px-4 text-[10px] font-bold uppercase tracking-wider bg-white shadow-sm hover:bg-[#F7F8FC] border-[#E4E6F0] transition-colors text-[#8A8FA3]">Resetar</Button>
                 </div>
               </div>
               <div className="flex items-center gap-4 mt-6 text-[10px] font-bold text-[#8A8FA3] uppercase tracking-wider">
