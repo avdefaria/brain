@@ -63,7 +63,30 @@ function ChurnAnalysisPage() {
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-title font-bold text-[#0E0E16]">Análise de Churn</h1>
+        <div>
+          <h1 className="text-2xl font-title font-bold text-[#0E0E16]">Análise de Churn</h1>
+          <p className="text-sm text-[#8A8FA3]">Entenda os motivos de cancelamento e retenção</p>
+        </div>
+        <div className="flex gap-3">
+          <Select defaultValue="monthly">
+            <SelectTrigger className="w-[140px] border-[#E4E6F0] rounded-full">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="monthly">Mensal</SelectItem>
+              <SelectItem value="yearly">Anual</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select defaultValue="2024">
+            <SelectTrigger className="w-[100px] border-[#E4E6F0] rounded-full">
+              <SelectValue placeholder="Ano" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2024">2024</SelectItem>
+              <SelectItem value="2023">2023</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -120,6 +143,81 @@ function ChurnAnalysisPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-[#E4E6F0] shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-title">Clientes com Churn Recente</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent border-[#E4E6F0]">
+                <TableHead>Cliente</TableHead>
+                <TableHead>Data</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Receita Perdida</TableHead>
+                <TableHead>Motivo</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[
+                { name: "Old Fashion Inc", date: "12/03/2024", type: "Recorrente", value: "R$ 4.500", reason: "Preço" },
+                { name: "Future Tech", date: "05/03/2024", type: "Avulso", value: "R$ 15.000", reason: "Concorrência" },
+              ].map((c) => (
+                <TableRow key={c.name} className="border-[#E4E6F0]">
+                  <TableCell className="font-medium text-[#0E0E16]">{c.name}</TableCell>
+                  <TableCell className="text-[#8A8FA3]">{c.date}</TableCell>
+                  <TableCell className="text-[#8A8FA3]">{c.type}</TableCell>
+                  <TableCell className="font-bold text-[#EF4444] tabular">{c.value}</TableCell>
+                  <TableCell>
+                    <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 text-[10px] font-bold uppercase">
+                      {c.reason}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card className="border-[#E4E6F0] shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-title">Análise de Cohort de Retenção</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent border-[#E4E6F0]">
+                <TableHead className="min-w-[120px]">Entrada</TableHead>
+                <TableHead>Inicial</TableHead>
+                <TableHead>1º Mês</TableHead>
+                <TableHead>2º Mês</TableHead>
+                <TableHead>3º Mês</TableHead>
+                <TableHead>6º Mês</TableHead>
+                <TableHead>12º Mês</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[
+                { date: "Jan 2024", initial: 24, m1: "95%", m2: "92%", m3: "88%", m6: "80%", m12: "-" },
+                { date: "Fev 2024", initial: 18, m1: "98%", m2: "94%", m3: "90%", m6: "-", m12: "-" },
+                { date: "Mar 2024", initial: 15, m1: "100%", m2: "96%", m3: "-", m6: "-", m12: "-" },
+              ].map((row) => (
+                <TableRow key={row.date} className="border-[#E4E6F0]">
+                  <TableCell className="font-medium text-[#0E0E16]">{row.date}</TableCell>
+                  <TableCell className="text-[#0E0E16]">{row.initial}</TableCell>
+                  <TableCell className="bg-[#22C55E]/20 text-[#22C55E] font-bold">{row.m1}</TableCell>
+                  <TableCell className="bg-[#22C55E]/15 text-[#22C55E] font-medium">{row.m2}</TableCell>
+                  <TableCell className="bg-[#22C55E]/10 text-[#22C55E]">{row.m3}</TableCell>
+                  <TableCell className="bg-[#F7F8FC] text-[#8A8FA3]">{row.m6}</TableCell>
+                  <TableCell className="bg-[#F7F8FC] text-[#8A8FA3]">{row.m12}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
