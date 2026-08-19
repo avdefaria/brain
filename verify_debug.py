@@ -9,33 +9,35 @@ async def main():
         context = await browser.new_context(viewport={"width": 1280, "height": 1800})
         page = await context.new_page()
 
-        # Usar lovable auth-session para obter uma sessão válida
-        # Nota: Normalmente eu usaria 'lovable auth-session --json' mas aqui vou tentar a injeção manual se disponível
-        storage_key = os.environ.get("LOVABLE_BROWSER_SUPABASE_STORAGE_KEY")
-        session_json = os.environ.get("LOVABLE_BROWSER_SUPABASE_SESSION_JSON")
+        # Carregar a sessão gerada
+        session_file = "/root/.cache/lovable-auth/session.json"
+        with open(session_file) as f:
+            minted = json.load(f)
         
+        storage_key = minted["storage_key"]
+        session_json = json.dumps(minted["session"])
+        cookies = minted["cookies"]
+        
+        for c in cookies:
+            c["url"] = "http://localhost:8080"
+        await context.add_cookies(cookies)
+
         await page.goto("http://localhost:8080", wait_until="networkidle")
-        if storage_key and session_json:
-            await page.evaluate(
-                f"window.localStorage.setItem({json.dumps(storage_key)}, {json.dumps(session_json)})"
-            )
-            await page.goto("http://localhost:8080/projects", wait_until="networkidle")
-        else:
-            print("No auth session injected. Attempting to login manually...")
-            await page.goto("http://localhost:8080/auth", wait_until="networkidle")
-            await page.fill('input[type="email"]', 'alan.vieira.faria@gmail.com')
-            await page.fill('input[type="password"]', '745826@Faria')
-            await page.click('button[type="submit"]')
-            await page.wait_for_url("http://localhost:8080/projects", timeout=15000)
+        await page.evaluate(
+            f"window.localStorage.setItem({json.dumps(storage_key)}, {json.dumps(session_json)})"
+        )
+        
+        # Navegar para a rota /projects
+        await page.goto("http://localhost:8080/projects", wait_until="networkidle")
 
         # Esperar pelo bloco de debug
         try:
             await page.wait_for_selector('div.bg-yellow-50', timeout=20000)
             await asyncio.sleep(3)
         except:
-            print("Timeout waiting for debug zone after login attempt")
+            print("Timeout waiting for debug zone")
         
-        await page.screenshot(path="/tmp/browser/debug_projects_logged.png")
+        await page.screenshot(path="/tmp/browser/debug_projects_final.png")
         
         debug_content = await page.evaluate("""() => {
             const debugZone = document.querySelector('div.bg-yellow-50');
