@@ -150,9 +150,9 @@ export function SquadManagementDialog({ squad, isOpen, onOpenChange }: SquadMana
           <Button 
             onClick={handleSave} 
             className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90"
-            disabled={updateMutation.isPending}
+            disabled={mutation.isPending}
           >
-            {updateMutation.isPending ? "Salvando..." : "Salvar"}
+            {mutation.isPending ? "Salvando..." : squad ? "Salvar" : "Criar"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -295,7 +295,7 @@ function ProjectsPage() {
                 <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
               <span className="text-[10px] font-bold px-2 whitespace-nowrap">
-                {timelineView === 'week' ? (
+                {timelineView === 'week' && timelineDays.length > 0 ? (
                   `Semana de ${format(timelineDays[0], "dd 'de' MMM", { locale: ptBR })}`
                 ) : (
                   format(timelineDate, "MMMM yyyy", { locale: ptBR })
@@ -389,6 +389,7 @@ function ProjectsPage() {
                 const end = new Date(project.end_date);
                 
                 // Check if project overlaps with current interval
+                if (timelineDays.length === 0) return null;
                 const interval = { start: timelineDays[0], end: timelineDays[timelineDays.length - 1] };
                 if (!isWithinInterval(start, interval) && !isWithinInterval(end, interval) && 
                     !(start < timelineDays[0] && end > timelineDays[timelineDays.length - 1])) {

@@ -53,7 +53,7 @@ const clientSchema = z.object({
   corporate_email: z.string().email("E-mail corporativo inválido"),
   contact_email: z.string().email("E-mail do responsável inválido").optional().nullable(),
   contact_whatsapp: z.string().min(10, "WhatsApp inválido"),
-  squad_id: z.string().nullable().optional(),
+  squad_id: z.string().uuid("Squad inválido").nullable().optional(),
   niche_id: z.string().min(1, "Nicho é obrigatório"),
   contract_type: z.enum(["recurring", "one-off"]),
   sales_channels: z.array(z.string()).optional(),
