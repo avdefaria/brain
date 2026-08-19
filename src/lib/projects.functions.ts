@@ -93,6 +93,11 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
         } : null,
         membersCount: squadProfiles.length,
         accountsCount: squadAccounts.length,
+        accounts: squadAccounts.map((acc: any) => ({
+          id: acc.id,
+          name: acc.clients?.name || acc.account_name || "Sem nome",
+          healthScore: acc.health_score || 0
+        })),
         healthScore: avgHealth || 0,
         progress: totalDeliveries > 0 ? Math.round((completedDeliveries / totalDeliveries) * 100) : (squadAccounts.length > 0 ? 100 : 0),
         deliveries: completedDeliveries,

@@ -177,6 +177,30 @@ function ProjectsPage() {
                 Health Score: {squad.healthScore || "0"}
               </div>
 
+              <div className="space-y-1 pt-2 border-t border-[#F7F8FC]">
+                <p className="text-[9px] font-bold text-[#8A8FA3] uppercase">Contas vinculadas</p>
+                <div className="space-y-1.5 max-h-[80px] overflow-y-auto pr-1 custom-scrollbar">
+                  {squad.accounts && squad.accounts.length > 0 ? (
+                    squad.accounts.map((acc: any) => (
+                      <div key={acc.id} className="flex items-center justify-between">
+                        <span className="text-[10px] font-medium text-[#0E0E16] truncate max-w-[150px]" title={acc.name}>
+                          {acc.name}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <div className={cn(
+                            "w-1 h-1 rounded-full",
+                            acc.healthScore >= 80 ? "bg-[#22C55E]" : acc.healthScore >= 50 ? "bg-[#F5A524]" : "bg-[#EF4444]"
+                          )} />
+                          <span className="text-[9px] font-bold text-[#8A8FA3]">{acc.healthScore}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[10px] text-[#8A8FA3] italic py-1">Nenhuma conta</p>
+                  )}
+                </div>
+              </div>
+
               <div className="grid grid-cols-4 gap-2 pt-2 border-t border-[#F7F8FC]">
                 <div className="text-center" title="Membros"><Users className="h-3 w-3 mx-auto text-[#8A8FA3] mb-1" /><span className="text-[10px] font-bold">{squad.membersCount}</span></div>
                 <div className="text-center" title="Contas"><Shield className="h-3 w-3 mx-auto text-[#8A8FA3] mb-1" /><span className="text-[10px] font-bold">{squad.accountsCount}</span></div>
