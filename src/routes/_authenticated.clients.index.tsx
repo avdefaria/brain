@@ -48,34 +48,42 @@ function ClientsOverviewPage() {
   if (isLoading || !data) return <div className="p-8">Carregando...</div>;
 
   const kpiData = [
-    { label: "Clientes Ativos", value: data.kpis.active, change: "+0%", trending: "up" },
-    { label: "Novos Clientes", value: data.kpis.new, change: "+0%", trending: "up" },
-    { label: "Churn", value: `${data.kpis.churn}`, change: "-0%", trending: "down" },
-    { label: "LTV Médio", value: `${data.kpis.ltv} meses`, change: "+0%", trending: "up" },
-    { label: "CAC Médio", value: `R$ ${data.kpis.cac}`, change: "-0%", trending: "down" },
+    { label: "Clientes Ativos", value: data.kpis.active, change: "+0%", trending: "up", icon: Users, tooltip: "Total de clientes com contrato ativo" },
+    { label: "Novos Clientes", value: data.kpis.new, change: "+0%", trending: "up", icon: TrendingUp, tooltip: "Clientes adquiridos nos últimos 30 dias" },
+    { label: "Churn", value: data.kpis.churn, change: "-0%", trending: "down", icon: TrendingDown, tooltip: "Contratos finalizados no período" },
+    { label: "LTV Médio", value: `${data.kpis.ltv} meses`, change: "+0%", trending: "up", icon: Clock, tooltip: "Tempo médio de permanência do cliente" },
+    { label: "CAC Médio", value: `R$ ${data.kpis.cac}`, change: "-0%", trending: "down", icon: DollarSign, tooltip: "Custo médio de aquisição por cliente" },
   ];
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-500">
+    <div className="p-8 space-y-8 animate-in fade-in duration-500 bg-[#F7F8FC]/50 min-h-screen">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-title font-bold text-[#0E0E16]">Visão Geral da Carteira</h1>
+        <div>
+          <h1 className="text-2xl font-title font-bold text-[#0E0E16]">Visão Geral da Carteira</h1>
+          <p className="text-sm text-[#8A8FA3]">Análise analítica e distribuição de clientes</p>
+        </div>
         <ClockDisplay />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {kpiData.map((kpi) => (
-          <Card key={kpi.label} className="border-[#E4E6F0] shadow-sm">
+          <Card key={kpi.label} className="border border-[#E4E6F0] shadow-sm hover:shadow-md transition-shadow group">
             <CardContent className="p-6 space-y-2">
               <div className="flex justify-between items-center">
-                <p className="text-xs font-bold text-[#8A8FA3] uppercase">{kpi.label}</p>
+                <div className="flex items-center gap-2">
+                  <div className="bg-[#3D4FE8]/8 p-1.5 rounded-lg">
+                    <kpi.icon className="h-4 w-4 text-[#3D4FE8]" />
+                  </div>
+                  <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-wider">{kpi.label}</p>
+                </div>
                 <TooltipProvider>
                   <UiTooltip>
-                    <TooltipTrigger><Info className="h-3 w-3 text-[#8A8FA3]" /></TooltipTrigger>
-                    <TooltipContent>Info sobre {kpi.label}</TooltipContent>
+                    <TooltipTrigger><Info className="h-3.5 w-3.5 text-[#8A8FA3] hover:text-[#3D4FE8] transition-colors" /></TooltipTrigger>
+                    <TooltipContent>{kpi.tooltip}</TooltipContent>
                   </UiTooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex items-baseline justify-between">
+              <div className="flex items-baseline justify-between pt-1">
                 <h3 className="text-2xl font-bold text-[#0E0E16] font-jakarta">{kpi.value}</h3>
                 <span className={cn(
                   "text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5",
