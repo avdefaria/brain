@@ -17,6 +17,7 @@ import { Route as AuthenticatedSquadsRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedStructureRouteImport } from './routes/_authenticated.structure'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated.users'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
+import { Route as EmBreveIndexRouteImport } from './routes/em-breve/index'
 import { Route as AuthenticatedClientsIndexRouteImport } from './routes/_authenticated.clients.index'
 import { Route as AuthenticatedClientsClientIdRouteImport } from './routes/_authenticated.clients.$clientId'
 import { Route as AuthenticatedClientsChurnRouteImport } from './routes/_authenticated.clients.churn'
@@ -64,6 +65,11 @@ const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmBreveIndexRoute = EmBreveIndexRouteImport.update({
+  id: '/em-breve/',
+  path: '/em-breve/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedClientsIndexRoute =
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/structure': typeof AuthenticatedStructureRoute
   '/users': typeof AuthenticatedUsersRoute
   '/auth/login': typeof AuthLoginRoute
+  '/em-breve/': typeof EmBreveIndexRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/clients/churn': typeof AuthenticatedClientsChurnRoute
   '/clients/contracts': typeof AuthenticatedClientsContractsRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/structure': typeof AuthenticatedStructureRoute
   '/users': typeof AuthenticatedUsersRoute
   '/auth/login': typeof AuthLoginRoute
+  '/em-breve': typeof EmBreveIndexRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/clients/churn': typeof AuthenticatedClientsChurnRoute
   '/clients/contracts': typeof AuthenticatedClientsContractsRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/_authenticated/structure': typeof AuthenticatedStructureRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/auth/login': typeof AuthLoginRoute
+  '/em-breve/': typeof EmBreveIndexRoute
   '/_authenticated/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/_authenticated/clients/churn': typeof AuthenticatedClientsChurnRoute
   '/_authenticated/clients/contracts': typeof AuthenticatedClientsContractsRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/structure'
     | '/users'
     | '/auth/login'
+    | '/em-breve/'
     | '/clients/$clientId'
     | '/clients/churn'
     | '/clients/contracts'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/structure'
     | '/users'
     | '/auth/login'
+    | '/em-breve'
     | '/clients/$clientId'
     | '/clients/churn'
     | '/clients/contracts'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/_authenticated/structure'
     | '/_authenticated/users'
     | '/auth/login'
+    | '/em-breve/'
     | '/_authenticated/clients/$clientId'
     | '/_authenticated/clients/churn'
     | '/_authenticated/clients/contracts'
@@ -238,6 +250,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthLoginRoute: typeof AuthLoginRoute
+  EmBreveIndexRoute: typeof EmBreveIndexRoute
   PublicApprovalTokenRoute: typeof PublicApprovalTokenRoute
 }
 
@@ -297,6 +310,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/login'
       fullPath: '/auth/login'
       preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/em-breve/': {
+      id: '/em-breve/'
+      path: '/em-breve'
+      fullPath: '/em-breve/'
+      preLoaderRoute: typeof EmBreveIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/clients/': {
@@ -417,6 +437,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthLoginRoute: AuthLoginRoute,
+  EmBreveIndexRoute: EmBreveIndexRoute,
   PublicApprovalTokenRoute: PublicApprovalTokenRoute,
 }
 export const routeTree = rootRouteImport

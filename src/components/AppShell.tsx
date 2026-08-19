@@ -6,7 +6,6 @@ import {
   Briefcase,
   Layers,
   Network, 
-
   Settings, 
   HelpCircle, 
   LogOut, 
@@ -17,7 +16,14 @@ import {
   MessageSquareText, 
   Database,
   Moon,
-  Sun
+  Sun,
+  TrendingUp,
+  DollarSign,
+  UserCheck,
+  Tool,
+  User,
+  CreditCard,
+  Target
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,7 +121,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-2">
+          <nav className="flex-1 space-y-1 overflow-y-auto pr-2 custom-scrollbar">
             <SidebarItem
               icon={LayoutDashboard}
               label="Início"
@@ -147,6 +153,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 { label: "Tarefas", href: "/projects/tasks" },
                 { label: "Aprovação de Conteúdo", href: "/projects/content-approval" },
               ]}
+            />
+            <SidebarItem
+              icon={Target}
+              label="Comercial"
+              href="/em-breve"
+              collapsed={sidebarCollapsed}
+              active={location.pathname === "/em-breve" && label === "Comercial"}
+            />
+            <SidebarItem
+              icon={DollarSign}
+              label="Finanças"
+              href="/em-breve"
+              collapsed={sidebarCollapsed}
+            />
+            <SidebarItem
+              icon={UserCheck}
+              label="Recursos Humanos"
+              href="/em-breve"
+              collapsed={sidebarCollapsed}
+            />
+            <SidebarItem
+              icon={Settings}
+              label="Toolkit"
+              href="/em-breve"
+              collapsed={sidebarCollapsed}
+            />
+            <SidebarItem
+              icon={Network}
+              label="Gestão de usuários"
+              href="/em-breve"
+              collapsed={sidebarCollapsed}
+            />
+            <SidebarItem
+              icon={User}
+              label="Perfil e assinatura"
+              href="/em-breve"
+              collapsed={sidebarCollapsed}
             />
           </nav>
 
