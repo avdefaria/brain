@@ -41,7 +41,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { SquadManagementDialog } from "@/components/SquadManagementDialog";
 import { DeleteSquadDialog } from "@/components/DeleteSquadDialog";
 import { ProjectCalendar } from "@/components/ProjectCalendar";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { addDays, startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isWithinInterval, addWeeks, subWeeks, startOfMonth, endOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { SpecialProjectModal } from "@/components/SpecialProjectModal";
 
 export const Route = createFileRoute("/_authenticated/projects")({
   component: ProjectsPage,
@@ -51,6 +54,12 @@ function ProjectsPage() {
   const [selectedSquad, setSelectedSquad] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isNewSquadDialogOpen, setIsNewSquadDialogOpen] = useState(false);
+  const [isSpecialProjectModalOpen, setIsSpecialProjectModalOpen] = useState(false);
+  
+  const [timelineDate, setTimelineDate] = useState(new Date());
+  const [timelineView, setTimelineView] = useState<"week" | "month">("week");
+  const [timelineFilter, setTimelineFilter] = useState<"all" | "my_squad" | "my_projects">("all");
 
   const { data, isLoading } = useQuery({
     queryKey: ["projects-overview"],
@@ -62,6 +71,20 @@ function ProjectsPage() {
     plannings: { total: 0, completed: 0 },
     tasks: { total: 0, completed: 0 }
   };
+  const specialProjects = data?.specialProjects || [];
+  const events = data?.events || [];
+  const birthdays = data?.birthdays || [];
+
+  const timelineDays = useMemo(() => {
+    if (timelineView === "week") {
+      const start = startOfWeek(timelineDate, { weekStartsOn: 1 });
+      return eachDayOfInterval({ start, end: addDays(start, 6) });
+    } else {
+      const start = startOfMonth(timelineDate);
+      const end = endOfMonth(timelineDate);
+      return eachDayOfInterval({ start, end });
+    }
+  }, [timelineDate, timelineView]);
 
   const planningProgress = stats.plannings.total > 0 
     ? Math.round((stats.plannings.completed / stats.plannings.total) * 100) 
