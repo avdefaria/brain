@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CreateTaskModal } from "@/components/CreateTaskModal";
+import { TaskDetailPanel } from "@/components/TaskDetailPanel";
 import { 
   Plus, 
   Search, 
@@ -73,6 +74,7 @@ function TasksPage() {
   const [tasks, setTasks] = useState(mockTasks);
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
 
   const onDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -200,6 +202,7 @@ function TasksPage() {
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                             className="border-[#E4E6F0] shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group"
+                            onClick={() => setSelectedTask(task)}
                           >
                             <CardContent className="p-4 space-y-4">
                               <div className="flex justify-between items-start">
@@ -260,6 +263,12 @@ function TasksPage() {
       <CreateTaskModal 
         isOpen={isCreateModalOpen} 
         onOpenChange={setIsCreateModalOpen} 
+      />
+
+      <TaskDetailPanel 
+        task={selectedTask}
+        isOpen={!!selectedTask}
+        onOpenChange={(open) => !open && setSelectedTask(null)}
       />
     </div>
   );
