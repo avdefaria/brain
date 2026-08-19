@@ -191,9 +191,7 @@ function ContentApprovalPage() {
   );
 }
 
-function cn(...inputs: any[]) {
-  return twMerge(clsx(inputs));
-}
 import { twMerge } from 'tailwind-merge';
 import { clsx } from 'clsx';
+
 
