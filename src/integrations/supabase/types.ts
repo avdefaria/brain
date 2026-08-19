@@ -14,6 +14,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          account_name: string | null
+          client_id: string
+          created_at: string
+          health_score: number | null
+          id: string
+          niche_id: string | null
+          risk_level: Database["public"]["Enums"]["risk_level"] | null
+          sales_channel_id: string | null
+          squad_id: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["client_status"] | null
+          updated_at: string
+        }
+        Insert: {
+          account_name?: string | null
+          client_id: string
+          created_at?: string
+          health_score?: number | null
+          id?: string
+          niche_id?: string | null
+          risk_level?: Database["public"]["Enums"]["risk_level"] | null
+          sales_channel_id?: string | null
+          squad_id?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["client_status"] | null
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string | null
+          client_id?: string
+          created_at?: string
+          health_score?: number | null
+          id?: string
+          niche_id?: string | null
+          risk_level?: Database["public"]["Enums"]["risk_level"] | null
+          sales_channel_id?: string | null
+          squad_id?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["client_status"] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_niche_id_fkey"
+            columns: ["niche_id"]
+            isOneToOne: false
+            referencedRelation: "niches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_squad_id_fkey"
+            columns: ["squad_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_public_access: {
         Row: {
           client_id: string
