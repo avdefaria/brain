@@ -14,12 +14,15 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
           accounts (
             id,
             health_score,
-            clients ( id, name ),
-            project_deliveries (
+            clients (
               id,
-              current_count,
-              target_count,
-              status
+              name,
+              project_deliveries (
+                id,
+                current_count,
+                target_count,
+                status
+              )
             )
           )
         )
@@ -68,7 +71,9 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
       let totalDeliveries = 0;
       let completedDeliveries = 0;
       squadAccounts.forEach((acc: any) => {
-        (acc.project_deliveries || []).forEach((d: any) => {
+        const client = acc.clients;
+        if (!client) return;
+        (client.project_deliveries || []).forEach((d: any) => {
           totalDeliveries += d.target_count || 0;
           completedDeliveries += d.current_count || 0;
         });
@@ -108,7 +113,9 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
       (s.account_squads || []).forEach((as: any) => {
         const acc = as.accounts;
         if (!acc) return;
-        acc.project_deliveries?.forEach((d: any) => {
+        const client = acc.clients;
+        if (!client) return;
+        client.project_deliveries?.forEach((d: any) => {
           totalTarget += d.target_count || 0;
           totalCurrent += d.current_count || 0;
         });
