@@ -20,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCollaborators } from "@/lib/squads.functions";
-import { updateSquad } from "@/lib/projects.functions";
+import { createSquad, updateSquad } from "@/lib/projects.functions";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 
@@ -44,8 +44,8 @@ interface SquadManagementDialogProps {
 
 export function SquadManagementDialog({ squad, isOpen, onOpenChange }: SquadManagementDialogProps) {
   const queryClient = useQueryClient();
-  const [name, setName] = React.useState(squad?.name || "");
-  const [selectedColor, setSelectedColor] = React.useState(squad?.color || COLORS[0]);
+  const [name, setName] = React.useState("");
+  const [selectedColor, setSelectedColor] = React.useState(COLORS[0]);
   const [leaderId, setLeaderId] = React.useState("");
 
   const { data: collaborators } = useQuery({
@@ -53,47 +53,59 @@ export function SquadManagementDialog({ squad, isOpen, onOpenChange }: SquadMana
     queryFn: () => getCollaborators(),
   });
 
+  const createFn = useServerFn(createSquad);
   const updateFn = useServerFn(updateSquad);
 
-  const updateMutation = useMutation({
-    mutationFn: (data: any) => updateFn({ data }),
+  const mutation = useMutation({
+    mutationFn: (data: any) => squad ? updateFn({ data }) : createFn({ data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
-      toast.success("Squad atualizado com sucesso");
+      toast.success(squad ? "Squad atualizado com sucesso" : "Squad criado com sucesso");
       onOpenChange(false);
+      if (!squad) resetForm();
     },
-    onError: () => {
-      toast.error("Erro ao atualizar squad");
+    onError: (error: any) => {
+      toast.error(error?.message || (squad ? "Erro ao atualizar squad" : "Erro ao criar squad"));
     }
   });
 
+  const resetForm = () => {
+    setName("");
+    setSelectedColor(COLORS[0]);
+    setLeaderId("");
+  };
+
   React.useEffect(() => {
     if (squad) {
-      setName(squad.name);
+      setName(squad.name || "");
       setSelectedColor(squad.color || COLORS[0]);
-      // Assuming we have a leader_id or we find it from collaborator list
+      setLeaderId(squad.leader?.id || "");
+    } else if (isOpen) {
+      resetForm();
     }
-  }, [squad]);
+  }, [squad, isOpen]);
 
   const handleSave = () => {
     if (!name.trim()) {
       toast.error("O nome do squad é obrigatório");
       return;
     }
-    updateMutation.mutate({
-      id: squad.id,
+    const payload: any = {
       name,
       color: selectedColor,
-      leader_id: leaderId
-    });
+      leader_id: leaderId || undefined
+    };
+    if (squad) payload.id = squad.id;
+    
+    mutation.mutate(payload);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="font-title">Editar Squad</DialogTitle>
-          <DialogDescription>Altere os dados do squad</DialogDescription>
+          <DialogTitle className="font-title">{squad ? "Editar Squad" : "Novo Squad"}</DialogTitle>
+          <DialogDescription>{squad ? "Altere os dados do squad" : "Crie um novo squad para a agência"}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-6 py-4">
@@ -150,9 +162,9 @@ export function SquadManagementDialog({ squad, isOpen, onOpenChange }: SquadMana
           <Button 
             onClick={handleSave} 
             className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90"
-            disabled={updateMutation.isPending}
+            disabled={mutation.isPending}
           >
-            {updateMutation.isPending ? "Salvando..." : "Salvar"}
+            {mutation.isPending ? "Salvando..." : squad ? "Salvar" : "Criar"}
           </Button>
         </DialogFooter>
       </DialogContent>

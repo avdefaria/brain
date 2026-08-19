@@ -23,10 +23,10 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
 
     if (squadsError) throw squadsError;
 
-    // Get profiles linked to squads to find leaders (assuming leader logic)
+    // Get profiles linked to squads
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, full_name, function, avatar_url, squad_id');
+      .select('id, full_name, function, avatar_url, squad_id, birth_date');
     
     if (profilesError) throw profilesError;
 
@@ -37,18 +37,28 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
     
     if (tasksError) throw tasksError;
 
+    // Get company events
+    const { data: events, error: eventsError } = await supabase
+      .from('company_events' as any)
+      .select('*')
+      .order('date');
+    
+    // Get special projects for timeline
+    const { data: specialProjects, error: spError } = await supabase
+      .from('special_projects' as any)
+      .select('*, client:client_id(name), squad:squad_id(name, color)')
+      .order('start_date');
+
     // 3. Process Squads
     const processedSquads = squadsData.map(s => {
       const squadProfiles = profiles.filter(p => p.squad_id === s.id);
-      // For demo/simplicity, first profile in squad is "leader" if not otherwise specified
-      const leader = squadProfiles[0] || null;
+      const leader = profiles.find(p => p.id === (s as any).leader_id) || squadProfiles[0] || null;
       const squadClients = s.clients || [];
       const squadClientIds = squadClients.map(c => c.id);
       
       const totalHealth = squadClients.reduce((acc: number, curr: any) => acc + (curr.health_score || 0), 0);
       const avgHealth = squadClients.length > 0 ? Math.round(totalHealth / squadClients.length) : null;
       
-      // Calculate delivery progress from project_deliveries
       let totalDeliveries = 0;
       let completedDeliveries = 0;
       squadClients.forEach((c: any) => {
@@ -66,6 +76,7 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
         name: s.name,
         color: (s as any).color || '#3D4FE8', 
         leader: leader ? {
+          id: leader.id,
           name: leader.full_name,
           role: leader.function,
           avatar: leader.avatar_url
@@ -85,7 +96,6 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter(t => t.stage === 'done').length;
     
-    // Planning stats from deliveries
     let totalTarget = 0;
     let totalCurrent = 0;
     squadsData.forEach(s => {
@@ -101,15 +111,41 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
       squads: processedSquads,
       stats: {
         plannings: {
-          total: totalTarget || 10, // Fallback if no data
+          total: totalTarget || 10,
           completed: totalCurrent || 0
         },
         tasks: {
           total: totalTasks,
           completed: completedTasks
         }
-      }
+      },
+      events: events || [],
+      birthdays: profiles.filter(p => p.birth_date).map(p => ({
+        name: `Aniversário: ${p.full_name}`,
+        date: p.birth_date,
+        type: 'birthday'
+      })),
+      specialProjects: specialProjects || []
     };
+  });
+
+export const createSquad = createServerFn({ method: "POST" })
+  .inputValidator(z.object({
+    name: z.string(),
+    color: z.string(),
+    leader_id: z.string().optional()
+  }).parse)
+  .handler(async ({ data }) => {
+    const { error } = await supabase
+      .from('squads')
+      .insert({
+        name: data.name,
+        color: data.color,
+        leader_id: data.leader_id
+      } as any);
+
+    if (error) throw error;
+    return { success: true };
   });
 
 export const updateSquad = createServerFn({ method: "POST" })
@@ -124,7 +160,8 @@ export const updateSquad = createServerFn({ method: "POST" })
       .from('squads')
       .update({
         name: data.name,
-        color: data.color
+        color: data.color,
+        leader_id: data.leader_id
       } as any)
       .eq('id', data.id);
 
@@ -140,6 +177,25 @@ export const deleteSquad = createServerFn({ method: "POST" })
       .delete()
       .eq('id', data.id);
 
+    if (error) throw error;
+    return { success: true };
+  });
+
+export const createSpecialProject = createServerFn({ method: "POST" })
+  .inputValidator(z.object({
+    name: z.string(),
+    client_id: z.string(),
+    squad_id: z.string().optional(),
+    start_date: z.string(),
+    end_date: z.string(),
+    description: z.string().optional(),
+    color: z.string().optional()
+  }).parse)
+  .handler(async ({ data }) => {
+    const { error } = await supabase
+      .from('special_projects' as any)
+      .insert(data);
+    
     if (error) throw error;
     return { success: true };
   });

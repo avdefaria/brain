@@ -169,6 +169,33 @@ export type Database = {
           },
         ]
       }
+      company_events: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          name: string
+          repeat_annually: boolean | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          name: string
+          repeat_annually?: boolean | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          name?: string
+          repeat_annually?: boolean | null
+          type?: string
+        }
+        Relationships: []
+      }
       content_comments: {
         Row: {
           author_name: string | null
@@ -337,6 +364,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          birth_date: string | null
           created_at: string | null
           employment_type: Database["public"]["Enums"]["employment_type"]
           full_name: string
@@ -347,6 +375,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string | null
           employment_type?: Database["public"]["Enums"]["employment_type"]
           full_name: string
@@ -357,6 +386,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string | null
           employment_type?: Database["public"]["Enums"]["employment_type"]
           full_name?: string
@@ -437,25 +467,82 @@ export type Database = {
         }
         Relationships: []
       }
+      special_projects: {
+        Row: {
+          client_id: string | null
+          color: string | null
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          name: string
+          squad_id: string | null
+          start_date: string
+        }
+        Insert: {
+          client_id?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          name: string
+          squad_id?: string | null
+          start_date: string
+        }
+        Update: {
+          client_id?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          name?: string
+          squad_id?: string | null
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "special_projects_squad_id_fkey"
+            columns: ["squad_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       squads: {
         Row: {
+          color: string | null
           created_at: string | null
           description: string | null
           id: string
+          leader_id: string | null
           name: string
           updated_at: string | null
         }
         Insert: {
+          color?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
+          leader_id?: string | null
           name: string
           updated_at?: string | null
         }
         Update: {
+          color?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
+          leader_id?: string | null
           name?: string
           updated_at?: string | null
         }
