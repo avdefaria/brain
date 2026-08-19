@@ -107,7 +107,15 @@ function ClientsManagePage() {
             <TableBody>
               {mockClients.map((client) => (
                 <TableRow key={client.id} className="border-[#E4E6F0] hover:bg-[#F7F8FC]/50">
-                  <TableCell className="font-medium text-[#0E0E16]">{client.name}</TableCell>
+                  <TableCell className="font-medium text-[#0E0E16]">
+                    <Link 
+                      to="/clients/$clientId" 
+                      params={{ clientId: client.id }}
+                      className="hover:text-[#3D4FE8] transition-colors"
+                    >
+                      {client.name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-[#8A8FA3]">{client.segment}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
