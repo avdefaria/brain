@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -70,8 +70,8 @@ function LoginPage() {
       toast.success("Bem-vindo de volta!");
       
       // Explicitly redirect to dashboard after successful login
-      console.log("Forcing redirection to /dashboard...");
-      window.location.href = "/dashboard";
+      console.log("Navigating to /dashboard...");
+      navigate({ to: "/dashboard", replace: true });
     } catch (error: any) {
       console.error("Unexpected login error:", error);
       toast.error("Ocorreu um erro inesperado.");
