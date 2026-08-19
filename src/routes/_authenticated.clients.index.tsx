@@ -221,7 +221,7 @@ function ClientsOverviewPage() {
                 <span>Intensidade:</span>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-[#F0F1F7] rounded-sm border border-[#E4E6F0]"></div> Poucos</div>
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-[#3D4FE8]/40 rounded-sm"></div> Médio</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-[#3D4FE8]/12 rounded-sm"></div> Médio</div>
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-[#3D4FE8] rounded-sm"></div> Muitos</div>
                 </div>
               </div>
