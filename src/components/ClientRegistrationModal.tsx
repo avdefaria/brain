@@ -106,7 +106,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
     maxFiles: 1
   });
 
-  const onSubmit = async (data: ClientFormValues) => {
+  const onSubmit = async (data: any) => {
     try {
       const { error } = await supabase.from('clients').insert([{
         name: data.name,
