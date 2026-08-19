@@ -6,7 +6,17 @@ import {
   MoreVertical, 
   Eye, 
   UserMinus,
-  AlertCircle
+  AlertCircle,
+  Mail,
+  Phone,
+  Settings,
+  ShieldCheck,
+  FileText,
+  Calendar,
+  MessageSquare,
+  Trash2,
+  ExternalLink,
+  Smartphone
 } from "lucide-react";
 import { useState } from "react";
 import { ClientRegistrationModal } from "@/components/ClientRegistrationModal";
@@ -28,6 +38,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/clients/manage")({
@@ -35,9 +53,9 @@ export const Route = createFileRoute("/_authenticated/clients/manage")({
 });
 
 const mockClients = [
-  { id: 1, name: "TechFlow Systems", segment: "SaaS", risk: "low", status: "active", health: 92 },
-  { id: 2, name: "Global Logistics", segment: "Logística", risk: "medium", status: "active", health: 75 },
-  { id: 3, name: "Urban Eats", segment: "Food & Bev", risk: "high", status: "active", health: 45 },
+  { id: 1, name: "TechFlow Systems", segment: "SaaS", risk: "low", status: "active", health: 92, contact_whatsapp: "(11) 99999-9999", contact_email: "ana@techflow.com" },
+  { id: 2, name: "Global Logistics", segment: "Logística", risk: "medium", status: "active", health: 75, contact_whatsapp: "(11) 98888-8888", contact_email: "carlos@logistics.com" },
+  { id: 3, name: "Urban Eats", segment: "Food & Bev", risk: "high", status: "active", health: 45, contact_whatsapp: "(11) 97777-7777", contact_email: "julia@urbaneats.com" },
 ];
 
 function ClientsManagePage() {
@@ -148,14 +166,40 @@ function ClientsManagePage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-[#8A8FA3] hover:text-[#3D4FE8]">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-[#8A8FA3] hover:text-red-500">
-                        <UserMinus className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-[#8A8FA3] hover:text-[#3D4FE8]">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56 border-[#E4E6F0] dark:border-[#2A2A36] rounded-xl shadow-lg">
+                        <DropdownMenuLabel className="text-xs font-bold text-[#8A8FA3] uppercase px-3 py-2">Comunicação</DropdownMenuLabel>
+                        <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => window.open(`https://wa.me/${client.contact_whatsapp.replace(/\D/g, '')}`, '_blank')}>
+                          <Smartphone className="h-4 w-4 text-green-500" /> WhatsApp
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => window.location.href = `mailto:${client.contact_email}`}>
+                          <Mail className="h-4 w-4 text-blue-500" /> Enviar email
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuSeparator className="bg-[#E4E6F0] dark:bg-[#2A2A36]" />
+                        
+                        <DropdownMenuLabel className="text-xs font-bold text-[#8A8FA3] uppercase px-3 py-2">Ações</DropdownMenuLabel>
+                        <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                          <Link to="/clients/$clientId" params={{ clientId: String(client.id) }}>
+                            <Eye className="h-4 w-4 text-[#8A8FA3]" /> Ver detalhes
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer gap-2">
+                          <ShieldCheck className="h-4 w-4 text-[#8A8FA3]" /> Pesquisa health score
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer gap-2">
+                          <Settings className="h-4 w-4 text-[#8A8FA3]" /> Editar cliente
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer gap-2">
+                          <FileText className="h-4 w-4 text-[#8A8FA3]" /> Configurar entregáveis
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
