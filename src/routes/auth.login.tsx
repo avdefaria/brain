@@ -15,7 +15,8 @@ export const Route = createFileRoute("/auth/login")({
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
     if (data.session) {
-      throw redirect({ to: "/" });
+      console.log("Session found in beforeLoad, redirecting to dashboard");
+      throw redirect({ to: "/dashboard" });
     }
   },
   component: LoginPage,
