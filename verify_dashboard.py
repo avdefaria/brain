@@ -15,23 +15,19 @@ async def main():
         await page.goto("http://localhost:8080", wait_until="networkidle")
         if storage_key and session_json:
             await page.evaluate(
-                f"window.localStorage.setItem({json.dumps(storage_key)}, {json.dumps(session_json)})"
+                f"(key, val) => window.localStorage.setItem(key, val)", storage_key, session_json
             )
-            await page.reload(wait_until="networkidle")
+            await page.goto("http://localhost:8080/projects", wait_until="networkidle")
 
-        # Ir para a rota /projects
-        await page.goto("http://localhost:8080/projects", wait_until="networkidle")
+        # Esperar pelo carregamento dos dados (cards de squad)
+        await page.wait_for_selector('.animate-in', timeout=10000)
+        await asyncio.sleep(2) # Dar tempo para o React Query hidratar
         
-        # Tirar print do dashboard
         await page.screenshot(path="/tmp/browser/projects_dashboard.png")
         
-        # Verificar o conteúdo do card do Squad Alpha
-        # O card deve conter "TechFlow Systems"
         content = await page.content()
         has_techflow = "TechFlow Systems" in content
         
-        # Verificar itens do submenu no DOM
-        # O item "Visão Geral" não deve existir sob Projetos
         menu_items = await page.evaluate("""() => {
             const items = Array.from(document.querySelectorAll('nav a'));
             return items.map(a => a.innerText.trim());
