@@ -70,7 +70,8 @@ function LoginPage() {
       toast.success("Bem-vindo de volta!");
       
       // Explicitly redirect to dashboard after successful login
-      window.location.href = "/dashboard";
+      // Use TanStack Router navigation if possible, fallback to window.location
+      window.location.replace("/dashboard");
     } catch (error: any) {
       console.error("Unexpected login error:", error);
       toast.error("Ocorreu um erro inesperado.");
