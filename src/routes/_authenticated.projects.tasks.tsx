@@ -14,9 +14,10 @@ import {
   Calendar,
   MessageSquare,
   Play,
-  Check
+  Check,
+  Loader2
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,10 @@ import {
   Draggable,
   DropResult
 } from "@hello-pangea/dnd";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getTasks, updateTasksBatch } from "@/lib/tasks.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/projects/tasks")({
   component: TasksPage,
