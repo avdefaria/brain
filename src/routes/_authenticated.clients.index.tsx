@@ -282,6 +282,30 @@ function ClientsOverviewPage() {
                   )}
                 </div>
               </div>
+              <div>
+                <h4 className="text-xs font-bold text-[#8A8FA3] mb-4 uppercase tracking-wider">Top 3 Canais de Vendas</h4>
+                <div className="space-y-4">
+                  {data.topChannels.length > 0 ? data.topChannels.map((channel: any, i: number) => (
+                    <div key={channel.name} className="flex justify-between items-center group">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#3D4FE8]/10 text-[#3D4FE8] text-[10px] font-bold">
+                          {i + 1}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-[#0E0E16] group-hover:text-[#3D4FE8] transition-colors">{channel.name}</p>
+                          <p className="text-[10px] text-[#8A8FA3]">{((channel.count / (data.totalClients || 1)) * 100).toFixed(1)}% da base</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-[#0E0E16]">{channel.count}</span>
+                    </div>
+                  )) : (
+                    <div className="flex flex-col items-center justify-center py-4 text-center">
+                      <AlertTriangle className="h-5 w-5 text-[#F5A524] mb-2 opacity-20" />
+                      <p className="text-[10px] text-[#8A8FA3]">Sem dados de canais</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
