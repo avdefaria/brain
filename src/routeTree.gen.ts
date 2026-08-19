@@ -21,6 +21,7 @@ import { Route as AuthenticatedClientsClientIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedClientsChurnRouteImport } from './routes/_authenticated.clients.churn'
 import { Route as AuthenticatedClientsContractsRouteImport } from './routes/_authenticated.clients.contracts'
 import { Route as AuthenticatedClientsManageRouteImport } from './routes/_authenticated.clients.manage'
+import { Route as AuthenticatedProjectsDeliveriesRouteImport } from './routes/_authenticated.projects.deliveries'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -86,6 +87,12 @@ const AuthenticatedClientsManageRoute =
     path: '/clients/manage',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedProjectsDeliveriesRoute =
+  AuthenticatedProjectsDeliveriesRouteImport.update({
+    id: '/projects/deliveries',
+    path: '/projects/deliveries',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/clients/churn': typeof AuthenticatedClientsChurnRoute
   '/clients/contracts': typeof AuthenticatedClientsContractsRoute
   '/clients/manage': typeof AuthenticatedClientsManageRoute
+  '/projects/deliveries': typeof AuthenticatedProjectsDeliveriesRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -111,6 +119,7 @@ export interface FileRoutesByTo {
   '/clients/churn': typeof AuthenticatedClientsChurnRoute
   '/clients/contracts': typeof AuthenticatedClientsContractsRoute
   '/clients/manage': typeof AuthenticatedClientsManageRoute
+  '/projects/deliveries': typeof AuthenticatedProjectsDeliveriesRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRoutesById {
@@ -126,6 +135,7 @@ export interface FileRoutesById {
   '/_authenticated/clients/churn': typeof AuthenticatedClientsChurnRoute
   '/_authenticated/clients/contracts': typeof AuthenticatedClientsContractsRoute
   '/_authenticated/clients/manage': typeof AuthenticatedClientsManageRoute
+  '/_authenticated/projects/deliveries': typeof AuthenticatedProjectsDeliveriesRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRouteTypes {
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/clients/churn'
     | '/clients/contracts'
     | '/clients/manage'
+    | '/projects/deliveries'
     | '/clients/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/clients/churn'
     | '/clients/contracts'
     | '/clients/manage'
+    | '/projects/deliveries'
     | '/clients'
   id:
     | '__root__'
@@ -168,6 +180,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clients/churn'
     | '/_authenticated/clients/contracts'
     | '/_authenticated/clients/manage'
+    | '/_authenticated/projects/deliveries'
     | '/_authenticated/clients/'
   fileRoutesById: FileRoutesById
 }
@@ -263,6 +276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientsManageRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/projects/deliveries': {
+      id: '/_authenticated/projects/deliveries'
+      path: '/projects/deliveries'
+      fullPath: '/projects/deliveries'
+      preLoaderRoute: typeof AuthenticatedProjectsDeliveriesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -275,6 +295,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedClientsChurnRoute: typeof AuthenticatedClientsChurnRoute
   AuthenticatedClientsContractsRoute: typeof AuthenticatedClientsContractsRoute
   AuthenticatedClientsManageRoute: typeof AuthenticatedClientsManageRoute
+  AuthenticatedProjectsDeliveriesRoute: typeof AuthenticatedProjectsDeliveriesRoute
   AuthenticatedClientsIndexRoute: typeof AuthenticatedClientsIndexRoute
 }
 
@@ -287,6 +308,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedClientsChurnRoute: AuthenticatedClientsChurnRoute,
   AuthenticatedClientsContractsRoute: AuthenticatedClientsContractsRoute,
   AuthenticatedClientsManageRoute: AuthenticatedClientsManageRoute,
+  AuthenticatedProjectsDeliveriesRoute: AuthenticatedProjectsDeliveriesRoute,
   AuthenticatedClientsIndexRoute: AuthenticatedClientsIndexRoute,
 }
 
