@@ -10,10 +10,12 @@ import {
   TrendingUp,
   LayoutGrid,
   List,
-  Plus
+  Plus,
+  Eye,
+  Layers
 } from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -25,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { DeliveryDetailPanel } from "@/components/DeliveryDetailPanel";
 
 export const Route = createFileRoute("/_authenticated/projects/deliveries")({
   component: DeliveriesPage,
@@ -33,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/projects/deliveries")({
 const mockDeliveries = [
   {
     id: "1",
-    client: "TechFlow Systems",
+    name: "TechFlow Systems",
     completed: 12,
     total: 15,
     squad: "Growth",
@@ -43,7 +46,7 @@ const mockDeliveries = [
   },
   {
     id: "2",
-    client: "Global Logistics",
+    name: "Global Logistics",
     completed: 8,
     total: 20,
     squad: "Design",
@@ -53,7 +56,7 @@ const mockDeliveries = [
   },
   {
     id: "3",
-    client: "Urban Eats",
+    name: "Urban Eats",
     completed: 5,
     total: 5,
     squad: "Dev",
@@ -65,6 +68,7 @@ const mockDeliveries = [
 
 function DeliveriesPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [selectedClient, setSelectedClient] = useState<any>(null);
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
@@ -119,7 +123,7 @@ function DeliveriesPage() {
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div>
                 <h3 className="font-title font-bold text-[#0E0E16] group-hover:text-[#3D4FE8] transition-colors">
-                  {delivery.client}
+                  {delivery.name}
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="outline" className="text-[9px] uppercase font-bold text-[#8A8FA3] border-[#E4E6F0] rounded-full">
@@ -141,12 +145,12 @@ function DeliveriesPage() {
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="border-[#E4E6F0]">
-                  <DropdownMenuItem className="gap-2">
-                    <TrendingUp className="h-4 w-4" /> Ver Detalhes
+                <DropdownMenuContent align="end" className="w-48 border-[#E4E6F0] rounded-xl">
+                  <DropdownMenuItem className="gap-2 cursor-pointer font-bold text-xs py-2.5" onClick={() => setSelectedClient(delivery)}>
+                    <Eye className="h-4 w-4 text-[#3D4FE8]" /> Ver detalhes
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="gap-2">
-                    <Plus className="h-4 w-4" /> Entregáveis
+                  <DropdownMenuItem className="gap-2 cursor-pointer font-bold text-xs py-2.5">
+                    <Layers className="h-4 w-4 text-[#3D4FE8]" /> Entregáveis
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
