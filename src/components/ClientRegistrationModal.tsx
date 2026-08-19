@@ -51,16 +51,16 @@ const clientSchema = z.object({
   state: z.string().min(2, "Estado é obrigatório"),
   city: z.string().min(2, "Cidade é obrigatória"),
   corporate_email: z.string().email("E-mail corporativo inválido"),
-  contact_email: z.string().email("E-mail do responsável inválido").optional().or(z.literal("")),
+  contact_email: z.string().email("E-mail do responsável inválido").optional().nullable(),
   contact_whatsapp: z.string().min(10, "WhatsApp inválido"),
-  squad_id: z.string().nullable(),
+  squad_id: z.string().nullable().optional(),
   niche_id: z.string().min(1, "Nicho é obrigatório"),
   contract_type: z.enum(["recurring", "one-off"]),
   sales_channels: z.array(z.string()).optional(),
   start_date: z.string(),
   end_date_expected: z.string().min(1, "Data de encerramento é obrigatória"),
-  scope_details: z.string().nullable(),
-  extra_comments: z.string().nullable(),
+  scope_details: z.string().nullable().optional(),
+  extra_comments: z.string().nullable().optional(),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
@@ -103,12 +103,11 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
       state: "",
       city: "",
       corporate_email: "",
-      contact_email: "",
-      contact_whatsapp: "",
+      contact_email: null,
       squad_id: null,
       niche_id: "",
       contract_type: "recurring",
-      start_date: new Date().toISOString().split('T')[0],
+      start_date: new Date().toISOString().split('T')[0] || "",
       end_date_expected: "",
       scope_details: null,
       extra_comments: null,
@@ -126,12 +125,12 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         state: initialData.state || "",
         city: initialData.city || "",
         corporate_email: initialData.corporate_email || "",
-        contact_email: initialData.contact_email || "",
+        contact_email: initialData.contact_email || null,
         contact_whatsapp: initialData.contact_whatsapp || "",
         squad_id: initialData.squad_id || null,
         niche_id: initialData.niche_id || "",
-        contract_type: initialData.contract_type || "recurring",
-        start_date: initialData.start_date || new Date().toISOString().split('T')[0],
+        contract_type: (initialData.contract_type as any) || "recurring",
+        start_date: initialData.start_date || new Date().toISOString().split('T')[0] || "",
         end_date_expected: initialData.end_date_expected || "",
         scope_details: initialData.scope_details || null,
         extra_comments: initialData.extra_comments || null,
@@ -146,12 +145,12 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         state: "",
         city: "",
         corporate_email: "",
-        contact_email: "",
+        contact_email: null,
         contact_whatsapp: "",
         squad_id: null,
         niche_id: "",
         contract_type: "recurring",
-        start_date: new Date().toISOString().split('T')[0],
+        start_date: new Date().toISOString().split('T')[0] || "",
         end_date_expected: "",
         scope_details: null,
         extra_comments: null,
@@ -361,7 +360,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Squad responsável</Label>
-                <Select onValueChange={(v) => form.setValue("squad_id", v)} value={form.watch("squad_id") || undefined}>
+                <Select onValueChange={(v) => form.setValue("squad_id", v)} value={form.watch("squad_id") || ""}>
                   <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
                     <SelectValue placeholder="Selecione o squad" />
                   </SelectTrigger>
