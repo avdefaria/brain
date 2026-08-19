@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -41,6 +42,7 @@ function ClockDisplay() {
 }
 
 function ClientsOverviewPage() {
+  const location = useLocation();
   const { data, isLoading } = useQuery({
     queryKey: ['clients-overview'],
     queryFn: () => getClientsOverviewData()
@@ -489,13 +491,14 @@ function ClientsOverviewPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-[#F7F8FC] px-3 py-1.5 rounded-full border border-[#E4E6F0]">
-              <Search className="h-3 w-3 text-[#8A8FA3]" />
-              <span className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-wider">Alto Risco → Baixo</span>
-            </div>
-            <div className="bg-[#F7F8FC] px-3 py-1.5 rounded-full border border-[#E4E6F0]">
-              <span className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-wider">5 por página</span>
-            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              asChild
+              className="rounded-full border-[#E4E6F0] text-[#8A8FA3] hover:text-[#3D4FE8] hover:bg-[#3D4FE8]/5 h-8 text-[10px] font-bold uppercase tracking-wider"
+            >
+              <Link to="/clients/manage">Ver todos</Link>
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
