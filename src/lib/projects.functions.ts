@@ -174,7 +174,16 @@ export const updateSquad = createServerFn({ method: "POST" })
       } as any)
       .eq('id', data.id);
 
-    if (error) throw error;
+    if (error) {
+      await logSecurityEvent({
+        action: 'UPDATE',
+        tableName: 'squads',
+        recordId: data.id,
+        details: data,
+        errorMessage: error.message
+      });
+      throw error;
+    }
     return { success: true };
   });
 
