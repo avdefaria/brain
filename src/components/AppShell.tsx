@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { 
   LayoutDashboard, 
   Users, 
+  Briefcase,
   Network, 
   Settings, 
   HelpCircle, 
