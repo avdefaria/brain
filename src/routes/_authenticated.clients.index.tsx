@@ -254,7 +254,104 @@ function ClientsOverviewPage() {
           </div>
         </Card>
       </div>
+      {/* Cards Linha 4 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6 border-[#E4E6F0] shadow-sm">
+          <CardTitle className="text-lg font-title mb-6">Contas por líder</CardTitle>
+          <div className="space-y-6">
+            {data.leaderStats.map((leader: any) => (
+              <div key={leader.name} className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={leader.avatar || ""} />
+                      <AvatarFallback className="bg-[#3D4FE8]/10 text-[#3D4FE8] text-xs">
+                        {leader.name?.substring(0, 2).toUpperCase() || "L"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-bold text-[#0E0E16]">{leader.name}</p>
+                      <p className="text-[10px] text-[#8A8FA3]">{leader.count} cliente(s)</p>
+                    </div>
+                  </div>
+                  <span className="text-sm font-bold text-[#0E0E16]">{leader.count}</span>
+                </div>
+                <Progress value={(leader.count / (data.totalClients || 1)) * 100} className="h-1" />
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card className="p-6 border-[#E4E6F0] shadow-sm">
+          <CardTitle className="text-lg font-title mb-6">Health score por squad</CardTitle>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.squadHealthData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
+                <XAxis dataKey="name" />
+                <YAxis domain={[0, 100]} />
+                <Tooltip />
+                <Bar dataKey="score" fill="#3D4FE8" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-6 border-[#E4E6F0] shadow-sm">
+        <div className="flex justify-between items-center mb-6">
+          <CardTitle>Clientes prioritários</CardTitle>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-[#8A8FA3]">Alto Risco → Baixo</span>
+            <span className="text-xs text-[#8A8FA3]">5 por página</span>
+          </div>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-[#E4E6F0] hover:bg-transparent">
+              <TableHead className="text-xs font-bold text-[#8A8FA3] uppercase">Cliente</TableHead>
+              <TableHead className="text-xs font-bold text-[#8A8FA3] uppercase">Segmento</TableHead>
+              <TableHead className="text-xs font-bold text-[#8A8FA3] uppercase">Responsável</TableHead>
+              <TableHead className="text-xs font-bold text-[#8A8FA3] uppercase">Risco</TableHead>
+              <TableHead className="text-xs font-bold text-[#8A8FA3] uppercase">Score</TableHead>
+              <TableHead className="text-xs font-bold text-[#8A8FA3] uppercase">CAC</TableHead>
+              <TableHead className="text-xs font-bold text-[#8A8FA3] uppercase text-right">Tempo</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.priorityClients.map((client: any) => (
+              <TableRow key={client.id} className="border-[#E4E6F0] hover:bg-[#F7F8FC] transition-colors">
+                <TableCell className="font-bold text-[#0E0E16]">{client.name}</TableCell>
+                <TableCell>
+                  <span className="bg-[#F7F8FC] text-[#8A8FA3] px-2 py-1 rounded-full text-[10px] font-bold border border-[#E4E6F0]">
+                    {client.segment}
+                  </span>
+                </TableCell>
+                <TableCell>{client.responsible}</TableCell>
+                <TableCell>
+                  <span className={cn(
+                    "px-2 py-1 rounded-full text-[10px] font-bold border",
+                    client.risk_level === 'high' ? "bg-red-50 text-red-600 border-red-100" :
+                    client.risk_level === 'medium' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                    "bg-green-50 text-green-600 border-green-100"
+                  )}>
+                    {client.risk_level === 'high' ? 'Crítico' : client.risk_level === 'medium' ? 'Atenção' : 'Estável'}
+                  </span>
+                </TableCell>
+                <TableCell className="font-bold text-[#0E0E16]">{client.health_score}</TableCell>
+                <TableCell className="text-[#8A8FA3]">R$ {client.cac}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1 text-[#8A8FA3]">
+                    <Clock className="h-3 w-3" />
+                    <span className="text-xs">12 meses</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }
+
 
