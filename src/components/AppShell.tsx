@@ -125,9 +125,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarItem
                 icon={Briefcase}
                 label="Clientes"
-                href="/clients/manage"
+                href="/clients"
                 collapsed={sidebarCollapsed}
                 children={[
+                  { label: "Visão Geral", href: "/clients" },
                   { label: "Gestão de clientes", href: "/clients/manage" },
                   { label: "Análise de churn", href: "/clients/churn" },
                   { label: "Contratos", href: "/clients/contracts" },
