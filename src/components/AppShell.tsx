@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { 
   LayoutDashboard, 
   Users, 
@@ -80,6 +80,7 @@ function SidebarItem({ icon: Icon, label, href, collapsed, active, children }: S
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const location = useLocation();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
