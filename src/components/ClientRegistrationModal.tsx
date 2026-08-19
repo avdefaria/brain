@@ -213,7 +213,6 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         contact_whatsapp: data.contact_whatsapp,
         squad_id: data.squad_id,
         niche_id: data.niche_id,
-        sales_channels: data.sales_channels || [],
         start_date: data.start_date,
         end_date_expected: data.end_date_expected,
         scope_details: data.scope_details,
@@ -223,23 +222,83 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         health_score: initialData ? initialData.health_score : 100
       };
 
+      let clientId = initialData?.id;
+
       if (initialData) {
-        const { error } = await supabase.from('clients').update(payload).eq('id', initialData.id);
-        if (error) throw error;
-        toast.success("Cliente atualizado com sucesso!");
+        // Update client
+        const { error } = await supabase.from('clients').update(payload).eq('id', clientId);
+        if (error) {
+          console.error("Error updating client:", error);
+          throw new Error(`Erro ao atualizar dados básicos do cliente: ${error.message}`);
+        }
       } else {
-        const { error } = await supabase.from('clients').insert([payload]);
-        if (error) throw error;
-        toast.success("Cliente cadastrado com sucesso!");
+        // Insert new client
+        const { data: newClient, error } = await supabase.from('clients').insert([payload]).select('id').single();
+        if (error) {
+          console.error("Error inserting client:", error);
+          throw new Error(`Erro ao criar cliente: ${error.message}`);
+        }
+        clientId = newClient.id;
       }
 
+      // Handle sales channels junction table
+      if (clientId) {
+        // 1. Get channel IDs for the selected names
+        const selectedChannelNames = data.sales_channels || [];
+        
+        if (selectedChannelNames.length > 0) {
+          const { data: channels, error: channelsError } = await supabase
+            .from('sales_channels' as any)
+            .select('id, name')
+            .in('name', selectedChannelNames);
+            
+          if (channelsError) {
+            console.error("Error fetching channel IDs:", channelsError);
+            throw new Error(`Erro ao buscar IDs dos canais: ${channelsError.message}`);
+          }
+
+          const channelIds = channels.map(c => c.id);
+
+          // 2. Clear existing relationships if editing
+          if (initialData) {
+            const { error: deleteError } = await supabase
+              .from('client_sales_channels')
+              .delete()
+              .eq('client_id', clientId);
+            
+            if (deleteError) {
+              console.error("Error clearing existing channels:", deleteError);
+            }
+          }
+
+          // 3. Insert new relationships
+          const junctionData = channelIds.map(channelId => ({
+            client_id: clientId,
+            sales_channel_id: channelId
+          }));
+
+          const { error: junctionError } = await supabase
+            .from('client_sales_channels')
+            .insert(junctionData);
+
+          if (junctionError) {
+            console.error("Error inserting channel relationships:", junctionError);
+            throw new Error(`Erro ao vincular canais de venda: ${junctionError.message}`);
+          }
+        } else if (initialData) {
+          // If no channels selected but was editing, clear them
+          await supabase.from('client_sales_channels').delete().eq('client_id', clientId);
+        }
+      }
+
+      toast.success(initialData ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
       onOpenChange(false);
       form.reset();
       setFile(null);
       if (onSuccess) onSuccess();
     } catch (error: any) {
-      console.error("Erro ao salvar cliente:", error);
-      toast.error("Erro ao salvar cliente: " + error.message);
+      console.error("Detailed registration error:", error);
+      toast.error(error.message || "Erro inesperado ao salvar cliente");
     }
   };
 
