@@ -148,73 +148,127 @@ function ClientsOverviewPage() {
         </Card>
       </div>
 
-      <Card className="p-6 border-[#E4E6F0] shadow-sm">
-        <div className="flex justify-between items-center mb-6">
-          <CardTitle>Distribuição Geográfica</CardTitle>
-          <span className="bg-[#3D4FE8]/10 text-[#3D4FE8] px-3 py-1 rounded-full text-xs font-bold">Total: {data.totalClients}</span>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="h-[400px] relative bg-[#F7F8FC] rounded-xl overflow-hidden">
-              <ComposableMap projection="geoMercator" projectionConfig={{ scale: 700, center: [-55, -15] }}>
-                <Geographies geography="/brazil.json">
-                  {({ geographies }) =>
-                    geographies.map((geo) => (
-                      <Geography key={geo.rsmKey} geography={geo} fill="#E4E6F0" stroke="#FFFFFF" />
-                    ))
-                  }
-                </Geographies>
-              </ComposableMap>
-              <div className="absolute bottom-4 left-4 flex gap-2">
-                <Button variant="outline" size="sm" className="h-8 w-8 rounded-full">+</Button>
-                <Button variant="outline" size="sm" className="h-8 w-8 rounded-full">-</Button>
-                <Button variant="outline" size="sm" className="rounded-full px-3 text-xs">Resetar</Button>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 mt-4 text-xs font-bold text-[#8A8FA3]">
-              Legenda:
-              <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#E4E6F0] rounded-full"></div> Poucos</div>
-              <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#3D4FE8]/40 rounded-full"></div> Médio</div>
-              <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#3D4FE8] rounded-full"></div> Muitos</div>
-            </div>
-          </div>
-          <div className="space-y-8">
-            <div>
-              <h4 className="text-sm font-bold text-[#0E0E16] mb-4">Top 3 Canais de vendas</h4>
-              <div className="space-y-4">
-                {data.topChannels.map((ch, i) => (
-                  <div key={ch.name} className="flex justify-between items-start">
-                    <div className="flex gap-3">
-                      <span className="text-xs font-bold text-[#3D4FE8]">#{i+1}</span>
-                      <div>
-                        <p className="text-xs font-bold text-[#0E0E16]">{ch.name}</p>
-                        <p className="text-[10px] text-[#8A8FA3]">{((ch.count / (data.totalClients || 1)) * 100).toFixed(1)}% do total</p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-[#0E0E16]">{ch.count}</span>
-                  </div>
-                ))}
-              </div>
+      <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between p-6">
+          <div className="flex items-center">
+            <div className="bg-[#3D4FE8]/8 p-2 rounded-lg mr-4">
+              <MapPin className="h-5 w-5 text-[#3D4FE8]" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-[#0E0E16] mb-4">Top 3 Cidades (Brasil)</h4>
-              <div className="space-y-4">
-                {data.topCities.map((city, i) => (
-                  <div key={city.name} className="flex justify-between items-start">
-                    <div className="flex gap-3">
-                      <span className="text-xs font-bold text-[#3D4FE8]">#{i+1}</span>
-                      <div>
-                        <p className="text-xs font-bold text-[#0E0E16]">{city.name}</p>
-                        <p className="text-[10px] text-[#8A8FA3]">{((city.count / (data.totalClients || 1)) * 100).toFixed(1)}% do total</p>
+              <CardTitle className="text-lg font-title font-semibold">Distribuição Geográfica</CardTitle>
+              <p className="text-xs text-[#8A8FA3]">Mapa de clientes por estados brasileiros</p>
+            </div>
+          </div>
+          <span className="bg-[#3D4FE8]/10 text-[#3D4FE8] px-3 py-1 rounded-full text-xs font-bold font-jakarta">
+            {data.totalClients} {data.totalClients === 1 ? 'cliente' : 'clientes'}
+          </span>
+        </CardHeader>
+        <CardContent className="p-6 pt-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <div className="h-[400px] relative bg-[#F7F8FC] rounded-xl overflow-hidden border border-[#E4E6F0]">
+                <ComposableMap projection="geoMercator" projectionConfig={{ scale: 700, center: [-55, -15] }}>
+                  <Geographies geography="/brazil.json">
+                    {({ geographies }) =>
+                      geographies.map((geo) => {
+                        const stateName = geo.properties.name;
+                        const clientCount = data.clientsByState[stateName] || 0;
+                        const intensity = clientCount > 0 ? Math.min(0.2 + (clientCount / (data.totalClients || 1)) * 0.8, 1) : 0;
+                        
+                        return (
+                          <TooltipProvider key={geo.rsmKey}>
+                            <UiTooltip>
+                              <TooltipTrigger asChild>
+                                <Geography
+                                  geography={geo}
+                                  fill={clientCount > 0 ? `rgba(61, 79, 232, ${intensity})` : "#F0F1F7"}
+                                  stroke="#FFFFFF"
+                                  strokeWidth={0.5}
+                                  style={{
+                                    default: { outline: "none" },
+                                    hover: { fill: "#3D4FE8", outline: "none", cursor: "pointer" },
+                                    pressed: { outline: "none" }
+                                  }}
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-bold">{stateName}</p>
+                                <p className="text-xs">{clientCount > 0 ? `${clientCount} cliente(s)` : 'Sem clientes'}</p>
+                              </TooltipContent>
+                            </UiTooltip>
+                          </TooltipProvider>
+                        );
+                      })
+                    }
+                  </Geographies>
+                </ComposableMap>
+                <div className="absolute bottom-4 left-4 flex gap-2">
+                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full shadow-sm bg-white"><ArrowUpRight className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full shadow-sm bg-white"><ArrowDownRight className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="sm" className="rounded-full px-3 text-xs bg-white shadow-sm">Resetar</Button>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 mt-6 text-[10px] font-bold text-[#8A8FA3] uppercase tracking-wider">
+                <span>Intensidade:</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-[#F0F1F7] rounded-sm border border-[#E4E6F0]"></div> Poucos</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-[#3D4FE8]/40 rounded-sm"></div> Médio</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-[#3D4FE8] rounded-sm"></div> Muitos</div>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-8">
+              <div>
+                <h4 className="text-xs font-bold text-[#8A8FA3] mb-4 uppercase tracking-wider">Top 3 Canais de vendas</h4>
+                <div className="space-y-4">
+                  {data.topChannels.length > 0 ? data.topChannels.map((ch, i) => (
+                    <div key={ch.name} className="flex justify-between items-center group">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#3D4FE8]/10 text-[#3D4FE8] text-[10px] font-bold">
+                          {i + 1}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-[#0E0E16] group-hover:text-[#3D4FE8] transition-colors">{ch.name}</p>
+                          <p className="text-[10px] text-[#8A8FA3]">{((ch.count / (data.totalClients || 1)) * 100).toFixed(1)}% da base</p>
+                        </div>
                       </div>
+                      <span className="text-sm font-bold text-[#0E0E16]">{ch.count}</span>
                     </div>
-                    <span className="text-xs font-bold text-[#0E0E16]">{city.count}</span>
-                  </div>
-                ))}
+                  )) : (
+                    <div className="flex flex-col items-center justify-center py-4 text-center">
+                      <AlertTriangle className="h-5 w-5 text-[#F5A524] mb-2 opacity-20" />
+                      <p className="text-[10px] text-[#8A8FA3]">Sem dados de canais</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-[#8A8FA3] mb-4 uppercase tracking-wider">Top 3 Cidades (Brasil)</h4>
+                <div className="space-y-4">
+                  {data.topCities.length > 0 ? data.topCities.map((city, i) => (
+                    <div key={city.name} className="flex justify-between items-center group">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#3D4FE8]/10 text-[#3D4FE8] text-[10px] font-bold">
+                          {i + 1}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-[#0E0E16] group-hover:text-[#3D4FE8] transition-colors">{city.name}</p>
+                          <p className="text-[10px] text-[#8A8FA3]">{((city.count / (data.totalClients || 1)) * 100).toFixed(1)}% da base</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-[#0E0E16]">{city.count}</span>
+                    </div>
+                  )) : (
+                    <div className="flex flex-col items-center justify-center py-4 text-center">
+                      <AlertTriangle className="h-5 w-5 text-[#F5A524] mb-2 opacity-20" />
+                      <p className="text-[10px] text-[#8A8FA3]">Sem dados de cidades</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
