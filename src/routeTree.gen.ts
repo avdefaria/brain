@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated.projects'
 import { Route as AuthenticatedSquadsRouteImport } from './routes/_authenticated.squads'
 import { Route as AuthenticatedStructureRouteImport } from './routes/_authenticated.structure'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated.users'
@@ -38,6 +39,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSquadsRoute = AuthenticatedSquadsRouteImport.update({
@@ -92,21 +98,21 @@ const AuthenticatedClientsManageRoute =
   } as any)
 const AuthenticatedProjectsContentApprovalRoute =
   AuthenticatedProjectsContentApprovalRouteImport.update({
-    id: '/projects/content-approval',
-    path: '/projects/content-approval',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/content-approval',
+    path: '/content-approval',
+    getParentRoute: () => AuthenticatedProjectsRoute,
   } as any)
 const AuthenticatedProjectsDeliveriesRoute =
   AuthenticatedProjectsDeliveriesRouteImport.update({
-    id: '/projects/deliveries',
-    path: '/projects/deliveries',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/deliveries',
+    path: '/deliveries',
+    getParentRoute: () => AuthenticatedProjectsRoute,
   } as any)
 const AuthenticatedProjectsTasksRoute =
   AuthenticatedProjectsTasksRouteImport.update({
-    id: '/projects/tasks',
-    path: '/projects/tasks',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/tasks',
+    path: '/tasks',
+    getParentRoute: () => AuthenticatedProjectsRoute,
   } as any)
 const PublicApprovalTokenRoute = PublicApprovalTokenRouteImport.update({
   id: '/public/approval/$token',
@@ -117,6 +123,7 @@ const PublicApprovalTokenRoute = PublicApprovalTokenRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/squads': typeof AuthenticatedSquadsRoute
   '/structure': typeof AuthenticatedStructureRoute
   '/users': typeof AuthenticatedUsersRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/squads': typeof AuthenticatedSquadsRoute
   '/structure': typeof AuthenticatedStructureRoute
   '/users': typeof AuthenticatedUsersRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/_authenticated/squads': typeof AuthenticatedSquadsRoute
   '/_authenticated/structure': typeof AuthenticatedStructureRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/projects'
     | '/squads'
     | '/structure'
     | '/users'
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/projects'
     | '/squads'
     | '/structure'
     | '/users'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/_authenticated/dashboard'
+    | '/_authenticated/projects'
     | '/_authenticated/squads'
     | '/_authenticated/structure'
     | '/_authenticated/users'
@@ -250,6 +262,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/projects': {
+      id: '/_authenticated/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof AuthenticatedProjectsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/squads': {
@@ -317,24 +336,24 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/projects/content-approval': {
       id: '/_authenticated/projects/content-approval'
-      path: '/projects/content-approval'
+      path: '/content-approval'
       fullPath: '/projects/content-approval'
       preLoaderRoute: typeof AuthenticatedProjectsContentApprovalRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedProjectsRoute
     }
     '/_authenticated/projects/deliveries': {
       id: '/_authenticated/projects/deliveries'
-      path: '/projects/deliveries'
+      path: '/deliveries'
       fullPath: '/projects/deliveries'
       preLoaderRoute: typeof AuthenticatedProjectsDeliveriesRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedProjectsRoute
     }
     '/_authenticated/projects/tasks': {
       id: '/_authenticated/projects/tasks'
-      path: '/projects/tasks'
+      path: '/tasks'
       fullPath: '/projects/tasks'
       preLoaderRoute: typeof AuthenticatedProjectsTasksRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedProjectsRoute
     }
     '/public/approval/$token': {
       id: '/public/approval/$token'
@@ -346,8 +365,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedProjectsRouteChildren {
+  AuthenticatedProjectsContentApprovalRoute: typeof AuthenticatedProjectsContentApprovalRoute
+  AuthenticatedProjectsDeliveriesRoute: typeof AuthenticatedProjectsDeliveriesRoute
+  AuthenticatedProjectsTasksRoute: typeof AuthenticatedProjectsTasksRoute
+}
+
+const AuthenticatedProjectsRouteChildren: AuthenticatedProjectsRouteChildren = {
+  AuthenticatedProjectsContentApprovalRoute:
+    AuthenticatedProjectsContentApprovalRoute,
+  AuthenticatedProjectsDeliveriesRoute: AuthenticatedProjectsDeliveriesRoute,
+  AuthenticatedProjectsTasksRoute: AuthenticatedProjectsTasksRoute,
+}
+
+const AuthenticatedProjectsRouteWithChildren =
+  AuthenticatedProjectsRoute._addFileChildren(
+    AuthenticatedProjectsRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRouteWithChildren
   AuthenticatedSquadsRoute: typeof AuthenticatedSquadsRoute
   AuthenticatedStructureRoute: typeof AuthenticatedStructureRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
@@ -355,14 +393,12 @@ interface AuthenticatedRouteChildren {
   AuthenticatedClientsChurnRoute: typeof AuthenticatedClientsChurnRoute
   AuthenticatedClientsContractsRoute: typeof AuthenticatedClientsContractsRoute
   AuthenticatedClientsManageRoute: typeof AuthenticatedClientsManageRoute
-  AuthenticatedProjectsContentApprovalRoute: typeof AuthenticatedProjectsContentApprovalRoute
-  AuthenticatedProjectsDeliveriesRoute: typeof AuthenticatedProjectsDeliveriesRoute
-  AuthenticatedProjectsTasksRoute: typeof AuthenticatedProjectsTasksRoute
   AuthenticatedClientsIndexRoute: typeof AuthenticatedClientsIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedProjectsRoute: AuthenticatedProjectsRouteWithChildren,
   AuthenticatedSquadsRoute: AuthenticatedSquadsRoute,
   AuthenticatedStructureRoute: AuthenticatedStructureRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
@@ -370,10 +406,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedClientsChurnRoute: AuthenticatedClientsChurnRoute,
   AuthenticatedClientsContractsRoute: AuthenticatedClientsContractsRoute,
   AuthenticatedClientsManageRoute: AuthenticatedClientsManageRoute,
-  AuthenticatedProjectsContentApprovalRoute:
-    AuthenticatedProjectsContentApprovalRoute,
-  AuthenticatedProjectsDeliveriesRoute: AuthenticatedProjectsDeliveriesRoute,
-  AuthenticatedProjectsTasksRoute: AuthenticatedProjectsTasksRoute,
   AuthenticatedClientsIndexRoute: AuthenticatedClientsIndexRoute,
 }
 
