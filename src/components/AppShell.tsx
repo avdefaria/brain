@@ -4,7 +4,9 @@ import {
   LayoutDashboard, 
   Users, 
   Briefcase,
+  Layers,
   Network, 
+
   Settings, 
   HelpCircle, 
   LogOut, 
@@ -130,6 +132,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 { label: "Gestão", href: "/clients/manage" },
                 { label: "Churn", href: "/clients/churn" },
                 { label: "Contratos", href: "/clients/contracts" },
+              ]}
+            />
+            <SidebarItem
+              icon={Layers}
+              label="Projetos"
+              href="/projects"
+              collapsed={sidebarCollapsed}
+              children={[
+                { label: "Gestão de Entregas", href: "/projects/deliveries" },
+                { label: "Tarefas", href: "/projects/tasks" },
               ]}
             />
             <SidebarItem
