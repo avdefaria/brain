@@ -91,6 +91,7 @@ export type Database = {
           health_score: number | null
           id: string
           name: string
+          niche_id: string | null
           risk_level: Database["public"]["Enums"]["risk_level"] | null
           sales_channels: string[] | null
           scope_details: string | null
@@ -115,6 +116,7 @@ export type Database = {
           health_score?: number | null
           id?: string
           name: string
+          niche_id?: string | null
           risk_level?: Database["public"]["Enums"]["risk_level"] | null
           sales_channels?: string[] | null
           scope_details?: string | null
@@ -139,6 +141,7 @@ export type Database = {
           health_score?: number | null
           id?: string
           name?: string
+          niche_id?: string | null
           risk_level?: Database["public"]["Enums"]["risk_level"] | null
           sales_channels?: string[] | null
           scope_details?: string | null
@@ -150,6 +153,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "clients_niche_id_fkey"
+            columns: ["niche_id"]
+            isOneToOne: false
+            referencedRelation: "niches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clients_squad_id_fkey"
             columns: ["squad_id"]
@@ -305,6 +315,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      niches: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

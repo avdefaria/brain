@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -46,7 +46,38 @@ function ClientsOverviewPage() {
     queryFn: () => getClientsOverviewData()
   });
 
-  if (isLoading || !data) return <div className="p-8">Carregando...</div>;
+  if (isLoading || !data) return (
+    <div className="p-8 flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">
+      <RefreshCw className="h-8 w-8 text-[#3D4FE8] animate-spin opacity-20" />
+      <p className="text-sm text-[#8A8FA3]">Carregando análise da carteira...</p>
+    </div>
+  );
+
+  if (data.totalClients === 0) {
+    return (
+      <div className="p-8 space-y-8 animate-in fade-in duration-500 bg-[#F7F8FC]/50 min-h-screen">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-title font-bold text-[#0E0E16]">Visão Geral da Carteira</h1>
+            <p className="text-sm text-[#8A8FA3]">Análise analítica e distribuição de clientes</p>
+          </div>
+          <ClockDisplay />
+        </div>
+        <Card className="p-12 text-center flex flex-col items-center justify-center space-y-4 border-[#E4E6F0]">
+          <div className="h-16 w-16 rounded-full bg-[#3D4FE8]/5 flex items-center justify-center text-[#3D4FE8]">
+            <Users className="h-8 w-8 opacity-20" />
+          </div>
+          <div>
+            <h3 className="text-lg font-title font-bold text-[#0E0E16]">Nenhum dado disponível</h3>
+            <p className="text-sm text-[#8A8FA3]">Cadastre clientes para visualizar as métricas analíticas.</p>
+          </div>
+          <Button asChild className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full">
+            <Link to="/clients/manage">Gerenciar Clientes</Link>
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   const kpiData = [
     { label: "Clientes Ativos", value: data.kpis.active, change: "+0%", trending: "up", icon: Users, tooltip: "Total de clientes com contrato ativo" },
@@ -472,7 +503,7 @@ function ClientsOverviewPage() {
             <TableHeader>
               <TableRow className="border-[#E4E6F0] hover:bg-transparent bg-[#F7F8FC]/50">
                 <TableHead className="text-[10px] font-bold text-[#8A8FA3] uppercase h-10 px-6">Cliente</TableHead>
-                <TableHead className="text-[10px] font-bold text-[#8A8FA3] uppercase h-10">Segmento</TableHead>
+                <TableHead className="text-[10px] font-bold text-[#8A8FA3] uppercase h-10">Nicho</TableHead>
                 <TableHead className="text-[10px] font-bold text-[#8A8FA3] uppercase h-10">Responsável</TableHead>
                 <TableHead className="text-[10px] font-bold text-[#8A8FA3] uppercase h-10">Risco</TableHead>
                 <TableHead className="text-[10px] font-bold text-[#8A8FA3] uppercase h-10">Score</TableHead>
@@ -486,7 +517,7 @@ function ClientsOverviewPage() {
                   <TableCell className="font-bold text-[#0E0E16] px-6 py-4">{client.name}</TableCell>
                   <TableCell>
                     <span className="bg-[#F7F8FC] text-[#8A8FA3] px-2 py-1 rounded-full text-[10px] font-bold border border-[#E4E6F0]">
-                      {client.segment}
+                      {client.niche}
                     </span>
                   </TableCell>
                   <TableCell>

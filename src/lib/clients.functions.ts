@@ -8,7 +8,11 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
       .select(`
         *,
         squads (name),
-        contracts (*)
+        contracts (*),
+        client_sales_channels (
+          sales_channels (name)
+        ),
+        niches (name)
       `);
 
     if (clientsError) throw clientsError;
@@ -43,10 +47,14 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
       return acc;
     }, {});
 
-    const channelCounts = clientsTyped.flatMap(c => c.sales_channels || []).reduce((acc: Record<string, number>, ch) => {
-      acc[ch] = (acc[ch] || 0) + 1;
+    const channelCounts = clientsTyped.reduce((acc: Record<string, number>, c) => {
+      const channels = c.client_sales_channels?.map((csc: any) => csc.sales_channels?.name).filter(Boolean) || [];
+      channels.forEach((ch: string) => {
+        acc[ch] = (acc[ch] || 0) + 1;
+      });
       return acc;
     }, {});
+    
     const topChannels = Object.entries(channelCounts)
       .sort((a: any, b: any) => b[1] - a[1])
       .slice(0, 3)
@@ -90,7 +98,7 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
       .map(c => ({
         id: c.id as string,
         name: c.name as string,
-        segment: c.segment as string || 'N/A',
+        niche: (c.niches as any)?.name || 'N/A',
         health_score: c.health_score as number || 0,
         risk_level: c.risk_level as string || 'low',
         responsible: (c.squads as any)?.name || 'N/A',
@@ -103,8 +111,8 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
         active: activeClients,
         new: newClients,
         churn: churnedClients,
-        ltv: totalMRR > 0 ? 24 : 0, // Mock LTV logic or calc based on history
-        cac: activeClients > 0 ? 850 : 0 // Real CAC would need marketing costs
+        ltv: totalMRR > 0 ? 24 : 0,
+        cac: activeClients > 0 ? 850 : 0
       },
       clientsByState,
       topChannels,
