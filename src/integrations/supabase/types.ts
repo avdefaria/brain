@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_squads: {
+        Row: {
+          account_id: string
+          created_at: string | null
+          id: string
+          squad_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string | null
+          id?: string
+          squad_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string | null
+          id?: string
+          squad_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_squads_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_squads_squad_id_fkey"
+            columns: ["squad_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           account_name: string | null
