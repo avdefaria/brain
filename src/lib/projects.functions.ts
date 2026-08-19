@@ -4,80 +4,108 @@ import { z } from "zod";
 
 export const getProjectsOverviewData = createServerFn({ method: "GET" })
   .handler(async () => {
-    // 1. Get Squads with counts and leader info
+    // 1. Get Squads with leader info and clients
     const { data: squadsData, error: squadsError } = await supabase
       .from('squads')
       .select(`
         *,
-        leader:profiles!profiles_squad_id_fkey (
-          full_name,
-          function,
-          avatar_url
-        ),
-        members:profiles (count),
         clients (
           id,
-          health_score
+          health_score,
+          project_deliveries (
+            id,
+            current_count,
+            target_count,
+            status
+          )
         )
       `);
 
     if (squadsError) throw squadsError;
 
-    // 2. Get Tasks statistics
+    // Get profiles linked to squads to find leaders (assuming leader logic)
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, function, avatar_url, squad_id');
+    
+    if (profilesError) throw profilesError;
+
+    // Get all tasks for stats
     const { data: tasks, error: tasksError } = await supabase
       .from('tasks')
-      .select('id, stage, deadline');
+      .select('id, stage, deadline, squad_id');
     
     if (tasksError) throw tasksError;
 
     // 3. Process Squads
     const processedSquads = squadsData.map(s => {
-      const leader = (s.leader as any)?.[0] || null;
-      const membersCount = (s.members as any)?.[0]?.count || 0;
+      const squadProfiles = profiles.filter(p => p.squad_id === s.id);
+      // For demo/simplicity, first profile in squad is "leader" if not otherwise specified
+      const leader = squadProfiles[0] || null;
       const squadClients = s.clients || [];
+      
       const totalHealth = squadClients.reduce((acc: number, curr: any) => acc + (curr.health_score || 0), 0);
       const avgHealth = squadClients.length > 0 ? Math.round(totalHealth / squadClients.length) : null;
       
-      // Calculate progress mock-up based on tasks if we had a link, but for now we'll use a realistic calculation
-      // or placeholder if data is missing. Let's try to find tasks for these clients.
-      
+      // Calculate delivery progress from project_deliveries
+      let totalDeliveries = 0;
+      let completedDeliveries = 0;
+      squadClients.forEach((c: any) => {
+        (c.project_deliveries || []).forEach((d: any) => {
+          totalDeliveries += d.target_count || 0;
+          completedDeliveries += d.current_count || 0;
+        });
+      });
+
+      const squadTasks = tasks.filter(t => t.squad_id === s.id);
+      const lateTasks = squadTasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && t.stage !== 'done').length;
+
       return {
         id: s.id,
         name: s.name,
-        color: (s as any).color || '#3D4FE8', // Identity color
+        color: (s as any).color || '#3D4FE8', 
         leader: leader ? {
           name: leader.full_name,
           role: leader.function,
           avatar: leader.avatar_url
         } : null,
-        membersCount,
+        membersCount: squadProfiles.length,
         accountsCount: squadClients.length,
         healthScore: avgHealth,
-        progress: 0, // Will calculate below if possible
-        deliveries: 0,
-        pending: 0,
-        late: 0
+        progress: totalDeliveries > 0 ? Math.round((completedDeliveries / totalDeliveries) * 100) : 0,
+        deliveries: completedDeliveries,
+        totalDeliveries: totalDeliveries,
+        pending: squadTasks.filter(t => t.stage !== 'done').length,
+        late: lateTasks
       };
     });
 
-    // 4. Overall Tasks Stats
+    // 4. Overall Stats
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter(t => t.stage === 'done').length;
-    const doingTasks = tasks.filter(t => t.stage === 'doing' || t.stage === 'review').length;
-    const lateTasks = tasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && t.stage !== 'done').length;
+    
+    // Planning stats from deliveries
+    let totalTarget = 0;
+    let totalCurrent = 0;
+    squadsData.forEach(s => {
+      s.clients?.forEach((c: any) => {
+        c.project_deliveries?.forEach((d: any) => {
+          totalTarget += d.target_count || 0;
+          totalCurrent += d.current_count || 0;
+        });
+      });
+    });
 
     return {
       squads: processedSquads,
       stats: {
         plannings: {
-          total: 10, // Mock for now until table exists
-          completed: 4
+          total: totalTarget || 10, // Fallback if no data
+          completed: totalCurrent || 0
         },
         tasks: {
           total: totalTasks,
-          completed: completedTasks,
-          doing: doingTasks,
-          late: lateTasks
+          completed: completedTasks
         }
       }
     };
@@ -95,18 +123,11 @@ export const updateSquad = createServerFn({ method: "POST" })
       .from('squads')
       .update({
         name: data.name,
-        color: data.color,
-        // If we want to update the leader, we'd need to update the profiles table's squad_id or a specific leader column
-        // For now, let's assume squads table has these columns or we update the relevant profile.
+        color: data.color
       } as any)
       .eq('id', data.id);
 
     if (error) throw error;
-    
-    if (data.leader_id) {
-       // Set this user as leader (business logic depends on schema, usually a 'is_leader' flag or similar)
-    }
-
     return { success: true };
   });
 

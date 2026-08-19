@@ -5,7 +5,7 @@ export const getSquads = createServerFn({ method: "GET" })
   .handler(async () => {
     const { data, error } = await supabase
       .from('squads')
-      .select('*, profiles(count)')
+      .select('*')
       .order('name');
     
     if (error) throw error;
