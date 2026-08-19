@@ -38,6 +38,7 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
     
     const clientsByState = clientsTyped.reduce((acc: Record<string, number>, c) => {
       const state = c.state || 'Unknown';
+      // Normalize state name for react-simple-maps if needed (Map uses full names)
       acc[state] = (acc[state] || 0) + 1;
       return acc;
     }, {});
