@@ -84,7 +84,7 @@ function ClientsOverviewPage() {
     { label: "Novos Clientes", value: data.kpis.new, change: "+0%", trending: "up", icon: TrendingUp, tooltip: "Clientes adquiridos nos últimos 30 dias" },
     { label: "Churn", value: data.kpis.churn, change: "-0%", trending: "down", icon: TrendingDown, tooltip: "Contratos finalizados no período" },
     { label: "LTV Médio", value: `${data.kpis.ltv} meses`, change: "+0%", trending: "up", icon: Clock, tooltip: "Tempo médio de permanência do cliente" },
-    { label: "CAC Médio", value: `R$ ${data.kpis.cac}`, change: "-0%", trending: "down", icon: DollarSign, tooltip: "Custo médio de aquisição por cliente" },
+    { label: "CAC Médio", value: `R$ ${data.kpis.cac.toLocaleString('pt-BR')}`, change: "-0%", trending: "down", icon: DollarSign, tooltip: "Custo médio de aquisição por cliente" },
   ];
 
   return (
@@ -116,7 +116,7 @@ function ClientsOverviewPage() {
                 </TooltipProvider>
               </div>
               <div className="flex items-baseline justify-between pt-1">
-                <h3 className="text-2xl font-bold text-[#0E0E16] font-jakarta">{kpi.value}</h3>
+                <h3 className="text-2xl font-bold text-[#0E0E16] font-sora">{kpi.value}</h3>
                 <span className={cn(
                   "text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5",
                   kpi.trending === "up" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
@@ -199,7 +199,7 @@ function ClientsOverviewPage() {
               <p className="text-xs text-[#8A8FA3]">Mapa de clientes por estados brasileiros</p>
             </div>
           </div>
-          <span className="bg-[#3D4FE8]/10 text-[#3D4FE8] px-3 py-1 rounded-full text-xs font-bold font-jakarta">
+          <span className="bg-[#3D4FE8]/10 text-[#3D4FE8] px-3 py-1 rounded-full text-xs font-bold font-sora">
             {data.totalClients} {data.totalClients === 1 ? 'cliente' : 'clientes'}
           </span>
         </CardHeader>
@@ -434,7 +434,7 @@ function ClientsOverviewPage() {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8 border border-[#E4E6F0]">
                         <AvatarImage src={leader.avatar || ""} />
-                        <AvatarFallback className="bg-[#3D4FE8]/8 text-[#3D4FE8] text-xs font-bold font-jakarta">
+                        <AvatarFallback className="bg-[#3D4FE8]/8 text-[#3D4FE8] text-xs font-bold font-sora">
                           {leader.name?.substring(0, 2).toUpperCase() || "L"}
                         </AvatarFallback>
                       </Avatar>
@@ -443,7 +443,7 @@ function ClientsOverviewPage() {
                         <p className="text-[10px] text-[#8A8FA3]">{leader.count} cliente(s)</p>
                       </div>
                     </div>
-                    <span className="text-sm font-bold text-[#0E0E16]">{leader.count}</span>
+                    <span className="text-sm font-bold text-[#0E0E16] font-sora">{leader.count}</span>
                   </div>
                   <Progress value={(leader.count / (data.totalClients || 1)) * 100} className="h-1 bg-[#F7F8FC]" />
                 </div>
