@@ -145,7 +145,15 @@ export const createSquad = createServerFn({ method: "POST" })
         leader_id: data.leader_id
       } as any);
 
-    if (error) throw error;
+    if (error) {
+      await logSecurityEvent({
+        action: 'INSERT',
+        tableName: 'squads',
+        details: data,
+        errorMessage: error.message
+      });
+      throw error;
+    }
     return { success: true };
   });
 
