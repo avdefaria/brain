@@ -341,8 +341,8 @@ function ClientsOverviewPage() {
         </Card>
         <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
           <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
-            <div className="bg-[#3D4FE8]/8 p-2 rounded-lg mr-4">
-              <TrendingUp className="h-5 w-5 text-[#3D4FE8]" />
+            <div className="bg-[#F5A524]/8 p-2 rounded-lg mr-4">
+              <DollarSign className="h-5 w-5 text-[#F5A524]" />
             </div>
             <CardTitle className="text-lg font-title font-semibold">CAC médio por mês</CardTitle>
           </CardHeader>
@@ -365,8 +365,8 @@ function ClientsOverviewPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
           <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
-            <div className="bg-[#3D4FE8]/8 p-2 rounded-lg mr-4">
-              <TrendingDown className="h-5 w-5 text-[#3D4FE8]" />
+            <div className="bg-[#EF4444]/8 p-2 rounded-lg mr-4">
+              <TrendingDown className="h-5 w-5 text-[#EF4444]" />
             </div>
             <CardTitle className="text-lg font-title font-semibold">Churn por mês</CardTitle>
           </CardHeader>
