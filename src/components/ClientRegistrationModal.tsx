@@ -238,6 +238,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
           console.error("Error inserting client:", error);
           throw new Error(`Erro ao criar cliente: ${error.message}`);
         }
+        
+        if (!newClient) throw new Error("Erro ao obter ID do novo cliente");
         clientId = newClient.id;
       }
 
