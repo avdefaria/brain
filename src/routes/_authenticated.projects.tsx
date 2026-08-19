@@ -11,7 +11,10 @@ import {
   Pencil,
   Trash2,
   TrendingUp,
-  Layout
+  Layout,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
