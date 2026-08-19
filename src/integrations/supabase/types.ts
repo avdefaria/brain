@@ -194,6 +194,50 @@ export type Database = {
           },
         ]
       }
+      project_deliveries: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          current_count: number
+          id: string
+          month: number
+          target_count: number
+          title: string
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          current_count?: number
+          id?: string
+          month: number
+          target_count?: number
+          title: string
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          current_count?: number
+          id?: string
+          month?: number
+          target_count?: number
+          title?: string
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_deliveries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       squads: {
         Row: {
           created_at: string | null
@@ -217,6 +261,190 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      task_activity: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          task_id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          task_id: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          task_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_activity_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_assignees: {
+        Row: {
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_assignees_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_attachments: {
+        Row: {
+          content_type: string | null
+          created_at: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          task_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          task_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          task_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_attachments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          actual_minutes: number | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          deadline: string | null
+          description: string | null
+          estimated_minutes: number | null
+          id: string
+          priority: Database["public"]["Enums"]["task_priority"]
+          stage: Database["public"]["Enums"]["task_stage"]
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          actual_minutes?: number | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deadline?: string | null
+          description?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          stage?: Database["public"]["Enums"]["task_stage"]
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          actual_minutes?: number | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deadline?: string | null
+          description?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          stage?: Database["public"]["Enums"]["task_stage"]
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -255,6 +483,8 @@ export type Database = {
       contract_type: "recurring" | "one-off"
       employment_type: "CLT" | "PJ" | "Estágio"
       risk_level: "low" | "medium" | "high"
+      task_priority: "low" | "medium" | "high"
+      task_stage: "todo" | "doing" | "review" | "done"
       user_function:
         | "Designer"
         | "Copywriter"
@@ -394,6 +624,8 @@ export const Constants = {
       contract_type: ["recurring", "one-off"],
       employment_type: ["CLT", "PJ", "Estágio"],
       risk_level: ["low", "medium", "high"],
+      task_priority: ["low", "medium", "high"],
+      task_stage: ["todo", "doing", "review", "done"],
       user_function: [
         "Designer",
         "Copywriter",
