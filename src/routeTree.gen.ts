@@ -16,6 +16,10 @@ import { Route as AuthenticatedSquadsRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedStructureRouteImport } from './routes/_authenticated.structure'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated.users'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
+import { Route as AuthenticatedClientsIndexRouteImport } from './routes/_authenticated.clients.index'
+import { Route as AuthenticatedClientsChurnRouteImport } from './routes/_authenticated.clients.churn'
+import { Route as AuthenticatedClientsContractsRouteImport } from './routes/_authenticated.clients.contracts'
+import { Route as AuthenticatedClientsManageRouteImport } from './routes/_authenticated.clients.manage'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -51,6 +55,30 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedClientsIndexRoute =
+  AuthenticatedClientsIndexRouteImport.update({
+    id: '/clients/',
+    path: '/clients/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedClientsChurnRoute =
+  AuthenticatedClientsChurnRouteImport.update({
+    id: '/clients/churn',
+    path: '/clients/churn',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedClientsContractsRoute =
+  AuthenticatedClientsContractsRouteImport.update({
+    id: '/clients/contracts',
+    path: '/clients/contracts',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedClientsManageRoute =
+  AuthenticatedClientsManageRouteImport.update({
+    id: '/clients/manage',
+    path: '/clients/manage',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +87,10 @@ export interface FileRoutesByFullPath {
   '/structure': typeof AuthenticatedStructureRoute
   '/users': typeof AuthenticatedUsersRoute
   '/auth/login': typeof AuthLoginRoute
+  '/clients/churn': typeof AuthenticatedClientsChurnRoute
+  '/clients/contracts': typeof AuthenticatedClientsContractsRoute
+  '/clients/manage': typeof AuthenticatedClientsManageRoute
+  '/clients/': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -67,6 +99,10 @@ export interface FileRoutesByTo {
   '/structure': typeof AuthenticatedStructureRoute
   '/users': typeof AuthenticatedUsersRoute
   '/auth/login': typeof AuthLoginRoute
+  '/clients/churn': typeof AuthenticatedClientsChurnRoute
+  '/clients/contracts': typeof AuthenticatedClientsContractsRoute
+  '/clients/manage': typeof AuthenticatedClientsManageRoute
+  '/clients': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,13 +113,36 @@ export interface FileRoutesById {
   '/_authenticated/structure': typeof AuthenticatedStructureRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/auth/login': typeof AuthLoginRoute
+  '/_authenticated/clients/churn': typeof AuthenticatedClientsChurnRoute
+  '/_authenticated/clients/contracts': typeof AuthenticatedClientsContractsRoute
+  '/_authenticated/clients/manage': typeof AuthenticatedClientsManageRoute
+  '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/dashboard' | '/squads' | '/structure' | '/users' | '/auth/login'
+    | '/'
+    | '/dashboard'
+    | '/squads'
+    | '/structure'
+    | '/users'
+    | '/auth/login'
+    | '/clients/churn'
+    | '/clients/contracts'
+    | '/clients/manage'
+    | '/clients/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/squads' | '/structure' | '/users' | '/auth/login'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/squads'
+    | '/structure'
+    | '/users'
+    | '/auth/login'
+    | '/clients/churn'
+    | '/clients/contracts'
+    | '/clients/manage'
+    | '/clients'
   id:
     | '__root__'
     | '/'
@@ -93,6 +152,10 @@ export interface FileRouteTypes {
     | '/_authenticated/structure'
     | '/_authenticated/users'
     | '/auth/login'
+    | '/_authenticated/clients/churn'
+    | '/_authenticated/clients/contracts'
+    | '/_authenticated/clients/manage'
+    | '/_authenticated/clients/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -152,6 +215,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/clients/': {
+      id: '/_authenticated/clients/'
+      path: '/clients'
+      fullPath: '/clients/'
+      preLoaderRoute: typeof AuthenticatedClientsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/clients/churn': {
+      id: '/_authenticated/clients/churn'
+      path: '/clients/churn'
+      fullPath: '/clients/churn'
+      preLoaderRoute: typeof AuthenticatedClientsChurnRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/clients/contracts': {
+      id: '/_authenticated/clients/contracts'
+      path: '/clients/contracts'
+      fullPath: '/clients/contracts'
+      preLoaderRoute: typeof AuthenticatedClientsContractsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/clients/manage': {
+      id: '/_authenticated/clients/manage'
+      path: '/clients/manage'
+      fullPath: '/clients/manage'
+      preLoaderRoute: typeof AuthenticatedClientsManageRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -160,6 +251,10 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSquadsRoute: typeof AuthenticatedSquadsRoute
   AuthenticatedStructureRoute: typeof AuthenticatedStructureRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedClientsChurnRoute: typeof AuthenticatedClientsChurnRoute
+  AuthenticatedClientsContractsRoute: typeof AuthenticatedClientsContractsRoute
+  AuthenticatedClientsManageRoute: typeof AuthenticatedClientsManageRoute
+  AuthenticatedClientsIndexRoute: typeof AuthenticatedClientsIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -167,6 +262,10 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSquadsRoute: AuthenticatedSquadsRoute,
   AuthenticatedStructureRoute: AuthenticatedStructureRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedClientsChurnRoute: AuthenticatedClientsChurnRoute,
+  AuthenticatedClientsContractsRoute: AuthenticatedClientsContractsRoute,
+  AuthenticatedClientsManageRoute: AuthenticatedClientsManageRoute,
+  AuthenticatedClientsIndexRoute: AuthenticatedClientsIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
