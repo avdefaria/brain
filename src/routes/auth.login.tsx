@@ -27,6 +27,7 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const navigate = useNavigate();
   const setupAdmin = useServerFn(createInitialAdmin);
 
   useEffect(() => {
