@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -41,6 +42,7 @@ function ClockDisplay() {
 }
 
 function ClientsOverviewPage() {
+  const location = useLocation();
   const { data, isLoading } = useQuery({
     queryKey: ['clients-overview'],
     queryFn: () => getClientsOverviewData()
@@ -84,7 +86,7 @@ function ClientsOverviewPage() {
     { label: "Novos Clientes", value: data.kpis.new, change: "+0%", trending: "up", icon: TrendingUp, tooltip: "Clientes adquiridos nos últimos 30 dias" },
     { label: "Churn", value: data.kpis.churn, change: "-0%", trending: "down", icon: TrendingDown, tooltip: "Contratos finalizados no período" },
     { label: "LTV Médio", value: `${data.kpis.ltv} meses`, change: "+0%", trending: "up", icon: Clock, tooltip: "Tempo médio de permanência do cliente" },
-    { label: "CAC Médio", value: `R$ ${data.kpis.cac}`, change: "-0%", trending: "down", icon: DollarSign, tooltip: "Custo médio de aquisição por cliente" },
+    { label: "CAC Médio", value: `R$ ${data.kpis.cac.toLocaleString('pt-BR')}`, change: "-0%", trending: "down", icon: DollarSign, tooltip: "Custo médio de aquisição por cliente" },
   ];
 
   return (
@@ -116,7 +118,7 @@ function ClientsOverviewPage() {
                 </TooltipProvider>
               </div>
               <div className="flex items-baseline justify-between pt-1">
-                <h3 className="text-2xl font-bold text-[#0E0E16] font-jakarta">{kpi.value}</h3>
+                <h3 className="text-2xl font-bold text-[#0E0E16] font-sora">{kpi.value}</h3>
                 <span className={cn(
                   "text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5",
                   kpi.trending === "up" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
@@ -142,7 +144,7 @@ function ClientsOverviewPage() {
           <CardContent className="p-6 pt-0">
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={[{ name: 'Jan', value: 10 }, { name: 'Fev', value: 20 }, { name: 'Mar', value: 15 }]}>
+                <AreaChart data={data.charts.clientsMonthly}>
                   <defs>
                     <linearGradient id="colorClients" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3D4FE8" stopOpacity={0.12}/>
@@ -169,7 +171,7 @@ function ClientsOverviewPage() {
           <CardContent className="p-6 pt-0">
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={[{ name: 'Jan', value: 20 }, { name: 'Fev', value: 22 }, { name: 'Mar', value: 25 }]}>
+                <AreaChart data={data.charts.ltvMonthly}>
                   <defs>
                     <linearGradient id="colorLTV" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#22C55E" stopOpacity={0.12}/>
@@ -199,7 +201,7 @@ function ClientsOverviewPage() {
               <p className="text-xs text-[#8A8FA3]">Mapa de clientes por estados brasileiros</p>
             </div>
           </div>
-          <span className="bg-[#3D4FE8]/10 text-[#3D4FE8] px-3 py-1 rounded-full text-xs font-bold font-jakarta">
+          <span className="bg-[#3D4FE8]/10 text-[#3D4FE8] px-3 py-1 rounded-full text-xs font-bold font-sora">
             {data.totalClients} {data.totalClients === 1 ? 'cliente' : 'clientes'}
           </span>
         </CardHeader>
@@ -259,49 +261,49 @@ function ClientsOverviewPage() {
             </div>
             <div className="space-y-8">
               <div>
-                <h4 className="text-xs font-bold text-[#8A8FA3] mb-4 uppercase tracking-wider">Top 3 Canais de vendas</h4>
+                <h4 className="text-xs font-bold text-[#8A8FA3] mb-4 uppercase tracking-wider">Top 3 Nichos</h4>
                 <div className="space-y-4">
-                  {data.topChannels.length > 0 ? data.topChannels.map((ch, i) => (
-                    <div key={ch.name} className="flex justify-between items-center group">
+                  {data.topNiches.length > 0 ? data.topNiches.map((niche: any, i: number) => (
+                    <div key={niche.name} className="flex justify-between items-center group">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#3D4FE8]/10 text-[#3D4FE8] text-[10px] font-bold">
                           {i + 1}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-[#0E0E16] group-hover:text-[#3D4FE8] transition-colors">{ch.name}</p>
-                          <p className="text-[10px] text-[#8A8FA3]">{((ch.count / (data.totalClients || 1)) * 100).toFixed(1)}% da base</p>
+                          <p className="text-sm font-bold text-[#0E0E16] group-hover:text-[#3D4FE8] transition-colors">{niche.name}</p>
+                          <p className="text-[10px] text-[#8A8FA3]">{((niche.count / (data.totalClients || 1)) * 100).toFixed(1)}% da base</p>
                         </div>
                       </div>
-                      <span className="text-sm font-bold text-[#0E0E16]">{ch.count}</span>
+                      <span className="text-sm font-bold text-[#0E0E16]">{niche.count}</span>
                     </div>
                   )) : (
                     <div className="flex flex-col items-center justify-center py-4 text-center">
                       <AlertTriangle className="h-5 w-5 text-[#F5A524] mb-2 opacity-20" />
-                      <p className="text-[10px] text-[#8A8FA3]">Sem dados de canais</p>
+                      <p className="text-[10px] text-[#8A8FA3]">Sem dados de nichos</p>
                     </div>
                   )}
                 </div>
               </div>
               <div>
-                <h4 className="text-xs font-bold text-[#8A8FA3] mb-4 uppercase tracking-wider">Top 3 Cidades (Brasil)</h4>
+                <h4 className="text-xs font-bold text-[#8A8FA3] mb-4 uppercase tracking-wider">Top 3 Canais de Vendas</h4>
                 <div className="space-y-4">
-                  {data.topCities.length > 0 ? data.topCities.map((city, i) => (
-                    <div key={city.name} className="flex justify-between items-center group">
+                  {data.topChannels.length > 0 ? data.topChannels.map((channel: any, i: number) => (
+                    <div key={channel.name} className="flex justify-between items-center group">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#3D4FE8]/10 text-[#3D4FE8] text-[10px] font-bold">
                           {i + 1}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-[#0E0E16] group-hover:text-[#3D4FE8] transition-colors">{city.name}</p>
-                          <p className="text-[10px] text-[#8A8FA3]">{((city.count / (data.totalClients || 1)) * 100).toFixed(1)}% da base</p>
+                          <p className="text-sm font-bold text-[#0E0E16] group-hover:text-[#3D4FE8] transition-colors">{channel.name}</p>
+                          <p className="text-[10px] text-[#8A8FA3]">{((channel.count / (data.totalClients || 1)) * 100).toFixed(1)}% da base</p>
                         </div>
                       </div>
-                      <span className="text-sm font-bold text-[#0E0E16]">{city.count}</span>
+                      <span className="text-sm font-bold text-[#0E0E16]">{channel.count}</span>
                     </div>
                   )) : (
                     <div className="flex flex-col items-center justify-center py-4 text-center">
                       <AlertTriangle className="h-5 w-5 text-[#F5A524] mb-2 opacity-20" />
-                      <p className="text-[10px] text-[#8A8FA3]">Sem dados de cidades</p>
+                      <p className="text-[10px] text-[#8A8FA3]">Sem dados de canais</p>
                     </div>
                   )}
                 </div>
@@ -322,7 +324,7 @@ function ClientsOverviewPage() {
           <CardContent className="p-6 pt-0">
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={[{ name: 'Jan', value: 10 }, { name: 'Fev', value: 20 }, { name: 'Mar', value: 15 }]}>
+                <AreaChart data={data.charts.newClientsMonthly}>
                   <defs>
                     <linearGradient id="colorNewClients" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3D4FE8" stopOpacity={0.12}/>
@@ -341,15 +343,15 @@ function ClientsOverviewPage() {
         </Card>
         <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
           <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
-            <div className="bg-[#3D4FE8]/8 p-2 rounded-lg mr-4">
-              <TrendingUp className="h-5 w-5 text-[#3D4FE8]" />
+            <div className="bg-[#F5A524]/8 p-2 rounded-lg mr-4">
+              <DollarSign className="h-5 w-5 text-[#F5A524]" />
             </div>
             <CardTitle className="text-lg font-title font-semibold">CAC médio por mês</CardTitle>
           </CardHeader>
           <CardContent className="p-6 pt-0">
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={[{ name: 'Jan', value: 800 }, { name: 'Fev', value: 750 }, { name: 'Mar', value: 850 }]}>
+                <LineChart data={data.charts.cacMonthly}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
@@ -365,15 +367,15 @@ function ClientsOverviewPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
           <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
-            <div className="bg-[#3D4FE8]/8 p-2 rounded-lg mr-4">
-              <TrendingDown className="h-5 w-5 text-[#3D4FE8]" />
+            <div className="bg-[#EF4444]/8 p-2 rounded-lg mr-4">
+              <TrendingDown className="h-5 w-5 text-[#EF4444]" />
             </div>
             <CardTitle className="text-lg font-title font-semibold">Churn por mês</CardTitle>
           </CardHeader>
           <CardContent className="p-6 pt-0">
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={[{ name: 'Jan', value: 2 }, { name: 'Fev', value: 1 }, { name: 'Mar', value: 3 }]}>
+                <LineChart data={data.charts.churnMonthly}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
@@ -396,10 +398,10 @@ function ClientsOverviewPage() {
               {data.kpis.active > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={[{ name: 'Baixo', value: 70 }, { name: 'Médio', value: 20 }, { name: 'Alto', value: 10 }]} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                      <Cell fill="#22C55E" />
-                      <Cell fill="#F5A524" />
-                      <Cell fill="#EF4444" />
+                    <Pie data={data.charts.riskData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                      {data.charts.riskData.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
                     </Pie>
                     <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
                   </PieChart>
@@ -434,7 +436,7 @@ function ClientsOverviewPage() {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8 border border-[#E4E6F0]">
                         <AvatarImage src={leader.avatar || ""} />
-                        <AvatarFallback className="bg-[#3D4FE8]/8 text-[#3D4FE8] text-xs font-bold font-jakarta">
+                        <AvatarFallback className="bg-[#3D4FE8]/8 text-[#3D4FE8] text-xs font-bold font-sora">
                           {leader.name?.substring(0, 2).toUpperCase() || "L"}
                         </AvatarFallback>
                       </Avatar>
@@ -443,7 +445,7 @@ function ClientsOverviewPage() {
                         <p className="text-[10px] text-[#8A8FA3]">{leader.count} cliente(s)</p>
                       </div>
                     </div>
-                    <span className="text-sm font-bold text-[#0E0E16]">{leader.count}</span>
+                    <span className="text-sm font-bold text-[#0E0E16] font-sora">{leader.count}</span>
                   </div>
                   <Progress value={(leader.count / (data.totalClients || 1)) * 100} className="h-1 bg-[#F7F8FC]" />
                 </div>
@@ -489,13 +491,14 @@ function ClientsOverviewPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-[#F7F8FC] px-3 py-1.5 rounded-full border border-[#E4E6F0]">
-              <Search className="h-3 w-3 text-[#8A8FA3]" />
-              <span className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-wider">Alto Risco → Baixo</span>
-            </div>
-            <div className="bg-[#F7F8FC] px-3 py-1.5 rounded-full border border-[#E4E6F0]">
-              <span className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-wider">5 por página</span>
-            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              asChild
+              className="rounded-full border-[#E4E6F0] text-[#8A8FA3] hover:text-[#3D4FE8] hover:bg-[#3D4FE8]/5 h-8 text-[10px] font-bold uppercase tracking-wider"
+            >
+              <Link to="/clients/manage">Ver todos</Link>
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -538,16 +541,16 @@ function ClientsOverviewPage() {
                       {client.risk_level === 'high' ? 'Crítico' : client.risk_level === 'medium' ? 'Atenção' : 'Estável'}
                     </span>
                   </TableCell>
-                  <TableCell className="font-bold text-[#0E0E16] font-jakarta">{client.health_score}</TableCell>
-                  <TableCell className="text-[#8A8FA3] font-jakarta">R$ {client.cac}</TableCell>
+                  <TableCell className="font-bold text-[#0E0E16] font-sora">{client.health_score}</TableCell>
+                  <TableCell className="text-[#8A8FA3] font-sora">R$ {client.cac.toLocaleString('pt-BR')}</TableCell>
                   <TableCell className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1.5 text-[#8A8FA3]">
                       <Clock className="h-3 w-3" />
                       <span className={cn(
-                        "text-xs font-jakarta",
+                        "text-xs font-sora",
                         client.contract_end && new Date(client.contract_end) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) ? "text-red-500 font-bold" : ""
                       )}>
-                        {client.contract_end ? new Date(client.contract_end).toLocaleDateString() : 'Sem data'}
+                        {client.contract_end ? new Date(client.contract_end).toLocaleDateString('pt-BR') : 'Sem data'}
                       </span>
                     </div>
                   </TableCell>
