@@ -82,11 +82,13 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
       contact_whatsapp: "",
       squad_id: null,
       segment: "",
+      contract_type: "recurring",
       start_date: new Date().toISOString().split('T')[0],
       end_date_expected: "",
       scope_details: "",
       extra_comments: "",
     }
+  });
   });
 
   const onDrop = (acceptedFiles: File[]) => {
