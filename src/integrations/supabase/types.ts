@@ -403,6 +403,7 @@ export type Database = {
           description: string | null
           estimated_minutes: number | null
           id: string
+          position: number | null
           priority: Database["public"]["Enums"]["task_priority"]
           stage: Database["public"]["Enums"]["task_stage"]
           title: string
@@ -417,6 +418,7 @@ export type Database = {
           description?: string | null
           estimated_minutes?: number | null
           id?: string
+          position?: number | null
           priority?: Database["public"]["Enums"]["task_priority"]
           stage?: Database["public"]["Enums"]["task_stage"]
           title: string
@@ -431,6 +433,7 @@ export type Database = {
           description?: string | null
           estimated_minutes?: number | null
           id?: string
+          position?: number | null
           priority?: Database["public"]["Enums"]["task_priority"]
           stage?: Database["public"]["Enums"]["task_stage"]
           title?: string

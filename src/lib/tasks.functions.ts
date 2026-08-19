@@ -9,7 +9,7 @@ export const getTasks = createServerFn({ method: "GET" })
       .select(`
         *,
         clients (name),
-        profiles:task_assignees (
+        task_assignees (
           user_id,
           profiles:profiles (full_name)
         )
@@ -25,12 +25,12 @@ export const getTasks = createServerFn({ method: "GET" })
       priority: task.priority,
       deadline: task.deadline ? new Date(task.deadline).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : "Sem prazo",
       stage: task.stage,
-      assignees: (task.profiles as any[])?.map(p => p.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || "??") || [],
-      position: task.position
+      assignees: (task.task_assignees as any[])?.map(p => p.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || "??") || [],
+      position: (task as any).position || 0
     }));
   });
 
-export const updateTaskStage = createServerFn({ method: "POST" })
+export const updateTaskPosition = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({
     taskId: z.string(),
     stage: z.enum(['todo', 'doing', 'review', 'done']),
@@ -43,30 +43,31 @@ export const updateTaskStage = createServerFn({ method: "POST" })
         stage: data.stage,
         position: data.position,
         updated_at: new Date().toISOString()
-      })
+      } as any)
       .eq("id", data.taskId);
 
     if (error) throw error;
     return { success: true };
   });
 
-export const updateTasksOrder = createServerFn({ method: "POST" })
+export const updateTasksBatch = createServerFn({ method: "POST" })
   .inputValidator((data) => z.array(z.object({
     id: z.string(),
     position: z.number(),
     stage: z.enum(['todo', 'doing', 'review', 'done'])
   })).parse(data))
   .handler(async ({ data }) => {
-    // We update each task's position. In a real app, we might use a stored procedure for batch updates.
     for (const item of data) {
-      await supabase
+      const { error } = await supabase
         .from("tasks")
         .update({ 
           position: item.position,
           stage: item.stage,
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .eq("id", item.id);
+      
+      if (error) throw error;
     }
     return { success: true };
   });
