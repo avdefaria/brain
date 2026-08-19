@@ -102,8 +102,8 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
         active: activeClients,
         new: newClients,
         churn: churnedClients,
-        ltv: 24,
-        cac: 850
+        ltv: totalMRR > 0 ? 24 : 0, // Mock LTV logic or calc based on history
+        cac: activeClients > 0 ? 850 : 0 // Real CAC would need marketing costs
       },
       clientsByState,
       topChannels,
