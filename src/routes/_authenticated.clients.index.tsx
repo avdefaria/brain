@@ -55,31 +55,6 @@ function ClientsOverviewPage() {
     </div>
   );
 
-  if (data.totalClients === 0) {
-    return (
-      <div className="p-8 space-y-8 animate-in fade-in duration-500 bg-[#F7F8FC]/50 min-h-screen">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-title font-bold text-[#0E0E16]">Visão Geral da Carteira</h1>
-            <p className="text-sm text-[#8A8FA3]">Análise analítica e distribuição de clientes</p>
-          </div>
-          <ClockDisplay />
-        </div>
-        <Card className="p-12 text-center flex flex-col items-center justify-center space-y-4 border-[#E4E6F0]">
-          <div className="h-16 w-16 rounded-full bg-[#3D4FE8]/5 flex items-center justify-center text-[#3D4FE8]">
-            <Users className="h-8 w-8 opacity-20" />
-          </div>
-          <div>
-            <h3 className="text-lg font-title font-bold text-[#0E0E16]">Nenhum dado disponível</h3>
-            <p className="text-sm text-[#8A8FA3]">Cadastre clientes para visualizar as métricas analíticas.</p>
-          </div>
-          <Button asChild className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full">
-            <Link to="/clients/manage">Gerenciar Clientes</Link>
-          </Button>
-        </Card>
-      </div>
-    );
-  }
 
   const kpiData = [
     { label: "Clientes Ativos", value: data.kpis.active, change: "+0%", trending: "up", icon: Users, tooltip: "Total de clientes com contrato ativo" },
