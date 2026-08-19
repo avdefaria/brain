@@ -61,110 +61,204 @@ function getBrazilianHolidays(year: number) {
   return holidays.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
-export function ProjectCalendar() {
+export function ProjectCalendar({ events: externalEvents = [], birthdays = [] }: { events?: any[], birthdays?: any[] }) {
   const [currentMonth, setCurrentMonth] = React.useState(new Date());
-  const [view, setView] = React.useState<"all" | "holidays">("all");
+  const [view, setView] = React.useState<"all" | "commercial">("all");
+  const [selectedDateEvents, setSelectedDateEvents] = React.useState<any[] | null>(null);
+  
   const holidays = React.useMemo(() => getBrazilianHolidays(currentMonth.getFullYear()), [currentMonth]);
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
-  const events = [
-    ...holidays.map(h => ({ ...h, isHoliday: true })),
-    // Mock other dates for UI demonstration as requested "Dias com evento recebem destaque"
-    { name: "Entrega Landing Page", date: new Date(2026, 7, 25), type: "Projeto", isHoliday: false },
-  ];
+  const allEvents = React.useMemo(() => {
+    return [
+      ...holidays.map(h => ({ ...h, category: "Feriado Nacional" })),
+      ...externalEvents.map(e => ({ ...e, date: new Date(e.date), category: "Evento" })),
+      ...birthdays.map(b => ({ ...b, date: new Date(b.date), category: "Aniversário" }))
+    ].sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [holidays, externalEvents, birthdays]);
 
-  const filteredEvents = view === "holidays" 
-    ? events.filter(e => e.isHoliday)
-    : events;
+  const filteredEvents = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let base = allEvents.filter(e => {
+      const eDate = new Date(e.date);
+      // For repeat annually, adjust year to check correctly
+      if (e.repeat_annually) {
+        eDate.setFullYear(today.getFullYear());
+        if (eDate < today) eDate.setFullYear(today.getFullYear() + 1);
+      }
+      return eDate >= today;
+    });
+
+    if (view === "commercial") {
+      return base.filter(e => e.type === "commercial");
+    }
+    return base;
+  }, [allEvents, view]);
+
+  const handleDayClick = (date: Date) => {
+    const dayEvents = allEvents.filter(e => {
+      const eDate = new Date(e.date);
+      return eDate.getDate() === date.getDate() && 
+             eDate.getMonth() === date.getMonth() &&
+             (e.repeat_annually || eDate.getFullYear() === date.getFullYear());
+    });
+    if (dayEvents.length > 0) {
+      setSelectedDateEvents(dayEvents);
+    } else {
+      setSelectedDateEvents(null);
+    }
+  };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-      {/* Left Column - Calendar */}
-      <Card className="p-6 border-[#E4E6F0] shadow-sm bg-white">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="font-title font-bold text-[#0E0E16]">Calendário</h3>
-          <div className="flex gap-1">
-            <Button variant="ghost" size="icon" onClick={prevMonth} className="h-8 w-8 rounded-full">
-              <ChevronLeft className="h-4 w-4" />
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+      {/* Left Column - Calendar (occupies 2 cols) */}
+      <Card className="lg:col-span-2 p-8 border-[#E4E6F0] shadow-sm bg-white overflow-hidden">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="font-title text-xl font-bold text-[#0E0E16] capitalize">
+            {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
+          </h3>
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon" onClick={prevMonth} className="h-10 w-10 rounded-full border-[#E4E6F0]">
+              <ChevronLeft className="h-5 w-5 text-[#8A8FA3]" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={nextMonth} className="h-8 w-8 rounded-full">
-              <ChevronRight className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={nextMonth} className="h-10 w-10 rounded-full border-[#E4E6F0]">
+              <ChevronRight className="h-5 w-5 text-[#8A8FA3]" />
             </Button>
           </div>
         </div>
         
-        <div className="flex justify-center">
+        <div className="w-full overflow-x-auto">
           <Calendar
             mode="single"
             month={currentMonth}
             onMonthChange={setCurrentMonth}
-            className="p-0 pointer-events-none"
+            onDayClick={handleDayClick}
+            locale={ptBR}
+            className="p-0 w-full"
             classNames={{
-              day_today: "bg-[#3D4FE8] text-white rounded-lg",
-              day: "h-9 w-9 text-center p-0 font-normal aria-selected:opacity-100",
-              outside: "text-[#8A8FA3] opacity-50",
+              months: "w-full",
+              month: "w-full space-y-4",
+              caption: "hidden",
+              nav: "hidden",
+              table: "w-full border-collapse",
+              head_row: "flex w-full",
+              head_cell: "text-[#8A8FA3] flex-1 font-bold text-xs uppercase text-center pb-4",
+              row: "flex w-full mt-2",
+              cell: "flex-1 text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
+              day: cn(
+                "h-16 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-[#F7F8FC] rounded-xl transition-colors flex flex-col items-center justify-center gap-1"
+              ),
+              day_today: "bg-[#3D4FE8] text-white font-bold rounded-xl hover:bg-[#3D4FE8]/90",
+              day_outside: "text-[#8A8FA3] opacity-30",
+              day_disabled: "text-[#8A8FA3] opacity-30",
             }}
             modifiers={{
-              hasEvent: (date) => events.some(e => isSameDay(e.date, date))
+              hasEvent: (date) => allEvents.some(e => {
+                const eDate = new Date(e.date);
+                return eDate.getDate() === date.getDate() && 
+                       eDate.getMonth() === date.getMonth() &&
+                       (e.repeat_annually || eDate.getFullYear() === date.getFullYear());
+              })
             }}
             modifiersClassNames={{
-              hasEvent: "after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:bg-[#3D4FE8] after:rounded-full relative"
+              hasEvent: "after:content-[''] after:w-1.5 after:h-1.5 after:bg-[#3D4FE8] after:rounded-full after:mt-1 day-today:after:bg-white"
             }}
           />
         </div>
+
+        {selectedDateEvents && (
+          <div className="mt-6 p-4 bg-[#F7F8FC] rounded-xl animate-in slide-in-from-top-2 duration-300">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-xs font-bold text-[#8A8FA3] uppercase">Eventos do dia</h4>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedDateEvents(null)} className="h-6 w-6 p-0 rounded-full">
+                <Star className="h-3 w-3 rotate-45" />
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {selectedDateEvents.map((e, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-[#3D4FE8]" />
+                  <span className="text-sm font-bold text-[#0E0E16]">{e.name}</span>
+                  <Badge variant="outline" className="text-[9px] py-0 h-4 border-[#E4E6F0] text-[#8A8FA3]">{e.category || e.type}</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Right Column - Upcoming Dates */}
-      <Card className="p-6 border-[#E4E6F0] shadow-sm bg-white flex flex-col h-full">
-        <div className="flex items-center justify-between mb-6">
+      <Card className="p-8 border-[#E4E6F0] shadow-sm bg-white flex flex-col h-[500px]">
+        <div className="flex items-center justify-between mb-8">
           <h3 className="font-title font-bold text-[#0E0E16]">Próximas datas</h3>
           <div className="flex bg-[#F7F8FC] p-1 rounded-full">
             <button
               onClick={() => setView("all")}
               className={cn(
-                "px-3 py-1 text-[10px] font-bold rounded-full transition-all",
+                "px-3 py-1.5 text-[10px] font-bold rounded-full transition-all",
                 view === "all" ? "bg-white text-[#0E0E16] shadow-sm" : "text-[#8A8FA3]"
               )}
             >
-              Todas as datas
+              Todas
             </button>
             <button
-              onClick={() => setView("holidays")}
+              onClick={() => setView("commercial")}
               className={cn(
-                "px-3 py-1 text-[10px] font-bold rounded-full transition-all",
-                view === "holidays" ? "bg-white text-[#0E0E16] shadow-sm" : "text-[#8A8FA3]"
+                "px-3 py-1.5 text-[10px] font-bold rounded-full transition-all",
+                view === "commercial" ? "bg-white text-[#0E0E16] shadow-sm" : "text-[#8A8FA3]"
               )}
             >
-              Datas comemorativas
+              Comerciais
             </button>
           </div>
         </div>
 
-        <div className="space-y-3 overflow-y-auto max-h-[300px] pr-2 scrollbar-thin scrollbar-thumb-[#E4E6F0]">
+        <div className="space-y-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#E4E6F0] flex-1">
           {filteredEvents.length > 0 ? (
-            filteredEvents.map((event, idx) => (
-              <div key={idx} className="p-3 rounded-xl border border-[#F7F8FC] hover:border-[#E4E6F0] transition-colors flex items-center justify-between group">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-[#F7F8FC] flex items-center justify-center text-[#3D4FE8] group-hover:bg-[#3D4FE8] group-hover:text-white transition-colors">
-                    <Star className="h-5 w-5" />
+            filteredEvents.slice(0, 10).map((event, idx) => {
+              const eventDate = new Date(event.date);
+              const isNextYear = eventDate.getFullYear() > new Date().getFullYear();
+              
+              return (
+                <div key={idx} className="flex items-center justify-between group p-1">
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "h-12 w-12 rounded-2xl flex items-center justify-center transition-colors shadow-sm",
+                      event.type === 'commercial' ? "bg-amber-50 text-amber-500 group-hover:bg-amber-500 group-hover:text-white" :
+                      event.category === 'Aniversário' ? "bg-pink-50 text-pink-500 group-hover:bg-pink-500 group-hover:text-white" :
+                      "bg-[#F7F8FC] text-[#3D4FE8] group-hover:bg-[#3D4FE8] group-hover:text-white"
+                    )}>
+                      <Star className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-[#0E0E16] line-clamp-1">{event.name}</h4>
+                      <p className="text-[10px] text-[#8A8FA3] font-medium">
+                        {format(eventDate, "dd 'de' MMMM", { locale: ptBR })}
+                        {isNextYear && ` de ${eventDate.getFullYear()}`}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-[#0E0E16]">{event.name}</h4>
-                    <p className="text-[10px] text-[#8A8FA3]">
-                      {format(event.date, "dd 'de' MMMM", { locale: ptBR })}
-                    </p>
-                  </div>
+                  <Badge variant="secondary" className={cn(
+                    "text-[8px] font-bold px-2 py-0.5 rounded-lg border-none",
+                    event.type === 'commercial' ? "bg-amber-100 text-amber-600" :
+                    event.category === 'Aniversário' ? "bg-pink-100 text-pink-600" :
+                    "bg-[#F7F8FC] text-[#8A8FA3]"
+                  )}>
+                    {event.category || event.type}
+                  </Badge>
                 </div>
-                <div className="px-2 py-0.5 rounded-full bg-[#F7F8FC] text-[9px] font-bold text-[#8A8FA3]">
-                  {event.type}
-                </div>
-              </div>
-            ))
+              );
+            })
           ) : (
-            <div className="text-center py-8 text-[#8A8FA3] text-sm">
-              Nenhuma data encontrada
+            <div className="h-full flex flex-col items-center justify-center text-center py-8">
+              <div className="h-12 w-12 rounded-full bg-[#F7F8FC] flex items-center justify-center mb-2">
+                <Calendar className="h-6 w-6 text-[#E4E6F0]" />
+              </div>
+              <p className="text-[#8A8FA3] text-xs font-medium italic">Nenhuma data futura</p>
             </div>
           )}
         </div>
