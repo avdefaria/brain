@@ -322,7 +322,7 @@ function ClientsOverviewPage() {
           <CardContent className="p-6 pt-0">
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={[{ name: 'Jan', value: 10 }, { name: 'Fev', value: 20 }, { name: 'Mar', value: 15 }]}>
+                <AreaChart data={data.charts.newClientsMonthly}>
                   <defs>
                     <linearGradient id="colorNewClients" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3D4FE8" stopOpacity={0.12}/>
@@ -336,7 +336,7 @@ function ClientsOverviewPage() {
                   <Area type="monotone" dataKey="value" stroke="#3D4FE8" strokeWidth={2} fill="url(#colorNewClients)" />
                 </AreaChart>
               </ResponsiveContainer>
-          </CardContent>
+            </div>
         </Card>
         <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
           <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
