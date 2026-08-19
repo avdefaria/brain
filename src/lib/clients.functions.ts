@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const getClientsOverviewData = createServerFn({ method: "GET" })
   .handler(async () => {
-    // 1. Fetch all clients
     const { data: clients, error: clientsError } = await supabase
       .from("clients")
       .select(`
@@ -14,74 +13,64 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
 
     if (clientsError) throw clientsError;
 
-    // 2. Fetch all profiles for leaders
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select("*");
 
     if (profilesError) throw profilesError;
 
-    // 3. Process Data
-    const totalClients = clients.length;
-    const activeClients = clients.filter(c => c.status === 'active').length;
+    const clientsTyped = clients as any[];
     
-    // Determine new clients (created in the last 30 days)
+    const totalClients = clientsTyped.length;
+    const activeClients = clientsTyped.filter(c => c.status === 'active').length;
+    
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const newClients = clients.filter(c => new Date(c.created_at) >= thirtyDaysAgo).length;
+    const newClients = clientsTyped.filter(c => new Date(c.created_at) >= thirtyDaysAgo).length;
 
-    // Churn (inactive in last 30 days - simplified logic)
-    const churnedClients = clients.filter(c => c.status !== 'active').length;
+    const churnedClients = clientsTyped.filter(c => c.status !== 'active').length;
 
-    // Average LTV (simplified as months active or contract duration)
-    // Here we'll calculate average health score instead for now as a proxy or if we had actual MRR
-    const avgHealthScore = clients.reduce((acc, c) => acc + (c.health_score || 0), 0) / (totalClients || 1);
+    const avgHealthScore = clientsTyped.reduce((acc, c) => acc + (c.health_score || 0), 0) / (totalClients || 1);
     
-    // MRR and CAC calculations from contracts
-    const allContracts = clients.flatMap(c => c.contracts || []);
+    const allContracts = clientsTyped.flatMap(c => c.contracts || []);
     const totalMRR = allContracts.reduce((acc, c: any) => acc + (c.monthly_value || 0), 0);
     const avgMRR = totalMRR / (activeClients || 1);
     
-    // Map data for Brazil Map (group by state)
-    const clientsByState = clients.reduce((acc: Record<string, number>, c) => {
+    const clientsByState = clientsTyped.reduce((acc: Record<string, number>, c) => {
       const state = c.state || 'Unknown';
       acc[state] = (acc[state] || 0) + 1;
       return acc;
     }, {});
 
-    // Top Channels
-    const channelCounts = clients.flatMap(c => c.sales_channels || []).reduce((acc: Record<string, number>, ch) => {
+    const channelCounts = clientsTyped.flatMap(c => c.sales_channels || []).reduce((acc: Record<string, number>, ch) => {
       acc[ch] = (acc[ch] || 0) + 1;
       return acc;
     }, {});
     const topChannels = Object.entries(channelCounts)
-      .sort((a, b) => b[1] - a[1])
+      .sort((a: any, b: any) => b[1] - a[1])
       .slice(0, 3)
       .map(([name, count]) => ({ name, count: count as number }));
 
-    // Top Cities
-    const cityCounts = clients.reduce((acc: Record<string, number>, c) => {
+    const cityCounts = clientsTyped.reduce((acc: Record<string, number>, c) => {
       const city = c.city || 'Unknown';
       acc[city] = (acc[city] || 0) + 1;
       return acc;
     }, {});
     const topCities = Object.entries(cityCounts)
-      .sort((a, b) => b[1] - a[1])
+      .sort((a: any, b: any) => b[1] - a[1])
       .slice(0, 3)
       .map(([name, count]) => ({ name, count: count as number }));
 
-    // Accounts per Leader
-    const leaderStats = profiles.map(p => {
-      const count = clients.filter(c => c.squad_id === p.squad_id).length; // Simplified assignment
+    const leaderStats = (profiles as any[]).map(p => {
+      const count = clientsTyped.filter(c => c.squad_id === p.squad_id).length;
       return {
-        name: p.full_name,
+        name: p.full_name as string,
         count,
-        avatar: p.avatar_url
+        avatar: p.avatar_url as string | null
       };
     }).sort((a, b) => b.count - a.count).slice(0, 5);
 
-    // Squad Stats
-    const squadStats = clients.reduce((acc: any, c) => {
+    const squadStats = clientsTyped.reduce((acc: any, c) => {
       const squadName = (c.squads as any)?.name || 'Sem Squad';
       if (!acc[squadName]) acc[squadName] = { name: squadName, totalScore: 0, count: 0 };
       acc[squadName].totalScore += (c.health_score || 0);
@@ -93,20 +82,19 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
       score: Math.round(s.totalScore / s.count)
     }));
 
-    // Priority Clients (Top 5 lowest health score)
-    const priorityClients = clients
+    const priorityClients = clientsTyped
       .filter(c => c.status === 'active')
       .sort((a, b) => (a.health_score || 0) - (b.health_score || 0))
       .slice(0, 5)
       .map(c => ({
-        id: c.id,
-        name: c.name,
-        segment: c.segment,
-        health_score: c.health_score,
-        risk_level: c.risk_level,
-        responsible: (c.squads as any)?.name || 'N/A', // Using squad as proxy for now
-        cac: 850, // Mocked as not in DB yet
-        contract_end: c.end_date_expected
+        id: c.id as string,
+        name: c.name as string,
+        segment: c.segment as string || 'N/A',
+        health_score: c.health_score as number || 0,
+        risk_level: c.risk_level as string || 'low',
+        responsible: (c.squads as any)?.name || 'N/A',
+        cac: 850,
+        contract_end: c.end_date_expected as string
       }));
 
     return {
@@ -114,8 +102,8 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
         active: activeClients,
         new: newClients,
         churn: churnedClients,
-        ltv: 24, // months (mocked or calculated)
-        cac: 850 // R$ (mocked)
+        ltv: totalMRR > 0 ? 24 : 0, // Mock LTV logic or calc based on history
+        cac: activeClients > 0 ? 850 : 0 // Real CAC would need marketing costs
       },
       clientsByState,
       topChannels,

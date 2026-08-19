@@ -322,6 +322,25 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
                     </Badge>
                   ))}
                 </div>
+                <div className="flex gap-2 mb-2">
+                  <Input 
+                    placeholder="Novo canal..." 
+                    className="h-9"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = e.currentTarget.value.trim();
+                        if (val) {
+                          const current = form.getValues("sales_channels") || [];
+                          if (!current.includes(val)) {
+                            form.setValue("sales_channels", [...current, val]);
+                          }
+                          e.currentTarget.value = "";
+                        }
+                      }
+                    }}
+                  />
+                </div>
                 <Select onValueChange={(v) => {
                   const current = form.getValues("sales_channels") || [];
                   if (!current.includes(v)) {
@@ -329,7 +348,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
                   }
                 }}>
                   <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
-                    <SelectValue placeholder="Adicionar canal de venda" />
+                    <SelectValue placeholder="Sugestões de canais" />
                   </SelectTrigger>
                   <SelectContent>
                     {["Mercado Livre", "Shopee", "Amazon", "TikTok Shop", "Magalu", "Americanas", "Shein", "Loja própria", "Instagram"].map(opt => (
@@ -337,6 +356,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
                     ))}
                   </SelectContent>
                 </Select>
+
               </div>
             </CardContent>
           </Card>
