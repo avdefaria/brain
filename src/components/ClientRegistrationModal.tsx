@@ -85,8 +85,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
       contract_type: "recurring",
       start_date: new Date().toISOString().split('T')[0] || "",
       end_date_expected: "",
-      scope_details: "",
-      extra_comments: "",
+      scope_details: null,
+      extra_comments: null,
     }
   });
 
