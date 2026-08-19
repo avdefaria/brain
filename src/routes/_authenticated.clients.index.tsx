@@ -342,7 +342,12 @@ function ClientsOverviewPage() {
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1 text-[#8A8FA3]">
                     <Clock className="h-3 w-3" />
-                    <span className="text-xs">12 meses</span>
+                    <span className={cn(
+                      "text-xs",
+                      client.contract_end && new Date(client.contract_end) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) ? "text-red-500 font-bold" : ""
+                    )}>
+                      {client.contract_end ? new Date(client.contract_end).toLocaleDateString() : 'Sem data'}
+                    </span>
                   </div>
                 </TableCell>
               </TableRow>
