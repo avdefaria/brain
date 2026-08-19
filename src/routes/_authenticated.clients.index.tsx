@@ -538,16 +538,16 @@ function ClientsOverviewPage() {
                       {client.risk_level === 'high' ? 'Crítico' : client.risk_level === 'medium' ? 'Atenção' : 'Estável'}
                     </span>
                   </TableCell>
-                  <TableCell className="font-bold text-[#0E0E16] font-jakarta">{client.health_score}</TableCell>
-                  <TableCell className="text-[#8A8FA3] font-jakarta">R$ {client.cac}</TableCell>
+                  <TableCell className="font-bold text-[#0E0E16] font-sora">{client.health_score}</TableCell>
+                  <TableCell className="text-[#8A8FA3] font-sora">R$ {client.cac.toLocaleString('pt-BR')}</TableCell>
                   <TableCell className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1.5 text-[#8A8FA3]">
                       <Clock className="h-3 w-3" />
                       <span className={cn(
-                        "text-xs font-jakarta",
+                        "text-xs font-sora",
                         client.contract_end && new Date(client.contract_end) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) ? "text-red-500 font-bold" : ""
                       )}>
-                        {client.contract_end ? new Date(client.contract_end).toLocaleDateString() : 'Sem data'}
+                        {client.contract_end ? new Date(client.contract_end).toLocaleDateString('pt-BR') : 'Sem data'}
                       </span>
                     </div>
                   </TableCell>
