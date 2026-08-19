@@ -53,8 +53,10 @@ export function SquadManagementDialog({ squad, isOpen, onOpenChange }: SquadMana
     queryFn: () => getCollaborators(),
   });
 
+  const updateFn = useServerFn(updateSquad);
+
   const updateMutation = useMutation({
-    mutationFn: (data: any) => updateSquad(data),
+    mutationFn: (data: any) => updateFn({ data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
       toast.success("Squad atualizado com sucesso");
