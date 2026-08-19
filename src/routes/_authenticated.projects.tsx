@@ -295,7 +295,7 @@ function ProjectsPage() {
                 <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
               <span className="text-[10px] font-bold px-2 whitespace-nowrap">
-                {timelineView === 'week' && timelineDays.length > 0 ? (
+                {timelineView === 'week' && timelineDays[0] ? (
                   `Semana de ${format(timelineDays[0], "dd 'de' MMM", { locale: ptBR })}`
                 ) : (
                   format(timelineDate, "MMMM yyyy", { locale: ptBR })
