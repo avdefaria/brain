@@ -19,7 +19,7 @@ async def main():
             )
             await page.reload(wait_until="networkidle")
 
-        print("\n--- Testing getProjectsOverviewData Query Structure (FIXED) ---")
+        print("\n--- Testing getProjectsOverviewData Query Structure (FINAL) ---")
         result1 = await page.evaluate("""async () => {
             try {
                 const { supabase } = await import('/src/integrations/supabase/client.ts');
@@ -37,8 +37,7 @@ async def main():
                           project_deliveries (
                             id,
                             current_count,
-                            target_count,
-                            
+                            target_count
                           )
                         )
                       )
@@ -51,7 +50,7 @@ async def main():
         }""")
         print(json.dumps(result1, indent=2))
 
-        print("\n--- Testing Clients Management Query Structure ---")
+        print("\n--- Testing Clients Management Query Structure (FINAL) ---")
         result2 = await page.evaluate("""async () => {
             try {
                 const { supabase } = await import('/src/integrations/supabase/client.ts');
