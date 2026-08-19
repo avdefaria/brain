@@ -37,6 +37,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { IMaskInput } from "react-imask";
 import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const clientSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
@@ -51,6 +52,7 @@ const clientSchema = z.object({
   squad_id: z.string().nullable(),
   segment: z.string().min(2, "Segmento é obrigatório"),
   contract_type: z.enum(["recurring", "one-off"]),
+  sales_channels: z.array(z.string()).optional(),
   start_date: z.string(),
   end_date_expected: z.string().min(1, "Data de encerramento é obrigatória"),
   scope_details: z.string().nullable(),
@@ -87,6 +89,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
       end_date_expected: "",
       scope_details: null as any,
       extra_comments: null as any,
+      sales_channels: [],
     }
   });
 
@@ -119,6 +122,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
         contact_whatsapp: data.contact_whatsapp,
         squad_id: data.squad_id,
         segment: data.segment,
+        sales_channels: data.sales_channels || [],
         start_date: data.start_date,
         end_date_expected: data.end_date_expected,
         scope_details: data.scope_details,
@@ -298,6 +302,41 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
                   </SelectContent>
                 </Select>
                 {form.formState.errors.contract_type && <p className="text-xs text-red-500">{form.formState.errors.contract_type.message}</p>}
+              </div>
+              <div className="space-y-2 md:col-span-3">
+                <Label>Canais de vendas</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {(form.watch("sales_channels") || []).map((channel) => (
+                    <Badge key={channel} className="bg-[#3D4FE8]/10 text-[#3D4FE8] border-none px-3 py-1 rounded-full flex items-center gap-1">
+                      {channel}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = form.getValues("sales_channels") || [];
+                          form.setValue("sales_channels", current.filter(c => c !== channel));
+                        }}
+                        className="hover:text-red-500"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <Select onValueChange={(v) => {
+                  const current = form.getValues("sales_channels") || [];
+                  if (!current.includes(v)) {
+                    form.setValue("sales_channels", [...current, v]);
+                  }
+                }}>
+                  <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
+                    <SelectValue placeholder="Adicionar canal de venda" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["Mercado Livre", "Shopee", "Amazon", "TikTok Shop", "Magalu", "Americanas", "Shein", "Loja própria", "Instagram"].map(opt => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
