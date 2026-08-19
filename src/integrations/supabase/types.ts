@@ -353,6 +353,7 @@ export type Database = {
       }
       contracts: {
         Row: {
+          account_id: string | null
           auto_renewal: boolean | null
           client_id: string
           contract_number: string | null
@@ -369,6 +370,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_id?: string | null
           auto_renewal?: boolean | null
           client_id: string
           contract_number?: string | null
@@ -385,6 +387,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_id?: string | null
           auto_renewal?: boolean | null
           client_id?: string
           contract_number?: string | null
@@ -401,6 +404,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contracts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contracts_client_id_fkey"
             columns: ["client_id"]
@@ -781,6 +791,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          account_id: string | null
           actual_minutes: number | null
           client_id: string | null
           created_at: string | null
@@ -796,6 +807,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          account_id?: string | null
           actual_minutes?: number | null
           client_id?: string | null
           created_at?: string | null
@@ -811,6 +823,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          account_id?: string | null
           actual_minutes?: number | null
           client_id?: string | null
           created_at?: string | null
@@ -826,6 +839,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_client_id_fkey"
             columns: ["client_id"]
