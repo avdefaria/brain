@@ -42,6 +42,7 @@ const mockClients = [
 
 function ClientsManagePage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
@@ -54,7 +55,10 @@ function ClientsManagePage() {
           <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]">
             Ver todos
           </Button>
-          <Button className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full">
+          <Button 
+            className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full"
+            onClick={() => setIsModalOpen(true)}
+          >
             <UserPlus className="h-4 w-4 mr-2" />
             Cadastrar cliente
           </Button>
@@ -151,6 +155,10 @@ function ClientsManagePage() {
           </Table>
         </CardContent>
       </Card>
+      <ClientRegistrationModal 
+        open={isModalOpen} 
+        onOpenChange={setIsModalOpen} 
+      />
     </div>
   );
 }
