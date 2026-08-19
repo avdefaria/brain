@@ -77,15 +77,18 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
   const [availableChannels, setAvailableChannels] = useState<{id: string, name: string}[]>([]);
   const [availableNiches, setAvailableNiches] = useState<{id: string, name: string}[]>([]);
 
+  const [availableSquads, setAvailableSquads] = useState<{id: string, name: string}[]>([]);
+
   useEffect(() => {
     const fetchData = async () => {
       if (!open) return;
       
       try {
-        console.log("Iniciando busca de catálogos (Nichos e Canais)...");
-        const [channels, niches] = await Promise.all([
+        console.log("Iniciando busca de catálogos (Nichos, Canais e Squads)...");
+        const [channels, niches, squads] = await Promise.all([
           getSalesChannels(),
-          getNiches()
+          getNiches(),
+          supabase.from('squads').select('id, name').order('name')
         ]);
         
         console.log("Canais carregados:", channels.length);
@@ -93,6 +96,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         
         setAvailableChannels(channels);
         setAvailableNiches(niches);
+        if (squads.data) setAvailableSquads(squads.data);
       } catch (err) {
         console.error("Erro crítico ao carregar catálogos no Modal:", err);
         toast.error("Erro ao carregar opções de Nicho e Canais. Verifique sua conexão.");
@@ -432,14 +436,15 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Squad responsável</Label>
-                <Select onValueChange={(v) => form.setValue("squad_id", v)} value={form.watch("squad_id") || ""}>
+                <Select onValueChange={(v) => form.setValue("squad_id", v === "none" ? null : v)} value={form.watch("squad_id") || "none"}>
                   <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
                     <SelectValue placeholder="Selecione o squad" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="growth">Growth</SelectItem>
-                    <SelectItem value="design">Design</SelectItem>
-                    <SelectItem value="dev">Desenvolvimento</SelectItem>
+                    <SelectItem value="none">Nenhum squad</SelectItem>
+                    {availableSquads.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
