@@ -21,8 +21,10 @@ import { Route as AuthenticatedClientsClientIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedClientsChurnRouteImport } from './routes/_authenticated.clients.churn'
 import { Route as AuthenticatedClientsContractsRouteImport } from './routes/_authenticated.clients.contracts'
 import { Route as AuthenticatedClientsManageRouteImport } from './routes/_authenticated.clients.manage'
+import { Route as AuthenticatedProjectsContentApprovalRouteImport } from './routes/_authenticated.projects.content-approval'
 import { Route as AuthenticatedProjectsDeliveriesRouteImport } from './routes/_authenticated.projects.deliveries'
 import { Route as AuthenticatedProjectsTasksRouteImport } from './routes/_authenticated.projects.tasks'
+import { Route as PublicApprovalTokenRouteImport } from './routes/public.approval.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -88,6 +90,12 @@ const AuthenticatedClientsManageRoute =
     path: '/clients/manage',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedProjectsContentApprovalRoute =
+  AuthenticatedProjectsContentApprovalRouteImport.update({
+    id: '/projects/content-approval',
+    path: '/projects/content-approval',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProjectsDeliveriesRoute =
   AuthenticatedProjectsDeliveriesRouteImport.update({
     id: '/projects/deliveries',
@@ -100,6 +108,11 @@ const AuthenticatedProjectsTasksRoute =
     path: '/projects/tasks',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const PublicApprovalTokenRoute = PublicApprovalTokenRouteImport.update({
+  id: '/public/approval/$token',
+  path: '/public/approval/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -112,8 +125,10 @@ export interface FileRoutesByFullPath {
   '/clients/churn': typeof AuthenticatedClientsChurnRoute
   '/clients/contracts': typeof AuthenticatedClientsContractsRoute
   '/clients/manage': typeof AuthenticatedClientsManageRoute
+  '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliveries': typeof AuthenticatedProjectsDeliveriesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
+  '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -127,8 +142,10 @@ export interface FileRoutesByTo {
   '/clients/churn': typeof AuthenticatedClientsChurnRoute
   '/clients/contracts': typeof AuthenticatedClientsContractsRoute
   '/clients/manage': typeof AuthenticatedClientsManageRoute
+  '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliveries': typeof AuthenticatedProjectsDeliveriesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
+  '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRoutesById {
@@ -144,8 +161,10 @@ export interface FileRoutesById {
   '/_authenticated/clients/churn': typeof AuthenticatedClientsChurnRoute
   '/_authenticated/clients/contracts': typeof AuthenticatedClientsContractsRoute
   '/_authenticated/clients/manage': typeof AuthenticatedClientsManageRoute
+  '/_authenticated/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/_authenticated/projects/deliveries': typeof AuthenticatedProjectsDeliveriesRoute
   '/_authenticated/projects/tasks': typeof AuthenticatedProjectsTasksRoute
+  '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
 }
 export interface FileRouteTypes {
@@ -161,8 +180,10 @@ export interface FileRouteTypes {
     | '/clients/churn'
     | '/clients/contracts'
     | '/clients/manage'
+    | '/projects/content-approval'
     | '/projects/deliveries'
     | '/projects/tasks'
+    | '/public/approval/$token'
     | '/clients/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -176,8 +197,10 @@ export interface FileRouteTypes {
     | '/clients/churn'
     | '/clients/contracts'
     | '/clients/manage'
+    | '/projects/content-approval'
     | '/projects/deliveries'
     | '/projects/tasks'
+    | '/public/approval/$token'
     | '/clients'
   id:
     | '__root__'
@@ -192,8 +215,10 @@ export interface FileRouteTypes {
     | '/_authenticated/clients/churn'
     | '/_authenticated/clients/contracts'
     | '/_authenticated/clients/manage'
+    | '/_authenticated/projects/content-approval'
     | '/_authenticated/projects/deliveries'
     | '/_authenticated/projects/tasks'
+    | '/public/approval/$token'
     | '/_authenticated/clients/'
   fileRoutesById: FileRoutesById
 }
@@ -201,6 +226,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthLoginRoute: typeof AuthLoginRoute
+  PublicApprovalTokenRoute: typeof PublicApprovalTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -289,6 +315,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientsManageRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/projects/content-approval': {
+      id: '/_authenticated/projects/content-approval'
+      path: '/projects/content-approval'
+      fullPath: '/projects/content-approval'
+      preLoaderRoute: typeof AuthenticatedProjectsContentApprovalRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/projects/deliveries': {
       id: '/_authenticated/projects/deliveries'
       path: '/projects/deliveries'
@@ -303,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsTasksRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/public/approval/$token': {
+      id: '/public/approval/$token'
+      path: '/public/approval/$token'
+      fullPath: '/public/approval/$token'
+      preLoaderRoute: typeof PublicApprovalTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -315,6 +355,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedClientsChurnRoute: typeof AuthenticatedClientsChurnRoute
   AuthenticatedClientsContractsRoute: typeof AuthenticatedClientsContractsRoute
   AuthenticatedClientsManageRoute: typeof AuthenticatedClientsManageRoute
+  AuthenticatedProjectsContentApprovalRoute: typeof AuthenticatedProjectsContentApprovalRoute
   AuthenticatedProjectsDeliveriesRoute: typeof AuthenticatedProjectsDeliveriesRoute
   AuthenticatedProjectsTasksRoute: typeof AuthenticatedProjectsTasksRoute
   AuthenticatedClientsIndexRoute: typeof AuthenticatedClientsIndexRoute
@@ -329,6 +370,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedClientsChurnRoute: AuthenticatedClientsChurnRoute,
   AuthenticatedClientsContractsRoute: AuthenticatedClientsContractsRoute,
   AuthenticatedClientsManageRoute: AuthenticatedClientsManageRoute,
+  AuthenticatedProjectsContentApprovalRoute:
+    AuthenticatedProjectsContentApprovalRoute,
   AuthenticatedProjectsDeliveriesRoute: AuthenticatedProjectsDeliveriesRoute,
   AuthenticatedProjectsTasksRoute: AuthenticatedProjectsTasksRoute,
   AuthenticatedClientsIndexRoute: AuthenticatedClientsIndexRoute,
@@ -342,6 +385,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthLoginRoute: AuthLoginRoute,
+  PublicApprovalTokenRoute: PublicApprovalTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -142,6 +142,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               children={[
                 { label: "Gestão de Entregas", href: "/projects/deliveries" },
                 { label: "Tarefas", href: "/projects/tasks" },
+                { label: "Aprovação de Conteúdo", href: "/projects/content-approval" },
               ]}
             />
             <SidebarItem
