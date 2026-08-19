@@ -12,6 +12,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteSquad } from "@/lib/projects.functions";
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 
 interface DeleteSquadDialogProps {
   squad: any;
@@ -21,9 +22,10 @@ interface DeleteSquadDialogProps {
 
 export function DeleteSquadDialog({ squad, isOpen, onOpenChange }: DeleteSquadDialogProps) {
   const queryClient = useQueryClient();
+  const deleteFn = useServerFn(deleteSquad);
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteSquad({ id }),
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
       toast.success("Squad excluído com sucesso");
