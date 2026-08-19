@@ -92,33 +92,59 @@ function ClientsOverviewPage() {
 
       {/* Gráficos Linha 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6 border-[#E4E6F0] shadow-sm">
-          <CardTitle className="text-lg font-title mb-6">Clientes por mês</CardTitle>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={[{ name: 'Jan', value: 10 }, { name: 'Fev', value: 20 }, { name: 'Mar', value: 15 }]}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="value" stroke="#3D4FE8" fill="#3D4FE8" fillOpacity={0.1} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
+          <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
+            <div className="bg-[#3D4FE8]/8 p-2 rounded-lg mr-4">
+              <TrendingUp className="h-5 w-5 text-[#3D4FE8]" />
+            </div>
+            <CardTitle className="text-lg font-title font-semibold">Clientes por mês</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 pt-0">
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={[{ name: 'Jan', value: 10 }, { name: 'Fev', value: 20 }, { name: 'Mar', value: 15 }]}>
+                  <defs>
+                    <linearGradient id="colorClients" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3D4FE8" stopOpacity={0.12}/>
+                      <stop offset="95%" stopColor="#3D4FE8" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} cursor={{ stroke: '#3D4FE8', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Area type="monotone" dataKey="value" stroke="#3D4FE8" strokeWidth={2} fill="url(#colorClients)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
         </Card>
-        <Card className="p-6 border-[#E4E6F0] shadow-sm">
-          <CardTitle className="text-lg font-title mb-6">LTV por mês (em meses)</CardTitle>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={[{ name: 'Jan', value: 20 }, { name: 'Fev', value: 22 }, { name: 'Mar', value: 25 }]}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="value" stroke="#3D4FE8" fill="#3D4FE8" fillOpacity={0.1} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
+          <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
+            <div className="bg-[#3D4FE8]/8 p-2 rounded-lg mr-4">
+              <TrendingUp className="h-5 w-5 text-[#3D4FE8]" />
+            </div>
+            <CardTitle className="text-lg font-title font-semibold">LTV por mês (em meses)</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 pt-0">
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={[{ name: 'Jan', value: 20 }, { name: 'Fev', value: 22 }, { name: 'Mar', value: 25 }]}>
+                  <defs>
+                    <linearGradient id="colorLTV" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22C55E" stopOpacity={0.12}/>
+                      <stop offset="95%" stopColor="#22C55E" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#8A8FA3', fontSize: 12}} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} cursor={{ stroke: '#22C55E', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Area type="monotone" dataKey="value" stroke="#22C55E" strokeWidth={2} fill="url(#colorLTV)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
         </Card>
       </div>
 
