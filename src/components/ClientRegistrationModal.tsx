@@ -71,6 +71,33 @@ interface ClientRegistrationModalProps {
 
 export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: ClientRegistrationModalProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [availableChannels, setAvailableChannels] = useState<{id: string, name: string}[]>([]);
+
+  useEffect(() => {
+    const fetchChannels = async () => {
+      try {
+        const channels = await getSalesChannels();
+        setAvailableChannels(channels || []);
+      } catch (err) {
+        console.error("Erro ao carregar canais:", err);
+      }
+    };
+    if (open) fetchChannels();
+  }, [open]);
+
+  const handleAddNewChannel = async (name: string) => {
+    try {
+      const newChannel = await addSalesChannel(name);
+      setAvailableChannels(prev => [...prev, newChannel]);
+      const current = form.getValues("sales_channels") || [];
+      if (!current.includes(newChannel.name)) {
+        form.setValue("sales_channels", [...current, newChannel.name]);
+      }
+      toast.success(`Canal "${newChannel.name}" adicionado`);
+    } catch (err) {
+      toast.error("Erro ao adicionar canal");
+    }
+  };
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
@@ -307,58 +334,18 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
               </div>
               <div className="space-y-2 md:col-span-3">
                 <Label>Canais de vendas</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {(form.watch("sales_channels") || []).map((channel) => (
-                    <Badge key={channel} className="bg-[#3D4FE8]/10 text-[#3D4FE8] border-none px-3 py-1 rounded-full flex items-center gap-1">
-                      {channel}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const current = form.getValues("sales_channels") || [];
-                          form.setValue("sales_channels", current.filter(c => c !== channel));
-                        }}
-                        className="hover:text-red-500"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex gap-2 mb-2">
-                  <Input 
-                    placeholder="Novo canal..." 
-                    className="h-9"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const val = e.currentTarget.value.trim();
-                        if (val) {
-                          const current = form.getValues("sales_channels") || [];
-                          if (!current.includes(val)) {
-                            form.setValue("sales_channels", [...current, val]);
-                          }
-                          e.currentTarget.value = "";
-                        }
-                      }
-                    }}
-                  />
-                </div>
-                <Select onValueChange={(v) => {
-                  const current = form.getValues("sales_channels") || [];
-                  if (!current.includes(v)) {
-                    form.setValue("sales_channels", [...current, v]);
-                  }
-                }}>
-                  <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
-                    <SelectValue placeholder="Sugestões de canais" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {["Mercado Livre", "Shopee", "Amazon", "TikTok Shop", "Magalu", "Americanas", "Shein", "Loja própria", "Instagram"].map(opt => (
-                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
+                <Controller
+                  control={form.control}
+                  name="sales_channels"
+                  render={({ field }) => (
+                    <MultiSelectSalesChannels
+                      selected={field.value || []}
+                      options={availableChannels}
+                      onChange={field.onChange}
+                      onAddChannel={handleAddNewChannel}
+                    />
+                  )}
+                />
               </div>
             </CardContent>
           </Card>

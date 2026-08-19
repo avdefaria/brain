@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -53,9 +54,9 @@ export const Route = createFileRoute("/_authenticated/clients/manage")({
 });
 
 const mockClients = [
-  { id: 1, name: "TechFlow Systems", segment: "SaaS", risk: "low", status: "active", health: 92, contact_whatsapp: "(11) 99999-9999", contact_email: "ana@techflow.com" },
-  { id: 2, name: "Global Logistics", segment: "Logística", risk: "medium", status: "active", health: 75, contact_whatsapp: "(11) 98888-8888", contact_email: "carlos@logistics.com" },
-  { id: 3, name: "Urban Eats", segment: "Food & Bev", risk: "high", status: "active", health: 45, contact_whatsapp: "(11) 97777-7777", contact_email: "julia@urbaneats.com" },
+  { id: 1, name: "TechFlow Systems", segment: "SaaS", risk: "low", status: "active", health: 92, contact_whatsapp: "(11) 99999-9999", contact_email: "ana@techflow.com", sales_channels: ["Amazon", "Mercado Livre"] },
+  { id: 2, name: "Global Logistics", segment: "Logística", risk: "medium", status: "active", health: 75, contact_whatsapp: "(11) 98888-8888", contact_email: "carlos@logistics.com", sales_channels: ["Loja própria"] },
+  { id: 3, name: "Urban Eats", segment: "Food & Bev", risk: "high", status: "active", health: 45, contact_whatsapp: "(11) 97777-7777", contact_email: "julia@urbaneats.com", sales_channels: [] },
 ];
 
 function ClientsManagePage() {
@@ -116,6 +117,7 @@ function ClientsManagePage() {
               <TableRow className="hover:bg-transparent border-[#E4E6F0]">
                 <TableHead className="font-bold text-[#0E0E16]">Cliente</TableHead>
                 <TableHead className="font-bold text-[#0E0E16]">Segmento</TableHead>
+                <TableHead className="font-bold text-[#0E0E16]">Canais</TableHead>
                 <TableHead className="font-bold text-[#0E0E16]">Health Score</TableHead>
                 <TableHead className="font-bold text-[#0E0E16]">Risco</TableHead>
                 <TableHead className="font-bold text-[#0E0E16]">Status</TableHead>
@@ -135,6 +137,19 @@ function ClientsManagePage() {
                     </Link>
                   </TableCell>
                   <TableCell className="text-[#8A8FA3]">{client.segment}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1 max-w-[200px]">
+                      {client.sales_channels && client.sales_channels.length > 0 ? (
+                        client.sales_channels.map((ch: string) => (
+                          <Badge key={ch} variant="secondary" className="bg-[#3D4FE8]/10 text-[#3D4FE8] border-none text-[9px] px-2 py-0 rounded-full">
+                            {ch}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-[#8A8FA3]">--</span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-24 bg-[#E4E6F0] rounded-full overflow-hidden">
