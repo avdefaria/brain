@@ -228,8 +228,8 @@ function ProjectsPage() {
                     if (active && payload && payload.length) {
                       return (
                         <div className="bg-white p-2 border border-[#E4E6F0] rounded-lg shadow-sm">
-                          <p className="text-xs font-bold text-[#0E0E16]">{payload[0].payload.name}</p>
-                          <p className="text-[10px] text-[#3D4FE8]">{payload[0].value} contas</p>
+                          <p className="text-xs font-bold text-[#0E0E16]">{payload[0]?.payload?.name}</p>
+                          <p className="text-[10px] text-[#3D4FE8]">{payload[0]?.value} contas</p>
                         </div>
                       );
                     }
