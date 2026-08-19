@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { 
   Users, UserPlus, TrendingDown, BarChart3, DollarSign, MapPin, AlertTriangle,
   ArrowUpRight, ArrowDownRight, Briefcase, Users2, TrendingUp, Target, Clock, Search, RefreshCw
