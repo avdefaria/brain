@@ -259,7 +259,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             throw new Error(`Erro ao buscar IDs dos canais: ${channelsError.message}`);
           }
 
-          const channelIds = channels.map(c => c.id);
+          const channelIds = (channels as any[]).map(c => c.id);
 
           // 2. Clear existing relationships if editing
           if (initialData) {
