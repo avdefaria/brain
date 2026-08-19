@@ -20,7 +20,7 @@ import {
   TrendingUp,
   DollarSign,
   UserCheck,
-  Tool,
+  Wrench,
   User,
   CreditCard,
   Target
@@ -159,7 +159,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               label="Comercial"
               href="/em-breve"
               collapsed={sidebarCollapsed}
-              active={location.pathname === "/em-breve" && label === "Comercial"}
             />
             <SidebarItem
               icon={DollarSign}
@@ -174,7 +173,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               collapsed={sidebarCollapsed}
             />
             <SidebarItem
-              icon={Settings}
+              icon={Wrench}
               label="Toolkit"
               href="/em-breve"
               collapsed={sidebarCollapsed}
