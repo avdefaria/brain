@@ -20,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCollaborators } from "@/lib/squads.functions";
-import { updateSquad } from "@/lib/projects.functions";
+import { createSquad, updateSquad } from "@/lib/projects.functions";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 
@@ -44,8 +44,8 @@ interface SquadManagementDialogProps {
 
 export function SquadManagementDialog({ squad, isOpen, onOpenChange }: SquadManagementDialogProps) {
   const queryClient = useQueryClient();
-  const [name, setName] = React.useState(squad?.name || "");
-  const [selectedColor, setSelectedColor] = React.useState(squad?.color || COLORS[0]);
+  const [name, setName] = React.useState("");
+  const [selectedColor, setSelectedColor] = React.useState(COLORS[0]);
   const [leaderId, setLeaderId] = React.useState("");
 
   const { data: collaborators } = useQuery({
