@@ -121,6 +121,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             />
             <SidebarItem
               icon={Users}
+              label="Clientes"
+              href="/clients"
+              collapsed={sidebarCollapsed}
+              children={[
+                { label: "Visão Geral", href: "/clients" },
+                { label: "Gestão", href: "/clients/manage" },
+                { label: "Churn", href: "/clients/churn" },
+                { label: "Contratos", href: "/clients/contracts" },
+              ]}
+            />
+            <SidebarItem
+              icon={Users}
               label="Equipe"
               href="/users"
               collapsed={sidebarCollapsed}
