@@ -5,7 +5,7 @@ import { logSecurityEvent } from "./security-logger";
 
 export const getProjectsOverviewData = createServerFn({ method: "GET" })
   .handler(async () => {
-    // 1. Get Squads with leader info and clients
+    // 1. Get Squads with leader info and accounts linked via account_squads
     const { data: squadsData, error: squadsError } = await supabase
       .from('squads')
       .select(`
@@ -57,7 +57,7 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
       .order('start_date');
 
     // 3. Process Squads
-    const processedSquads = squadsData.map(s => {
+    const processedSquads = (squadsData || []).map(s => {
       const squadProfiles = profiles.filter(p => p.squad_id === s.id);
       const leader = profiles.find(p => p.id === (s as any).leader_id) || squadProfiles[0] || null;
       
@@ -109,7 +109,7 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
     
     let totalTarget = 0;
     let totalCurrent = 0;
-    squadsData.forEach(s => {
+    (squadsData || []).forEach(s => {
       (s.account_squads || []).forEach((as: any) => {
         const acc = as.accounts;
         if (!acc) return;
