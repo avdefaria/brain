@@ -80,7 +80,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
       corporate_email: "",
       contact_email: "" as any,
       contact_whatsapp: "",
-      squad_id: null,
+      squad_id: null as any,
       segment: "",
       contract_type: "recurring",
       start_date: (new Date().toISOString().split('T')[0]) as any,
