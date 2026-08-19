@@ -8,7 +8,11 @@ import {
   MapPin,
   AlertTriangle,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Briefcase,
+  Users2,
+  TrendingUp,
+  Target
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
