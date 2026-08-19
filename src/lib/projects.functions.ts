@@ -20,8 +20,7 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
               project_deliveries (
                 id,
                 current_count,
-                target_count,
-                status
+                target_count
               )
             )
           )
