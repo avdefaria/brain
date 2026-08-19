@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_public_access: {
+        Row: {
+          client_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          token: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          token?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_public_access_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -90,6 +122,94 @@ export type Database = {
             columns: ["squad_id"]
             isOneToOne: false
             referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_comments: {
+        Row: {
+          author_name: string | null
+          content: string
+          created_at: string
+          id: string
+          is_internal: boolean | null
+          post_id: string
+          user_id: string | null
+        }
+        Insert: {
+          author_name?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          post_id: string
+          user_id?: string | null
+        }
+        Update: {
+          author_name?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          post_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_posts: {
+        Row: {
+          caption: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          funnel_stage: Database["public"]["Enums"]["funnel_stage"] | null
+          id: string
+          media_urls: string[] | null
+          scheduled_at: string
+          status: Database["public"]["Enums"]["content_status"] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          caption?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          funnel_stage?: Database["public"]["Enums"]["funnel_stage"] | null
+          id?: string
+          media_urls?: string[] | null
+          scheduled_at: string
+          status?: Database["public"]["Enums"]["content_status"] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          caption?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          funnel_stage?: Database["public"]["Enums"]["funnel_stage"] | null
+          id?: string
+          media_urls?: string[] | null
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["content_status"] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_posts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -484,8 +604,15 @@ export type Database = {
     Enums: {
       app_role: "admin" | "leader" | "collaborator"
       client_status: "active" | "inactive" | "churn"
+      content_status:
+        | "internally_approved"
+        | "client_approved"
+        | "internal_changes_requested"
+        | "client_changes_requested"
+        | "pending_internal_approval"
       contract_type: "recurring" | "one-off"
       employment_type: "CLT" | "PJ" | "Estágio"
+      funnel_stage: "attraction" | "education" | "conversion"
       risk_level: "low" | "medium" | "high"
       task_priority: "low" | "medium" | "high"
       task_stage: "todo" | "doing" | "review" | "done"
@@ -625,8 +752,16 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "leader", "collaborator"],
       client_status: ["active", "inactive", "churn"],
+      content_status: [
+        "internally_approved",
+        "client_approved",
+        "internal_changes_requested",
+        "client_changes_requested",
+        "pending_internal_approval",
+      ],
       contract_type: ["recurring", "one-off"],
       employment_type: ["CLT", "PJ", "Estágio"],
+      funnel_stage: ["attraction", "education", "conversion"],
       risk_level: ["low", "medium", "high"],
       task_priority: ["low", "medium", "high"],
       task_stage: ["todo", "doing", "review", "done"],
