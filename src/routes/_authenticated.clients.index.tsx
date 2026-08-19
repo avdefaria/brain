@@ -337,6 +337,7 @@ function ClientsOverviewPage() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+          </CardContent>
         </Card>
         <Card className="rounded-xl border border-[#E4E6F0] shadow-sm">
           <CardHeader className="flex flex-row items-center space-y-0 p-6 pb-2">
