@@ -78,7 +78,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
       state: "",
       city: "",
       corporate_email: "",
-      contact_email: "",
+      contact_email: "" as any,
       contact_whatsapp: "",
       squad_id: null,
       segment: "",
