@@ -14,11 +14,11 @@ export async function logSecurityEvent(params: {
     const { data: { user } } = await supabase.auth.getUser();
     
     await supabase.from('security_logs').insert({
-      user_id: user?.id,
+      user_id: user?.id ?? null,
       action: params.action,
       table_name: params.tableName,
-      record_id: params.recordId,
-      details: params.details,
+      record_id: params.recordId ?? null,
+      details: params.details ?? null,
       error_message: params.errorMessage
     });
   } catch (e) {
