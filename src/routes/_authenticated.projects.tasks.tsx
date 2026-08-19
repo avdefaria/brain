@@ -76,24 +76,69 @@ const mockTasks = [
 ];
 
 function TasksPage() {
-  const [tasks, setTasks] = useState(mockTasks);
+  const queryClient = useQueryClient();
+  const fetchTasks = useServerFn(getTasks);
+  const updateTasks = useServerFn(updateTasksBatch);
+
+  const { data: tasks = [], isLoading } = useQuery({
+    queryKey: ["tasks"],
+    queryFn: () => fetchTasks(),
+  });
+
+  const [localTasks, setLocalTasks] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
 
-  const onDragEnd = (result: DropResult) => {
+  useEffect(() => {
+    if (tasks.length > 0) {
+      setLocalTasks(tasks);
+    }
+  }, [tasks]);
+
+  const onDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    const newTasks = tasks.map(t => {
-      if (t.id === draggableId) {
-        return { ...t, stage: destination.droppableId };
-      }
-      return t;
-    });
-    setTasks(newTasks);
+    // Reorder local state immediately
+    const updatedTasks = Array.from(localTasks);
+    
+    // Find the task being moved
+    const taskIndex = updatedTasks.findIndex(t => t.id === draggableId);
+    if (taskIndex === -1) return;
+    
+    const task = { ...updatedTasks[taskIndex], stage: destination.droppableId };
+    
+    // Remove from old position
+    updatedTasks.splice(taskIndex, 1);
+    
+    // Insert into new position in the target column
+    const columnTasks = updatedTasks.filter(t => t.stage === destination.droppableId);
+    const otherTasks = updatedTasks.filter(t => t.stage !== destination.droppableId);
+    
+    columnTasks.splice(destination.index, 0, task);
+    
+    // Re-calculate positions for the target column
+    const reorderedColumn = columnTasks.map((t, idx) => ({ ...t, position: idx }));
+    
+    const finalTasks = [...otherTasks, ...reorderedColumn];
+    setLocalTasks(finalTasks);
+
+    try {
+      await updateTasks({
+        data: reorderedColumn.map(t => ({
+          id: t.id,
+          position: t.position,
+          stage: t.stage
+        }))
+      });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    } catch (error) {
+      toast.error("Erro ao salvar ordem das tarefas");
+      setLocalTasks(tasks); // Rollback
+    }
   };
 
   const kpis = [
@@ -175,7 +220,12 @@ function TasksPage() {
         </Button>
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
+      {isLoading ? (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 text-[#3D4FE8] animate-spin" />
+        </div>
+      ) : (
+        <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-6 overflow-x-auto pb-4">
           {COLUMNS.map((col) => (
             <div key={col.id} className="flex-1 min-w-[280px]">
@@ -184,7 +234,7 @@ function TasksPage() {
                   <div className="w-2 h-4 rounded-full" style={{ backgroundColor: col.color }} />
                   <h3 className="font-title font-bold text-[#0E0E16]">{col.title}</h3>
                   <span className="text-xs font-bold text-[#8A8FA3] bg-[#F7F8FC] px-2 py-0.5 rounded-full border border-[#E4E6F0]">
-                    {tasks.filter(t => t.stage === col.id).length}
+                    {localTasks.filter(t => t.stage === col.id).length}
                   </span>
                 </div>
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-[#8A8FA3] hover:text-[#3D4FE8] rounded-full border border-transparent hover:border-[#E4E6F0] hover:bg-white">
@@ -199,7 +249,7 @@ function TasksPage() {
                     ref={provided.innerRef}
                     className="space-y-4 min-h-[500px]"
                   >
-                    {tasks.filter(t => t.stage === col.id).map((task, index) => (
+                    {localTasks.filter(t => t.stage === col.id).sort((a, b) => (a.position || 0) - (b.position || 0)).map((task, index) => (
                       <Draggable key={task.id} draggableId={task.id} index={index}>
                         {(provided) => (
                           <Card
@@ -263,7 +313,8 @@ function TasksPage() {
             </div>
           ))}
         </div>
-      </DragDropContext>
+        </DragDropContext>
+      )}
 
       <CreateTaskModal 
         isOpen={isCreateModalOpen} 
