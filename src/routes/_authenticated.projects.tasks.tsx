@@ -283,7 +283,7 @@ function TasksPage() {
 
                               <div className="flex items-center justify-between pt-4 border-t border-[#F7F8FC]">
                                 <div className="flex -space-x-2">
-                                  {task.assignees.map((a, i) => (
+                                  {task.assignees.map((a: string, i: number) => (
                                     <div key={i} className="h-6 w-6 rounded-full border-2 border-white bg-[#3D4FE8] flex items-center justify-center text-[8px] text-white font-bold">
                                       {a}
                                     </div>
