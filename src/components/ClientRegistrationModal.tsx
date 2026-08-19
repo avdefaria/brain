@@ -39,33 +39,22 @@ import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const clientSchema = z.object({
-  // Bloco 1: Empresa
   name: z.string().min(2, "Nome é obrigatório"),
   cnpj_cpf: z.string().min(11, "CNPJ/CPF inválido"),
   address: z.string().min(5, "Endereço é obrigatório"),
-  country: z.string().default("Brasil"),
+  country: z.string(),
   state: z.string().min(2, "Estado é obrigatório"),
   city: z.string().min(2, "Cidade é obrigatória"),
   corporate_email: z.string().email("E-mail corporativo inválido"),
-  
-  // Bloco 2: Contato
   contact_email: z.string().email("E-mail do responsável inválido").optional().or(z.literal("")),
   contact_whatsapp: z.string().min(10, "WhatsApp inválido"),
-  
-  // Bloco 3: Comercial
   squad_id: z.string().nullable(),
   segment: z.string().min(2, "Segmento é obrigatório"),
-  contract_type: z.enum(["recurring", "one-off"], {
-    errorMap: () => ({ message: "Tipo de contrato é obrigatório" })
-  }),
-  
-  // Bloco 4: Cronograma
+  contract_type: z.enum(["recurring", "one-off"]),
   start_date: z.string().min(1, "Data de início é obrigatória"),
   end_date_expected: z.string().min(1, "Data de encerramento é obrigatória"),
-  
-  // Bloco 6: Observações
-  scope_details: z.string().optional(),
-  extra_comments: z.string().optional(),
+  scope_details: z.string().nullable(),
+  extra_comments: z.string().nullable(),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
