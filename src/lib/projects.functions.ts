@@ -56,6 +56,8 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
       .order('start_date');
 
     // 3. Process Squads
+    console.log("DEBUG BRUTO getProjectsOverviewData:", JSON.stringify(squadsData, null, 2));
+
     const processedSquads = (squadsData || []).map(s => {
       const squadProfiles = profiles.filter(p => p.squad_id === s.id);
       const leader = profiles.find(p => p.id === (s as any).leader_id) || squadProfiles[0] || null;
