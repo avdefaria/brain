@@ -70,9 +70,9 @@ function LoginPage() {
       console.log("Login successful, session:", data.session);
       toast.success("Bem-vindo de volta!");
       
-      // Explicitly redirect to dashboard after successful login
-      console.log("Navigating to /dashboard...");
-      navigate({ to: "/dashboard", replace: true });
+      // Force a full page reload to the dashboard to ensure AppShell and Auth context hydrate correctly
+      console.log("Forcing redirection to /dashboard...");
+      window.location.replace("/dashboard");
     } catch (error: any) {
       console.error("Unexpected login error:", error);
       toast.error("Ocorreu um erro inesperado.");
