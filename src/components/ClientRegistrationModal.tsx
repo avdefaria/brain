@@ -87,7 +87,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
 
   const handleAddNewChannel = async (name: string) => {
     try {
-      const newChannel = await addSalesChannel(name);
+      const newChannel = await addSalesChannel({ data: name });
       setAvailableChannels(prev => [...prev, newChannel]);
       const current = form.getValues("sales_channels") || [];
       if (!current.includes(newChannel.name)) {
