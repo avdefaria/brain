@@ -40,6 +40,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelectSalesChannels } from "./MultiSelectSalesChannels";
 import { getSalesChannels, addSalesChannel } from "@/lib/sales-channels.functions";
+import { getNiches, addNiche } from "@/lib/niches.functions";
+import { NicheSelector } from "./NicheSelector";
 
 const clientSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
@@ -52,7 +54,7 @@ const clientSchema = z.object({
   contact_email: z.string().email("E-mail do responsável inválido").optional().or(z.literal("")),
   contact_whatsapp: z.string().min(10, "WhatsApp inválido"),
   squad_id: z.string().nullable(),
-  segment: z.string().min(2, "Segmento é obrigatório"),
+  niche_id: z.string().min(1, "Nicho é obrigatório"),
   contract_type: z.enum(["recurring", "one-off"]),
   sales_channels: z.array(z.string()).optional(),
   start_date: z.string(),
@@ -67,23 +69,96 @@ interface ClientRegistrationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  initialData?: any;
 }
 
-export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: ClientRegistrationModalProps) {
+export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initialData }: ClientRegistrationModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [availableChannels, setAvailableChannels] = useState<{id: string, name: string}[]>([]);
+  const [availableNiches, setAvailableNiches] = useState<{id: string, name: string}[]>([]);
 
   useEffect(() => {
-    const fetchChannels = async () => {
+    const fetchData = async () => {
       try {
-        const channels = await getSalesChannels();
+        const [channels, niches] = await Promise.all([
+          getSalesChannels(),
+          getNiches()
+        ]);
         setAvailableChannels(channels);
+        setAvailableNiches(niches);
       } catch (err) {
-        console.error("Erro ao carregar canais:", err);
+        console.error("Erro ao carregar dados:", err);
       }
     };
-    if (open) fetchChannels();
+    if (open) fetchData();
   }, [open]);
+
+  const form = useForm<ClientFormValues>({
+    resolver: zodResolver(clientSchema),
+    defaultValues: {
+      name: "",
+      cnpj_cpf: "",
+      address: "",
+      country: "Brasil",
+      state: "",
+      city: "",
+      corporate_email: "",
+      contact_email: "",
+      contact_whatsapp: "",
+      squad_id: null,
+      niche_id: "",
+      contract_type: "recurring",
+      start_date: new Date().toISOString().split('T')[0],
+      end_date_expected: "",
+      scope_details: null,
+      extra_comments: null,
+      sales_channels: [],
+    }
+  });
+
+  useEffect(() => {
+    if (initialData && open) {
+      form.reset({
+        name: initialData.name || "",
+        cnpj_cpf: initialData.cnpj_cpf || "",
+        address: initialData.address || "",
+        country: initialData.country || "Brasil",
+        state: initialData.state || "",
+        city: initialData.city || "",
+        corporate_email: initialData.corporate_email || "",
+        contact_email: initialData.contact_email || "",
+        contact_whatsapp: initialData.contact_whatsapp || "",
+        squad_id: initialData.squad_id || null,
+        niche_id: initialData.niche_id || "",
+        contract_type: initialData.contract_type || "recurring",
+        start_date: initialData.start_date || new Date().toISOString().split('T')[0],
+        end_date_expected: initialData.end_date_expected || "",
+        scope_details: initialData.scope_details || null,
+        extra_comments: initialData.extra_comments || null,
+        sales_channels: initialData.sales_channels || [],
+      });
+    } else if (!initialData && open) {
+      form.reset({
+        name: "",
+        cnpj_cpf: "",
+        address: "",
+        country: "Brasil",
+        state: "",
+        city: "",
+        corporate_email: "",
+        contact_email: "",
+        contact_whatsapp: "",
+        squad_id: null,
+        niche_id: "",
+        contract_type: "recurring",
+        start_date: new Date().toISOString().split('T')[0],
+        end_date_expected: "",
+        scope_details: null,
+        extra_comments: null,
+        sales_channels: [],
+      });
+    }
+  }, [initialData, open, form]);
 
   const handleAddNewChannel = async (name: string) => {
     try {
@@ -99,28 +174,16 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
     }
   };
 
-  const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientSchema),
-    defaultValues: {
-      name: "",
-      cnpj_cpf: "",
-      address: "",
-      country: "Brasil",
-      state: "",
-      city: "",
-      corporate_email: "",
-      contact_email: "" as any,
-      contact_whatsapp: "",
-      squad_id: null as any,
-      segment: "",
-      contract_type: "recurring",
-      start_date: (new Date().toISOString().split('T')[0]) as any,
-      end_date_expected: "",
-      scope_details: null as any,
-      extra_comments: null as any,
-      sales_channels: [],
+  const handleAddNewNiche = async (name: string) => {
+    try {
+      const newNiche = await addNiche({ data: name });
+      setAvailableNiches(prev => [...prev, newNiche]);
+      form.setValue("niche_id", newNiche.id);
+      toast.success(`Nicho "${newNiche.name}" adicionado`);
+    } catch (err) {
+      toast.error("Erro ao adicionar nicho");
     }
-  });
+  };
 
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles[0]) {
@@ -140,7 +203,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
 
   const onSubmit = async (data: any) => {
     try {
-      const { error } = await supabase.from('clients').insert([{
+      const payload = {
         name: data.name,
         cnpj_cpf: data.cnpj_cpf,
         address: data.address,
@@ -150,27 +213,34 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
         corporate_email: data.corporate_email,
         contact_whatsapp: data.contact_whatsapp,
         squad_id: data.squad_id,
-        segment: data.segment,
+        niche_id: data.niche_id,
         sales_channels: data.sales_channels || [],
         start_date: data.start_date,
         end_date_expected: data.end_date_expected,
         scope_details: data.scope_details,
         extra_comments: data.extra_comments,
-        status: 'active',
-        risk_level: 'low',
-        health_score: 100
-      }]);
+        status: initialData ? initialData.status : 'active',
+        risk_level: initialData ? initialData.risk_level : 'low',
+        health_score: initialData ? initialData.health_score : 100
+      };
 
-      if (error) throw error;
+      if (initialData) {
+        const { error } = await supabase.from('clients').update(payload).eq('id', initialData.id);
+        if (error) throw error;
+        toast.success("Cliente atualizado com sucesso!");
+      } else {
+        const { error } = await supabase.from('clients').insert([payload]);
+        if (error) throw error;
+        toast.success("Cliente cadastrado com sucesso!");
+      }
 
-      toast.success("Cliente cadastrado com sucesso!");
       onOpenChange(false);
       form.reset();
       setFile(null);
       if (onSuccess) onSuccess();
     } catch (error: any) {
-      console.error("Erro ao cadastrar cliente:", error);
-      toast.error("Erro ao cadastrar cliente: " + error.message);
+      console.error("Erro ao salvar cliente:", error);
+      toast.error("Erro ao salvar cliente: " + error.message);
     }
   };
 
@@ -179,12 +249,11 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
       <DialogContent className="sm:max-w-[800px] h-[90vh] overflow-y-auto p-0 border-[#E4E6F0] dark:border-[#2A2A36] dark:bg-[#1A1A24]">
         <div className="sticky top-0 bg-white dark:bg-[#1A1A24] z-10 px-8 py-6 border-b border-[#E4E6F0] dark:border-[#2A2A36]">
           <DialogTitle className="text-2xl font-title font-bold text-[#0E0E16] dark:text-white">
-            Cadastrar cliente
+            {initialData ? "Editar cliente" : "Cadastrar cliente"}
           </DialogTitle>
         </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="px-8 py-8 space-y-8">
-          {/* Bloco 1 — Informações da empresa */}
           <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
               <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
@@ -222,7 +291,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
               </div>
               <div className="space-y-2">
                 <Label htmlFor="country">País</Label>
-                <Select onValueChange={(v) => form.setValue("country", v)} defaultValue="Brasil">
+                <Select onValueChange={(v) => form.setValue("country", v)} value={form.watch("country")}>
                   <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
                     <SelectValue placeholder="Selecione o país" />
                   </SelectTrigger>
@@ -251,7 +320,6 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
             </CardContent>
           </Card>
 
-          {/* Bloco 2 — Contato do responsável */}
           <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
               <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
@@ -283,7 +351,6 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
             </CardContent>
           </Card>
 
-          {/* Bloco 3 — Informações comerciais */}
           <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
               <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
@@ -294,7 +361,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Squad responsável</Label>
-                <Select onValueChange={(v) => form.setValue("squad_id", v)}>
+                <Select onValueChange={(v) => form.setValue("squad_id", v)} value={form.watch("squad_id") || undefined}>
                   <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
                     <SelectValue placeholder="Selecione o squad" />
                   </SelectTrigger>
@@ -306,22 +373,25 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Segmento</Label>
-                <Select onValueChange={(v) => form.setValue("segment", v)}>
-                  <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
-                    <SelectValue placeholder="Selecione o segmento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="saas">SaaS</SelectItem>
-                    <SelectItem value="ecommerce">E-commerce</SelectItem>
-                    <SelectItem value="logistics">Logística</SelectItem>
-                    <SelectItem value="food">Alimentação</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Nicho <span className="text-red-500">*</span></Label>
+                <Controller
+                  control={form.control}
+                  name="niche_id"
+                  render={({ field }) => (
+                    <NicheSelector
+                      selectedId={field.value}
+                      options={availableNiches}
+                      onChange={field.onChange}
+                      onAddNiche={handleAddNewNiche}
+                      placeholder="Selecionar nicho..."
+                    />
+                  )}
+                />
+                {form.formState.errors.niche_id && <p className="text-xs text-red-500">{form.formState.errors.niche_id.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Tipo de contrato <span className="text-red-500">*</span></Label>
-                <Select onValueChange={(v) => form.setValue("contract_type", v as any)}>
+                <Select onValueChange={(v) => form.setValue("contract_type", v as any)} value={form.watch("contract_type")}>
                   <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
@@ -350,7 +420,6 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
             </CardContent>
           </Card>
 
-          {/* Bloco 4 — Cronograma do projeto */}
           <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
               <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
@@ -370,7 +439,6 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
             </CardContent>
           </Card>
 
-          {/* Bloco 5 — Arquivo do contrato */}
           <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
               <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
@@ -408,7 +476,6 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
             </CardContent>
           </Card>
 
-          {/* Bloco 6 — Observações do contrato */}
           <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
               <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
@@ -453,7 +520,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
               type="submit"
               className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-white rounded-full px-12 font-bold"
             >
-              Salvar cliente
+              {initialData ? "Salvar alterações" : "Salvar cliente"}
             </Button>
           </div>
         </form>
