@@ -80,8 +80,8 @@ function TasksPage() {
 
     const newTasks = Array.from(tasks);
     const taskIndex = newTasks.findIndex(t => t.id === draggableId);
-    if (taskIndex !== -1) {
-      newTasks[taskIndex].stage = destination.droppableId;
+    if (taskIndex !== -1 && destination.droppableId) {
+      newTasks[taskIndex].stage = destination.droppableId as any;
       setTasks(newTasks);
     }
   };
