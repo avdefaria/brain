@@ -31,7 +31,7 @@ const clientSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
   cnpj_cpf: z.string().min(11, "CNPJ/CPF inválido"),
   address: z.string().min(5, "Endereço é obrigatório"),
-  country: z.string().default("Brasil"),
+  country: z.string(),
   state: z.string().min(2, "Estado é obrigatório"),
   city: z.string().min(2, "Cidade é obrigatória"),
   corporate_email: z.string().email("E-mail corporativo inválido"),
@@ -41,17 +41,17 @@ const clientSchema = z.object({
   contact_whatsapp: z.string().min(10, "WhatsApp inválido"),
   
   // Seção 3: Comercial
-  squad_id: z.string().optional(),
+  squad_id: z.string().nullable(),
   segment: z.string().min(2, "Segmento é obrigatório"),
   contract_type: z.enum(["recurring", "one-off"]),
   
   // Seção 4: Cronograma
   start_date: z.string(),
-  end_date_expected: z.string().optional(),
+  end_date_expected: z.string().nullable(),
   
   // Seção 6: Observações
-  scope_details: z.string().optional(),
-  extra_comments: z.string().optional(),
+  scope_details: z.string().nullable(),
+  extra_comments: z.string().nullable(),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
@@ -70,14 +70,26 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
+      name: "",
+      cnpj_cpf: "",
+      address: "",
       country: "Brasil",
+      state: "",
+      city: "",
+      corporate_email: "",
+      contact_name: "",
+      contact_whatsapp: "",
+      squad_id: null,
+      segment: "",
       contract_type: "recurring",
       start_date: new Date().toISOString().split('T')[0],
+      end_date_expected: null,
+      scope_details: null,
+      extra_comments: null,
     }
   });
 
   const nextStep = async () => {
-    // Basic validation per step could be added here if needed
     if (step < totalSteps) {
       setStep(step + 1);
     }
@@ -101,10 +113,10 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess }: Clien
         corporate_email: data.corporate_email,
         contact_name: data.contact_name,
         contact_whatsapp: data.contact_whatsapp,
-        squad_id: data.squad_id || null,
+        squad_id: data.squad_id,
         segment: data.segment,
         start_date: data.start_date,
-        end_date_expected: data.end_date_expected || null,
+        end_date_expected: data.end_date_expected,
         scope_details: data.scope_details,
         extra_comments: data.extra_comments,
         status: 'active',
