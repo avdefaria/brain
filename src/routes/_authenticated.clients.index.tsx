@@ -51,7 +51,7 @@ function ClientsOverviewPage() {
     { label: "Clientes Ativos", value: data.kpis.active, change: "+0%", trending: "up" },
     { label: "Novos Clientes", value: data.kpis.new, change: "+0%", trending: "up" },
     { label: "Churn", value: `${data.kpis.churn}`, change: "-0%", trending: "down" },
-    { label: "LTV Médio", value: `R$ ${data.kpis.ltv}`, change: "+0%", trending: "up" },
+    { label: "LTV Médio", value: `${data.kpis.ltv} meses`, change: "+0%", trending: "up" },
     { label: "CAC Médio", value: `R$ ${data.kpis.cac}`, change: "-0%", trending: "down" },
   ];
 
