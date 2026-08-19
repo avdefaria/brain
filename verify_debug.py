@@ -9,7 +9,6 @@ async def main():
         context = await browser.new_context(viewport={"width": 1280, "height": 1800})
         page = await context.new_page()
 
-        # Carregar a sessão gerada
         session_file = "/root/.cache/lovable-auth/session.json"
         with open(session_file) as f:
             minted = json.load(f)
@@ -22,22 +21,23 @@ async def main():
             c["url"] = "http://localhost:8080"
         await context.add_cookies(cookies)
 
-        await page.goto("http://localhost:8080", wait_until="networkidle")
+        # 1. Ir para a página de auth primeiro para estabelecer a origem do localStorage
+        await page.goto("http://localhost:8080/auth", wait_until="networkidle")
+        
+        # 2. Injetar localStorage
         await page.evaluate(
-            f"window.localStorage.setItem({json.dumps(storage_key)}, {json.dumps(session_json)})"
+            f"(key, val) => window.localStorage.setItem(key, val)", storage_key, session_json
         )
         
-        # Navegar para a rota /projects
+        # 3. Ir para /projects
+        print("Navigating to /projects...")
         await page.goto("http://localhost:8080/projects", wait_until="networkidle")
-
-        # Esperar pelo bloco de debug
-        try:
-            await page.wait_for_selector('div.bg-yellow-50', timeout=20000)
-            await asyncio.sleep(3)
-        except:
-            print("Timeout waiting for debug zone")
+        await asyncio.sleep(5)
         
         await page.screenshot(path="/tmp/browser/debug_projects_final.png")
+        
+        url = page.url
+        print(f"Current URL: {url}")
         
         debug_content = await page.evaluate("""() => {
             const debugZone = document.querySelector('div.bg-yellow-50');
