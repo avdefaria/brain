@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { CreatePostModal } from '@/components/CreatePostModal';
 import { cn } from '@/lib/utils';
+import { SocialPostCard } from '@/components/SocialPostCard';
+
 
 
 export const Route = createFileRoute('/_authenticated/projects/content-approval')({
@@ -179,10 +181,24 @@ function ContentApprovalPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {/* Grid view content would go here */}
-              <div className="text-center py-20 bg-white dark:bg-[#1A1A24] rounded-3xl border border-dashed border-[#E4E6F0] dark:border-[#2A2A36] col-span-full">
-                <p className="text-[#8A8FA3]">Visualização em grade em desenvolvimento...</p>
-              </div>
+              {[
+                {
+                  id: '1',
+                  client: { name: 'Ongo Branding', handle: 'ongomarketing' },
+                  media_urls: ['https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&q=80'],
+                  caption: 'Transforme sua agência com o novo Brain. A gestão inteligente que você precisava está aqui. 🚀 #OngoBrain #MarketingAgency',
+                  scheduled_at: new Date().toISOString(),
+                  status: 'pending_internal_approval',
+                  funnel_stage: 'attraction'
+                }
+              ].map(post => (
+                <SocialPostCard 
+                  key={post.id} 
+                  post={post} 
+                  onApprove={() => toast.success("Post aprovado!")}
+                  onChanges={() => toast.info("Solicitação de ajustes enviada")}
+                />
+              ))}
             </div>
           )}
         </div>
