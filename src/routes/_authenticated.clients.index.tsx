@@ -73,4 +73,4 @@ function ClientsOverviewPage() {
     </div>
   );
 }
-import { useEffect } from "react";
+
