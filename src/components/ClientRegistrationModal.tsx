@@ -79,18 +79,27 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!open) return;
+      
       try {
+        console.log("Iniciando busca de catálogos (Nichos e Canais)...");
         const [channels, niches] = await Promise.all([
           getSalesChannels(),
           getNiches()
         ]);
+        
+        console.log("Canais carregados:", channels.length);
+        console.log("Nichos carregados:", niches.length);
+        
         setAvailableChannels(channels);
         setAvailableNiches(niches);
       } catch (err) {
-        console.error("Erro ao carregar dados:", err);
+        console.error("Erro crítico ao carregar catálogos no Modal:", err);
+        toast.error("Erro ao carregar opções de Nicho e Canais. Verifique sua conexão.");
       }
     };
-    if (open) fetchData();
+    
+    fetchData();
   }, [open]);
 
   const form = useForm<ClientFormValues>({
