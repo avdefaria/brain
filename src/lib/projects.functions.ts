@@ -33,7 +33,7 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
     // Get all tasks for stats
     const { data: tasks, error: tasksError } = await supabase
       .from('tasks')
-      .select('id, stage, deadline, squad_id');
+      .select('id, stage, deadline, client_id');
     
     if (tasksError) throw tasksError;
 
@@ -43,6 +43,7 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
       // For demo/simplicity, first profile in squad is "leader" if not otherwise specified
       const leader = squadProfiles[0] || null;
       const squadClients = s.clients || [];
+      const squadClientIds = squadClients.map(c => c.id);
       
       const totalHealth = squadClients.reduce((acc: number, curr: any) => acc + (curr.health_score || 0), 0);
       const avgHealth = squadClients.length > 0 ? Math.round(totalHealth / squadClients.length) : null;
@@ -57,7 +58,7 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
         });
       });
 
-      const squadTasks = tasks.filter(t => t.squad_id === s.id);
+      const squadTasks = tasks.filter(t => t.client_id && squadClientIds.includes(t.client_id));
       const lateTasks = squadTasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && t.stage !== 'done').length;
 
       return {
