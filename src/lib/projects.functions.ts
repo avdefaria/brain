@@ -195,7 +195,15 @@ export const deleteSquad = createServerFn({ method: "POST" })
       .delete()
       .eq('id', data.id);
 
-    if (error) throw error;
+    if (error) {
+      await logSecurityEvent({
+        action: 'DELETE',
+        tableName: 'squads',
+        recordId: data.id,
+        errorMessage: error.message
+      });
+      throw error;
+    }
     return { success: true };
   });
 
