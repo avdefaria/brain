@@ -31,24 +31,25 @@ export const getTasks = createServerFn({ method: "GET" })
     return (data || []).map(task => {
       console.error('MAPPING TASK:', task.id, 'ASSIGNEES:', JSON.stringify(task.task_assignees));
       return {
-      id: task.id,
-      title: task.title || "Sem título",
-      client: (task.clients as any)?.name || "Sem cliente",
-      client_id: task.client_id,
-      priority: task.priority || "medium",
-      deadline: task.deadline ? new Date(task.deadline).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : "Sem prazo",
-      raw_deadline: task.deadline,
-      stage: task.stage || "todo",
-      assignees: Array.isArray(task.task_assignees) 
-        ? task.task_assignees
-            .filter((p: any) => p.profiles)
-            .map((p: any) => p.profiles.full_name?.split(' ').map((n: string) => n[0]).join('') || "??") 
-        : [],
-      position: task.position || 0,
-      deliverable_types: task.deliverable_types,
-      sku_reference: task.sku_reference,
-      description: task.description
-    }));
+        id: task.id,
+        title: task.title || "Sem título",
+        client: (task.clients as any)?.name || "Sem cliente",
+        client_id: task.client_id,
+        priority: task.priority || "medium",
+        deadline: task.deadline ? new Date(task.deadline).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : "Sem prazo",
+        raw_deadline: task.deadline,
+        stage: task.stage || "todo",
+        assignees: Array.isArray(task.task_assignees) 
+          ? task.task_assignees
+              .filter((p: any) => p.profiles)
+              .map((p: any) => p.profiles.full_name?.split(' ').map((n: string) => n[0]).join('') || "??") 
+          : [],
+        position: task.position || 0,
+        deliverable_types: task.deliverable_types,
+        sku_reference: task.sku_reference,
+        description: task.description
+      };
+    });
   });
 
 export const createTask = createServerFn({ method: "POST" })
