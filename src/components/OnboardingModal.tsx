@@ -30,6 +30,13 @@ export function OnboardingModal() {
   }, []);
 
   const handleComplete = () => {
+    console.log("Onboarding completed, saving to localStorage");
+    localStorage.setItem("ongo_onboarding_seen", "true");
+    setOpen(false);
+  };
+
+  const handleSkip = () => {
+    console.log("Onboarding skipped, saving to localStorage");
     localStorage.setItem("ongo_onboarding_seen", "true");
     setOpen(false);
   };
