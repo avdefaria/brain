@@ -69,7 +69,9 @@ export const getTasks = createServerFn({ method: "GET" })
       position: task.position || 0,
       deliverable_types: task.deliverable_types,
       sku_reference: task.sku_reference,
-      description: task.description
+      description: task.description,
+      time_tracked_seconds: (task as any).time_tracked_seconds || 0,
+      timer_started_at: (task as any).timer_started_at
     }));
   });
 
@@ -103,6 +105,8 @@ export const updateTask = createServerFn({ method: "POST" })
     deadline: z.string().optional().nullable(),
     description: z.string().optional().nullable(),
     title: z.string().optional(),
+    time_tracked_seconds: z.number().optional(),
+    timer_started_at: z.string().optional().nullable(),
   }).parse(data))
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
