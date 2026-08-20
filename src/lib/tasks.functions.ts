@@ -1,9 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const getTasks = createServerFn({ method: "GET" })
-  .handler(async () => {
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
+
     const { data, error } = await supabase
       .from("tasks")
       .select(`
@@ -31,12 +35,15 @@ export const getTasks = createServerFn({ method: "GET" })
   });
 
 export const updateTaskPosition = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({
     taskId: z.string(),
     stage: z.enum(['todo', 'doing', 'review', 'done']),
     position: z.number()
   }).parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
+
     const { error } = await supabase
       .from("tasks")
       .update({ 
@@ -51,12 +58,15 @@ export const updateTaskPosition = createServerFn({ method: "POST" })
   });
 
 export const updateTasksBatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.array(z.object({
     id: z.string(),
     position: z.number(),
     stage: z.enum(['todo', 'doing', 'review', 'done'])
   })).parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
+
     for (const item of data) {
       const { error } = await supabase
         .from("tasks")
