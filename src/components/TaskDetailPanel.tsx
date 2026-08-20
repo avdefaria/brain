@@ -58,10 +58,11 @@ interface TaskDetailPanelProps {
 
 export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelProps) {
   const queryClient = useQueryClient();
-  const [timerActive, setTimerActive] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [localDescription, setLocalDescription] = useState(task?.description || "");
+  const [displayTime, setDisplayTime] = useState(0);
+
 
   
   // Queries
@@ -79,17 +80,67 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
 
   useEffect(() => {
     setLocalDescription(task?.description || "");
-  }, [task?.id, task?.description]);
+    
+    const calculateCurrentTime = () => {
+      const baseSeconds = task?.time_tracked_seconds || 0;
+      if (task?.timer_started_at) {
+        const start = new Date(task.timer_started_at).getTime();
+        const now = new Date().getTime();
+        const diff = Math.floor((now - start) / 1000);
+        return baseSeconds + diff;
+      }
+      return baseSeconds;
+    };
+
+    setDisplayTime(calculateCurrentTime());
+  }, [task?.id, task?.description, task?.time_tracked_seconds, task?.timer_started_at]);
 
   useEffect(() => {
     let interval: any;
-    if (timerActive) {
+    if (task?.timer_started_at) {
       interval = setInterval(() => {
-        setSeconds(s => s + 1);
+        const start = new Date(task.timer_started_at).getTime();
+        const now = new Date().getTime();
+        const diff = Math.floor((now - start) / 1000);
+        setDisplayTime((task?.time_tracked_seconds || 0) + diff);
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [timerActive]);
+  }, [task?.timer_started_at, task?.time_tracked_seconds]);
+
+  const handleTimerToggle = async () => {
+    try {
+      if (task.timer_started_at) {
+        // Stop timer
+        const start = new Date(task.timer_started_at).getTime();
+        const now = new Date().getTime();
+        const diff = Math.floor((now - start) / 1000);
+        const newTotal = (task.time_tracked_seconds || 0) + diff;
+        
+        await updateTaskFn({ 
+          data: { 
+            id: task.id, 
+            time_tracked_seconds: newTotal,
+            timer_started_at: null 
+          } 
+        });
+        toast.success("Cronômetro parado e tempo salvo");
+      } else {
+        // Start timer
+        await updateTaskFn({ 
+          data: { 
+            id: task.id, 
+            timer_started_at: new Date().toISOString() 
+          } 
+        });
+        toast.success("Cronômetro iniciado");
+      }
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    } catch (error) {
+      toast.error("Erro ao atualizar cronômetro");
+    }
+  };
+
 
   const formatTime = (totalSeconds: number) => {
     const hrs = Math.floor(totalSeconds / 3600);
@@ -411,14 +462,14 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
           <div className="p-4 bg-[#3D4FE8] rounded-2xl text-white space-y-3 shadow-lg shadow-[#3D4FE8]/20">
             <div className="flex justify-between items-center">
               <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">Tempo registrado</p>
-              <p className="text-xl font-bold font-jakarta tabular-nums">{formatTime(seconds)}</p>
+              <p className="text-xl font-bold font-jakarta tabular-nums">{formatTime(displayTime)}</p>
             </div>
             <Button 
-              onClick={() => setTimerActive(!timerActive)}
+              onClick={handleTimerToggle}
               className="w-full rounded-xl bg-white text-[#3D4FE8] hover:bg-white/90 font-bold"
             >
-              {timerActive ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-              {timerActive ? "Parar" : "Iniciar"} Cronômetro
+              {task.timer_started_at ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+              {task.timer_started_at ? "Parar" : "Iniciar"} Cronômetro
             </Button>
           </div>
 
