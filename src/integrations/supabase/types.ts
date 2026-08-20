@@ -456,6 +456,27 @@ export type Database = {
           },
         ]
       }
+      deliverable_types: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_custom: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_custom?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_custom?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       niches: {
         Row: {
           created_at: string
@@ -833,11 +854,13 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           deadline: string | null
+          deliverable_type_id: string | null
           description: string | null
           estimated_minutes: number | null
           id: string
           position: number | null
           priority: Database["public"]["Enums"]["task_priority"]
+          sku_reference: string | null
           stage: Database["public"]["Enums"]["task_stage"]
           title: string
           updated_at: string | null
@@ -849,11 +872,13 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           deadline?: string | null
+          deliverable_type_id?: string | null
           description?: string | null
           estimated_minutes?: number | null
           id?: string
           position?: number | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          sku_reference?: string | null
           stage?: Database["public"]["Enums"]["task_stage"]
           title: string
           updated_at?: string | null
@@ -865,11 +890,13 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           deadline?: string | null
+          deliverable_type_id?: string | null
           description?: string | null
           estimated_minutes?: number | null
           id?: string
           position?: number | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          sku_reference?: string | null
           stage?: Database["public"]["Enums"]["task_stage"]
           title?: string
           updated_at?: string | null
@@ -887,6 +914,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_deliverable_type_id_fkey"
+            columns: ["deliverable_type_id"]
+            isOneToOne: false
+            referencedRelation: "deliverable_types"
             referencedColumns: ["id"]
           },
         ]
