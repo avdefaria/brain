@@ -96,22 +96,6 @@ function ProjectsPage() {
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500 font-body">
-      {/* DEBUG ZONE */}
-      <div className="mb-6 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg font-mono text-xs overflow-auto max-h-[200px]">
-        <h2 className="font-bold text-lg mb-2 text-yellow-800 underline">DEBUG DE DADOS (PROJETOS)</h2>
-        {squads.length === 0 ? (
-          <div className="text-red-600 font-black text-xl animate-pulse">QUERY RETORNOU 0 SQUADS</div>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-sm font-bold">Total de Squads: {squads.length}</p>
-            {squads.map((s: any) => (
-              <div key={s.id} className="border-b border-yellow-200 pb-1">
-                <span className="font-bold">[{s.name}]</span>: {s.accountsCount} contas | IDs das contas: {s.accounts?.map((a: any) => a.id).join(', ') || 'Nenhum'}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-title font-bold text-[#0E0E16]">Visão geral dos projetos</h1>
