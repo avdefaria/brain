@@ -956,6 +956,8 @@ export type Database = {
           priority: Database["public"]["Enums"]["task_priority"]
           sku_reference: string | null
           stage: Database["public"]["Enums"]["task_stage"]
+          time_tracked_seconds: number | null
+          timer_started_at: string | null
           title: string
           updated_at: string | null
         }
@@ -974,6 +976,8 @@ export type Database = {
           priority?: Database["public"]["Enums"]["task_priority"]
           sku_reference?: string | null
           stage?: Database["public"]["Enums"]["task_stage"]
+          time_tracked_seconds?: number | null
+          timer_started_at?: string | null
           title: string
           updated_at?: string | null
         }
@@ -992,6 +996,8 @@ export type Database = {
           priority?: Database["public"]["Enums"]["task_priority"]
           sku_reference?: string | null
           stage?: Database["public"]["Enums"]["task_stage"]
+          time_tracked_seconds?: number | null
+          timer_started_at?: string | null
           title?: string
           updated_at?: string | null
         }
