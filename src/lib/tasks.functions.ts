@@ -20,7 +20,11 @@ export const getTasks = createServerFn({ method: "GET" })
         task_tags (
           tags (id, name)
         ),
-        task_attachments (*)
+        task_attachments (*),
+        task_history (
+          *,
+          profiles:user_id (full_name)
+        )
       `)
       .order("position", { ascending: true });
     
@@ -52,6 +56,10 @@ export const getTasks = createServerFn({ method: "GET" })
         ? task.task_tags.map((tt: any) => tt.tags).filter(Boolean)
         : [],
       attachments: task.task_attachments || [],
+      history: (task.task_history || []).map((h: any) => ({
+        ...h,
+        user_name: h.profiles?.full_name || "Sistema"
+      })),
       position: task.position || 0,
       deliverable_types: task.deliverable_types,
       sku_reference: task.sku_reference,
@@ -93,6 +101,14 @@ export const updateTask = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
     const { id, ...updates } = data;
+
+    // Get old state for history
+    const { data: oldTask } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("id", id)
+      .single();
+
     const { error } = await supabase
       .from("tasks")
       .update({ 
@@ -100,7 +116,22 @@ export const updateTask = createServerFn({ method: "POST" })
         updated_at: new Date().toISOString()
       } as any)
       .eq("id", id);
+    
     if (error) throw error;
+
+    // Log changes to history
+    for (const [key, value] of Object.entries(updates)) {
+      if (oldTask && oldTask[key] !== value) {
+        await addTaskHistory({
+          taskId: id,
+          action: `campo_alterado_${key}`,
+          changes: { from: oldTask[key], to: value },
+          supabase,
+          userId: context.userId
+        });
+      }
+    }
+
     return { success: true };
   });
 
@@ -143,6 +174,14 @@ export const updateTaskTags = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
     
+    // Get current tags for comparison
+    const { data: currentTags } = await supabase
+      .from("task_tags")
+      .select("tag_id")
+      .eq("task_id", data.taskId);
+    
+    const currentTagIds = currentTags?.map(t => t.tag_id) || [];
+
     await supabase.from("task_tags").delete().eq("task_id", data.taskId);
 
     if (data.tagIds.length > 0) {
@@ -153,6 +192,20 @@ export const updateTaskTags = createServerFn({ method: "POST" })
           tag_id: tid
         })));
       if (error) throw error;
+    }
+
+    // Log history for tags
+    const added = data.tagIds.filter(id => !currentTagIds.includes(id));
+    const removed = currentTagIds.filter(id => !data.tagIds.includes(id));
+
+    if (added.length > 0 || removed.length > 0) {
+      await addTaskHistory({
+        taskId: data.taskId,
+        action: "tags_alteradas",
+        changes: { added, removed },
+        supabase,
+        userId: context.userId
+      });
     }
 
     return { success: true };
@@ -188,26 +241,74 @@ export const addTaskAttachment = createServerFn({ method: "POST" })
       .insert({
         task_id: data.taskId,
         file_name: data.fileName,
-        file_url: data.fileUrl,
+        file_path: data.fileUrl, // Corrected from file_url to file_path
         uploaded_by: userId
       } as any)
       .select()
       .single();
     
     if (error) throw error;
+
+    // Log to history
+    await addTaskHistory({
+      taskId: data.taskId,
+      action: "anexo_adicionado",
+      changes: { fileName: data.fileName },
+      supabase,
+      userId
+    });
+
     return attachment;
   });
 
-export const deleteTaskAttachment = createServerFn({ method: "POST" })
+export const deleteTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
+    const { error } = await supabase
+      .from("tasks")
+      .delete()
+      .eq("id", data.id);
+    
+    if (error) throw error;
+    return { success: true };
+  });
+
+// Internal helper for history
+async function addTaskHistory({ taskId, action, changes, supabase, userId }: any) {
+  const { error } = await supabase
+    .from("task_history")
+    .insert({
+      task_id: taskId,
+      user_id: userId,
+      action,
+      changes
+    });
+  if (error) console.error("Error logging history:", error);
+}
+
+export const deleteTaskAttachment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string(), taskId: z.string(), fileName: z.string() }).parse(data))
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
     const { error } = await supabase
       .from("task_attachments")
       .delete()
       .eq("id", data.id);
+    
     if (error) throw error;
+
+    // Log to history
+    await addTaskHistory({
+      taskId: data.taskId,
+      action: "anexo_removido",
+      changes: { fileName: data.fileName },
+      supabase,
+      userId: context.userId
+    });
+
     return { success: true };
   });
 
