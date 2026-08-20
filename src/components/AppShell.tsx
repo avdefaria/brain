@@ -96,6 +96,7 @@ function SidebarItem({ icon: Icon, label, href, collapsed, active, children }: S
             <Link
               key={child.href}
               to={child.href}
+              onClick={() => console.log('clicou no filho', child.href)}
               className={cn(
                 "block px-3 py-2 text-xs transition-colors rounded-md",
                 location.pathname === child.href 
