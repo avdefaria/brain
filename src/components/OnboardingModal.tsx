@@ -139,7 +139,7 @@ export function OnboardingModal() {
             <Button 
               variant="ghost" 
               className="text-[#8A8FA3] hover:text-[#0E0E16]"
-              onClick={() => setOpen(false)}
+              onClick={handleSkip}
             >
               Pular tudo
             </Button>
