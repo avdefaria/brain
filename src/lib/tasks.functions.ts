@@ -23,7 +23,7 @@ export const getTasks = createServerFn({ method: "GET" })
         task_attachments (*),
         task_history (
           *,
-          profiles:user_id (full_name)
+          profiles!task_history_user_id_profiles_fkey (full_name)
         )
       `)
       .order("position", { ascending: true });
