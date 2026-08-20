@@ -92,7 +92,7 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
 
   const handleUpdate = async (updates: any) => {
     try {
-      await updateTaskFn({ id: task.id, ...updates });
+      await updateTaskFn({ data: { id: task.id, ...updates } });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success("Tarefa atualizada");
     } catch (error) {
@@ -102,7 +102,7 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
 
   const handleAssigneesChange = async (userIds: string[]) => {
     try {
-      await updateAssigneesFn({ taskId: task.id, userIds });
+      await updateAssigneesFn({ data: { taskId: task.id, userIds } });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success("Responsáveis atualizados");
     } catch (error) {
@@ -112,7 +112,7 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
 
   const handleTagsChange = async (tagIds: string[]) => {
     try {
-      await updateTagsFn({ taskId: task.id, tagIds });
+      await updateTagsFn({ data: { taskId: task.id, tagIds } });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     } catch (error) {
       toast.error("Erro ao atualizar tags");
@@ -140,9 +140,11 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
         .getPublicUrl(filePath);
 
       await addAttachmentFn({
-        taskId: task.id,
-        fileName: file.name,
-        fileUrl: publicUrl
+        data: {
+          taskId: task.id,
+          fileName: file.name,
+          fileUrl: publicUrl
+        }
       });
 
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -280,7 +282,7 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
                             onClick={async () => {
                               const name = prompt("Nome da nova tag:");
                               if (name) {
-                                const newTag = await createTagFn({ name });
+                                const newTag = await createTagFn({ data: { name } });
                                 handleTagsChange([...currentTagIds, newTag.id]);
                               }
                             }}
@@ -338,7 +340,7 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
                   </a>
                   <button 
                     onClick={async () => {
-                      await deleteAttachmentFn({ id: file.id });
+                      await deleteAttachmentFn({ data: { id: file.id } });
                       queryClient.invalidateQueries({ queryKey: ['tasks'] });
                     }}
                     className="opacity-0 group-hover:opacity-100 p-1 text-red-500"

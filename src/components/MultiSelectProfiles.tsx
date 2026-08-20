@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 interface Profile {
   id: string;
   full_name: string;
-  avatar_url?: string;
+  avatar_url?: string | null;
 }
 
 interface MultiSelectProfilesProps {
