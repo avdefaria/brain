@@ -1,8 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const getSquads = createServerFn({ method: "GET" })
-  .handler(async () => {
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
+
     const { data, error } = await supabase
       .from('squads')
       .select('*')
@@ -13,7 +17,10 @@ export const getSquads = createServerFn({ method: "GET" })
   });
 
 export const getCollaborators = createServerFn({ method: "GET" })
-  .handler(async () => {
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
+
     const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, function')

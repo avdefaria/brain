@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
 import { z } from "zod";
 
 export const getSalesChannels = createServerFn({ method: "GET" })
@@ -47,7 +49,10 @@ export const addSalesChannel = createServerFn({ method: "POST" })
   });
 
 export const getClientsWithChannels = createServerFn({ method: "GET" })
-  .handler(async () => {
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
+
     // For general list, we use client-side supabase to respect RLS or the caller's identity
     const { data, error } = await supabase
       .from("clients")
