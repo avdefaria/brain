@@ -68,7 +68,7 @@ export function MultiSelectProfiles({
               className="bg-[#3D4FE8]/10 text-[#3D4FE8] hover:bg-[#3D4FE8]/20 border-none px-2 py-0.5 rounded-full flex items-center gap-2 transition-colors"
             >
               <Avatar className="h-4 w-4">
-                <AvatarImage src={profile.avatar_url} />
+                <AvatarImage src={profile.avatar_url || undefined} />
                 <AvatarFallback className="text-[6px] bg-[#3D4FE8] text-white">
                   {profile.full_name.split(' ').map(n => n[0]).join('')}
                 </AvatarFallback>
@@ -137,7 +137,7 @@ export function MultiSelectProfiles({
                       )}
                     />
                     <Avatar className="h-6 w-6 mr-2">
-                      <AvatarImage src={profile.avatar_url} />
+                      <AvatarImage src={profile.avatar_url || undefined} />
                       <AvatarFallback className="text-[8px] bg-[#3D4FE8] text-white">
                         {profile.full_name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
