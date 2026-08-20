@@ -19,7 +19,8 @@ import {
   Clock,
   Flag,
   User,
-  Tag as TagIcon
+  Tag as TagIcon,
+  Briefcase
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Progress } from "@/components/ui/progress";
@@ -112,12 +113,19 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
             </div>
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
-                <TagIcon className="h-3 w-3" /> Tags
+                <TagIcon className="h-3 w-3" /> Tipo de Entregável
               </p>
-              <div className="flex gap-1">
-                <Badge variant="outline" className="text-[9px] border-[#E4E6F0] rounded-full">Social</Badge>
-                <Badge variant="outline" className="text-[9px] border-[#E4E6F0] rounded-full">Ads</Badge>
-              </div>
+              <p className="text-sm font-bold text-[#0E0E16]">
+                {task.deliverable_types?.name || "Não definido"}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
+                <Briefcase className="h-3 w-3" /> SKU / Código
+              </p>
+              <p className="text-sm font-bold text-[#0E0E16]">
+                {task.sku_reference || "N/A"}
+              </p>
             </div>
           </div>
 

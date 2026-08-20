@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -25,8 +25,14 @@ import {
   User, 
   Flag,
   ListOrdered,
-  Layout
+  Layout,
+  Tag
 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { getClientsWithChannels } from "@/lib/sales-channels.functions";
+import { getDeliverableTypes } from "@/lib/deliverables.functions";
+import { createTask } from "@/lib/tasks.functions";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -39,7 +45,8 @@ const taskSchema = z.object({
   stage: z.string(),
   priority: z.string(),
   deadline: z.string().optional(),
-  type: z.string().optional(),
+  deliverable_type_id: z.string().optional(),
+  sku_reference: z.string().optional(),
 });
 
 interface CreateTaskModalProps {
@@ -48,11 +55,31 @@ interface CreateTaskModalProps {
 }
 
 export function CreateTaskModal({ isOpen, onOpenChange }: CreateTaskModalProps) {
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm({
+  const queryClient = useQueryClient();
+  const fetchClients = useServerFn(getClientsWithChannels);
+  const fetchDeliverableTypes = useServerFn(getDeliverableTypes);
+  const createTaskFn = useServerFn(createTask);
+
+  const [clients, setClients] = useState<any[]>([]);
+  const [deliverableTypes, setDeliverableTypes] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchClients().then(setClients);
+      fetchDeliverableTypes().then(setDeliverableTypes);
+    }
+  }, [isOpen]);
+
+  const { register, handleSubmit, setValue, formState: { errors }, reset } = useForm({
     resolver: zodResolver(taskSchema),
     defaultValues: {
       stage: "todo",
       priority: "medium",
+      title: "",
+      client_id: "",
+      deadline: "",
+      deliverable_type_id: "",
+      sku_reference: "",
     }
   });
 
@@ -67,11 +94,25 @@ export function CreateTaskModal({ isOpen, onOpenChange }: CreateTaskModalProps) 
     content: '',
   });
 
-  const onSubmit = (data: any) => {
-    const content = editor?.getHTML();
-    console.log({ ...data, description: content });
-    toast.success("Tarefa criada com sucesso!");
-    onOpenChange(false);
+  const onSubmit = async (data: any) => {
+    try {
+      const content = editor?.getHTML();
+      await createTaskFn({ 
+        data: {
+          ...data, 
+          description: content 
+        } 
+      });
+      toast.success("Tarefa criada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["deliverables-progress"] });
+      onOpenChange(false);
+      reset();
+      editor?.commands.setContent('');
+    } catch (error) {
+      console.error("Erro ao criar tarefa:", error);
+      toast.error("Erro ao criar tarefa");
+    }
   };
 
   return (
@@ -105,8 +146,9 @@ export function CreateTaskModal({ isOpen, onOpenChange }: CreateTaskModalProps) 
                   <SelectValue placeholder="Selecione o cliente" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">TechFlow Systems</SelectItem>
-                  <SelectItem value="2">Global Logistics</SelectItem>
+                  {clients.map(client => (
+                    <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -151,6 +193,30 @@ export function CreateTaskModal({ isOpen, onOpenChange }: CreateTaskModalProps) 
                 <CalendarIcon className="h-3 w-3" /> Data de Entrega
               </Label>
               <Input type="date" {...register("deadline")} className="border-[#E4E6F0] rounded-xl" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-bold text-[#8A8FA3] tracking-widest flex items-center gap-2">
+                <ListOrdered className="h-3 w-3" /> Tipo de Entregável
+              </Label>
+              <Select onValueChange={(v) => setValue("deliverable_type_id", v)}>
+                <SelectTrigger className="border-[#E4E6F0] rounded-xl">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {deliverableTypes.map(type => (
+                    <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-bold text-[#8A8FA3] tracking-widest flex items-center gap-2">
+                <Type className="h-3 w-3" /> SKU / Código do produto
+              </Label>
+              <Input {...register("sku_reference")} placeholder="Ex: SKU-123" className="border-[#E4E6F0] rounded-xl" />
             </div>
           </div>
 

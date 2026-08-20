@@ -150,6 +150,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               children={[
                 { label: "Gestão de Entregas", href: "/projects/deliveries" },
                 { label: "Tarefas", href: "/projects/tasks" },
+                { label: "Gestão de Entregáveis", href: "/projects/deliverables" },
                 { label: "Aprovação de Conteúdo", href: "/projects/content-approval" },
               ]}
             />
