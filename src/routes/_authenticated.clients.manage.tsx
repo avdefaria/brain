@@ -183,7 +183,7 @@ function ClientsManagePage() {
                         {client.name}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-[#8A8FA3]">{(client.niches as any)?.name || (client as any).niche_name || "--"}</TableCell>
+                    <TableCell className="text-[#8A8FA3]">{(client as any).niches?.name || (client as any).niche_name || "--"}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
                         {client.client_sales_channels && client.client_sales_channels.length > 0 ? (
