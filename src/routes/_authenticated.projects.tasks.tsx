@@ -91,8 +91,7 @@ function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<any>(null);
 
   useEffect(() => {
-    if (tasks && tasks.length > 0) {
-      console.log("Syncing localTasks with real data:", tasks.length);
+    if (tasks) {
       setLocalTasks(tasks);
     }
   }, [tasks]);
@@ -181,28 +180,6 @@ function TasksPage() {
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
-      <div className="bg-red-50 border-2 border-red-200 p-4 rounded-2xl space-y-2 font-mono text-[10px]">
-        <h2 className="font-bold text-red-600 text-xs">DEBUG DE SINCRONIA</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="font-bold">Tarefas da Query (tasks.length: {tasks.length})</p>
-            <ul className="list-disc list-inside">
-              {tasks.map((t: any) => <li key={t.id}>{t.title} (ID: {t.id.slice(0, 4)})</li>)}
-            </ul>
-          </div>
-          <div>
-            <p className="font-bold">Estado Local (localTasks.length: {localTasks.length})</p>
-            <ul className="list-disc list-inside">
-              {localTasks.map((t: any) => <li key={t.id}>{t.title} (ID: {t.id.slice(0, 4)})</li>)}
-            </ul>
-          </div>
-        </div>
-        {tasks.length !== localTasks.length && (
-          <div className="mt-2 bg-red-600 text-white p-2 text-center font-bold text-sm animate-pulse rounded-lg">
-            DESSINCRONIA DETECTADA
-          </div>
-        )}
-      </div>
 
       <div className="flex items-center justify-between">
         <div>
@@ -337,9 +314,13 @@ function TasksPage() {
 
                               <div className="flex items-center justify-between pt-4 border-t border-[#F7F8FC]">
                                 <div className="flex -space-x-2">
-                                  {task.assignees.map((a: string, i: number) => (
-                                    <div key={i} className="h-6 w-6 rounded-full border-2 border-white bg-[#3D4FE8] flex items-center justify-center text-[8px] text-white font-bold">
-                                      {a}
+                                  {task.assignees.map((a: any, i: number) => (
+                                    <div key={i} className="h-6 w-6 rounded-full border-2 border-white bg-[#3D4FE8] overflow-hidden flex items-center justify-center text-[8px] text-white font-bold">
+                                      {a.avatar_url ? (
+                                        <img src={a.avatar_url} alt={a.name} className="w-full h-full object-cover" />
+                                      ) : (
+                                        a.initials
+                                      )}
                                     </div>
                                   ))}
                                 </div>
