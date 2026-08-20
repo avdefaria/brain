@@ -16,7 +16,7 @@ export const getTasks = createServerFn({ method: "GET" })
         deliverable_types:deliverable_type_id (name),
         task_assignees (
           user_id,
-          profiles!task_assignees_user_id_fkey (full_name)
+          profiles:user_id (full_name)
         )
       `)
       .order("position", { ascending: true });
