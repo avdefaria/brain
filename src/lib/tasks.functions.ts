@@ -20,6 +20,8 @@ export const getTasks = createServerFn({ method: "GET" })
         )
       `)
       .order("position", { ascending: true });
+    
+    console.error('TASKS RESULT:', JSON.stringify(data));
 
     if (error) {
       console.error("Error fetching tasks:", error);
