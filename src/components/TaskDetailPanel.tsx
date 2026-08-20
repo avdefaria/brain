@@ -61,6 +61,8 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
   const [timerActive, setTimerActive] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [localDescription, setLocalDescription] = useState(task?.description || "");
+
   
   // Queries
   const { data: allTags = [] } = useQuery({ queryKey: ['tags'], queryFn: () => getTags() });
@@ -74,6 +76,10 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
   const addAttachmentFn = useServerFn(addTaskAttachment);
   const deleteAttachmentFn = useServerFn(deleteTaskAttachment);
   const deleteTaskFn = useServerFn(deleteTask);
+
+  useEffect(() => {
+    setLocalDescription(task?.description || "");
+  }, [task?.id, task?.description]);
 
   useEffect(() => {
     let interval: any;
@@ -356,8 +362,13 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
             <h4 className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest">Descrição</h4>
             <Textarea 
               className="p-4 bg-[#F7F8FC] rounded-2xl border border-[#E4E6F0] text-sm text-[#0E0E16] min-h-[100px]"
-              value={task.description || ""}
-              onChange={(e) => handleUpdate({ description: e.target.value })}
+              value={localDescription}
+              onChange={(e) => setLocalDescription(e.target.value)}
+              onBlur={() => {
+                if (localDescription !== task.description) {
+                  handleUpdate({ description: localDescription });
+                }
+              }}
               placeholder="Adicione uma descrição..."
             />
           </div>

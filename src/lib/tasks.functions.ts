@@ -127,11 +127,23 @@ export const updateTask = createServerFn({ method: "POST" })
 
     // Log changes to history
     for (const [key, value] of Object.entries(updates)) {
-      if (oldTask && (oldTask as any)[key] !== value) {
+      const oldValue = (oldTask as any)[key];
+      // Normalize values for comparison (handle null vs undefined vs empty string)
+      const normalizedOld = oldValue === null ? "" : oldValue;
+      const normalizedNew = value === null ? "" : value;
+      
+      if (oldTask && normalizedOld !== normalizedNew) {
+        let actionLabel = key;
+        if (key === 'description') actionLabel = 'a descrição';
+        else if (key === 'stage') actionLabel = 'a etapa';
+        else if (key === 'priority') actionLabel = 'a prioridade';
+        else if (key === 'deadline') actionLabel = 'o prazo';
+        else if (key === 'title') actionLabel = 'o título';
+
         await addTaskHistory({
           taskId: id,
-          action: `campo_alterado_${key}`,
-          changes: { from: (oldTask as any)[key], to: value },
+          action: `editou ${actionLabel}`,
+          changes: { from: oldValue, to: value },
           supabase,
           userId: context.userId
         });
