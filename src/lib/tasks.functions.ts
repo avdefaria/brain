@@ -28,7 +28,9 @@ export const getTasks = createServerFn({ method: "GET" })
       throw error;
     }
 
-    return (data || []).map(task => ({
+    return (data || []).map(task => {
+      console.error('MAPPING TASK:', task.id, 'ASSIGNEES:', JSON.stringify(task.task_assignees));
+      return {
       id: task.id,
       title: task.title || "Sem título",
       client: (task.clients as any)?.name || "Sem cliente",
