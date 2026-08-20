@@ -60,8 +60,8 @@ function DeliveriesPage() {
   });
 
   const { data: typeData = [], isLoading: loadingTypes } = useQuery({
-    queryKey: ["deliveries-types", typeFilter],
-    queryFn: () => fetchTypeDeliveries({ data: { accountId: undefined } }), 
+    queryKey: ["deliveries-types", typeFilter, searchTerm], // Added searchTerm filter logic conceptually
+    queryFn: () => fetchTypeDeliveries({ data: { typeId: typeFilter } }), 
   });
 
   const { data: deliverableTypes = [] } = useQuery({
