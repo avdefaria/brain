@@ -457,6 +457,8 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
                 <p className="text-[10px] text-[#8A8FA3] italic">Nenhum histórico registrado.</p>
               )}
             </div>
+          </div>
+        </div>
 
         <div className="p-6 border-t border-[#E4E6F0] bg-[#F7F8FC] flex gap-3">
           <Button 
