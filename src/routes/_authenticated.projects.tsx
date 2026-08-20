@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { 
   Shield, 
   Clock, 
@@ -51,6 +51,9 @@ export const Route = createFileRoute("/_authenticated/projects")({
 });
 
 function ProjectsPage() {
+  const location = useLocation();
+  const isExactProjects = location.pathname === "/projects" || location.pathname === "/projects/";
+
   const [selectedSquad, setSelectedSquad] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -95,7 +98,10 @@ function ProjectsPage() {
     : 0;
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-500 font-body">
+    <>
+      {isExactProjects && (
+        <div className="p-8 space-y-8 animate-in fade-in duration-500 font-body">
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-title font-bold text-[#0E0E16]">Visão geral dos projetos</h1>
@@ -578,7 +584,10 @@ function ProjectsPage() {
         isOpen={isSpecialProjectModalOpen}
         onOpenChange={setIsSpecialProjectModalOpen}
       />
-    </div>
+        </div>
+      )}
+      <Outlet />
+    </>
   );
 }
 
