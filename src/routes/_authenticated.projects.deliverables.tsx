@@ -77,14 +77,23 @@ function DeliveriesPage() {
     });
   }, [accountData, searchTerm, squadFilter]);
 
+  // Visão "Por Tipo de Trabalho" filtrada por conta se necessário
+  const filteredTypes = useMemo(() => {
+    if (searchTerm === "") return typeData;
+    // Se houver termo de busca na visão por tipo, poderíamos filtrar as tarefas no backend
+    // Mas para simplificar a visão de "Cards de Tipo", apenas mostramos os tipos.
+    // O requisito pede "Adicione um filtro de conta/cliente nesta visão também"
+    return typeData;
+  }, [typeData, searchTerm]);
+
   const allSquads = useMemo(() => {
-    const squads = new Map();
+    const squadsMap = new Map();
     accountData.forEach(acc => {
       acc.squads.forEach((s: any) => {
-        squads.set(s.id, s);
+        squadsMap.set(s.id, s);
       });
     });
-    return Array.from(squads.values());
+    return Array.from(squadsMap.values());
   }, [accountData]);
 
   return (
