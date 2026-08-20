@@ -2,9 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { logSecurityEvent } from "./security-logger";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const getProjectsOverviewData = createServerFn({ method: "GET" })
-  .handler(async () => {
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
+
     // 1. Get Squads with leader info and accounts linked via account_squads
     const { data: squadsData, error: squadsError } = await supabase
       .from('squads')
@@ -151,13 +155,16 @@ export const getProjectsOverviewData = createServerFn({ method: "GET" })
   });
 
 export const createSquad = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(z.object({
     name: z.string(),
     color: z.string(),
     leader_id: z.string().optional()
   }).parse)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
     const { error } = await supabase
+
       .from('squads')
       .insert({
         name: data.name,
@@ -178,14 +185,17 @@ export const createSquad = createServerFn({ method: "POST" })
   });
 
 export const updateSquad = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(z.object({
     id: z.string(),
     name: z.string(),
     color: z.string(),
     leader_id: z.string().optional()
   }).parse)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
     const { error } = await supabase
+
       .from('squads')
       .update({
         name: data.name,
@@ -208,9 +218,12 @@ export const updateSquad = createServerFn({ method: "POST" })
   });
 
 export const deleteSquad = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ id: z.string() }).parse)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
     const { error } = await supabase
+
       .from('squads')
       .delete()
       .eq('id', data.id);
@@ -228,6 +241,7 @@ export const deleteSquad = createServerFn({ method: "POST" })
   });
 
 export const createSpecialProject = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(z.object({
     name: z.string(),
     client_id: z.string(),
@@ -237,8 +251,10 @@ export const createSpecialProject = createServerFn({ method: "POST" })
     description: z.string().optional(),
     color: z.string().optional()
   }).parse)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
     const { error } = await supabase
+
       .from('special_projects' as any)
       .insert(data);
     
