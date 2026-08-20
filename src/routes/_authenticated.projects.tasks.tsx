@@ -91,7 +91,8 @@ function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<any>(null);
 
   useEffect(() => {
-    if (tasks) {
+    if (tasks && tasks.length > 0) {
+      console.log("Syncing localTasks with real data:", tasks.length);
       setLocalTasks(tasks);
     }
   }, [tasks]);
