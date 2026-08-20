@@ -179,7 +179,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               active={location.pathname.startsWith("/projects")}
               children={[
                 { label: "Tarefas", href: "/projects/tasks" },
-                { label: "Gestão de Entregáveis", href: "/projects/deliverables" },
+                { label: "Gestão de Entregas", href: "/projects/deliverables" },
                 { label: "Aprovação de Conteúdo", href: "/projects/content-approval" },
               ]}
             />
