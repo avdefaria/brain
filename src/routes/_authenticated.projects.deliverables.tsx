@@ -61,7 +61,7 @@ function DeliveriesPage() {
 
   const { data: typeData = [], isLoading: loadingTypes } = useQuery({
     queryKey: ["deliveries-types", typeFilter],
-    queryFn: () => fetchTypeDeliveries({ accountId: undefined }), // Pode ser extendido para filtrar por conta
+    queryFn: () => fetchTypeDeliveries({ data: { accountId: undefined } }), 
   });
 
   const { data: deliverableTypes = [] } = useQuery({
