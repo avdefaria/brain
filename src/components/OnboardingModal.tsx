@@ -30,7 +30,20 @@ export function OnboardingModal() {
   }, []);
 
   const handleComplete = () => {
-    localStorage.setItem("ongo_onboarding_seen", "true");
+    try {
+      localStorage.setItem("ongo_onboarding_seen", "true");
+    } catch (e) {
+      console.error("Failed to save onboarding state", e);
+    }
+    setOpen(false);
+  };
+
+  const handleSkip = () => {
+    try {
+      localStorage.setItem("ongo_onboarding_seen", "true");
+    } catch (e) {
+      console.error("Failed to save onboarding state", e);
+    }
     setOpen(false);
   };
 
@@ -66,7 +79,7 @@ export function OnboardingModal() {
               <div className="w-2 h-2 bg-white rounded-full"></div>
             </div>
             <button 
-              onClick={() => setOpen(false)}
+              onClick={handleSkip}
               className="text-[#8A8FA3] hover:text-[#0E0E16] transition-colors"
             >
               <X className="h-5 w-5" />
@@ -132,7 +145,7 @@ export function OnboardingModal() {
             <Button 
               variant="ghost" 
               className="text-[#8A8FA3] hover:text-[#0E0E16]"
-              onClick={() => setOpen(false)}
+              onClick={handleSkip}
             >
               Pular tudo
             </Button>
