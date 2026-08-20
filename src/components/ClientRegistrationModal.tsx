@@ -39,6 +39,7 @@ import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelectSalesChannels } from "./MultiSelectSalesChannels";
+import { MultiSelectSquads } from "./MultiSelectSquads";
 import { getSalesChannels, addSalesChannel } from "@/lib/sales-channels.functions";
 import { getNiches, addNiche } from "@/lib/niches.functions";
 import { NicheSelector } from "./NicheSelector";
@@ -53,7 +54,7 @@ const clientSchema = z.object({
   corporate_email: z.string().email("E-mail corporativo inválido"),
   contact_email: z.string().email("E-mail do responsável inválido").optional().nullable(),
   contact_whatsapp: z.string().min(10, "WhatsApp inválido"),
-  squad_id: z.string().uuid("Squad inválido").nullable().optional(),
+  squad_ids: z.array(z.string()).optional(),
   niche_id: z.string().min(1, "Nicho é obrigatório"),
   contract_type: z.enum(["recurring", "one-off"]),
   sales_channels: z.array(z.string()).optional(),
@@ -117,7 +118,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
       city: "",
       corporate_email: "",
       contact_email: null,
-      squad_id: null,
+      squad_ids: [],
       niche_id: "",
       contract_type: "recurring",
       start_date: new Date().toISOString().split('T')[0] || "",
@@ -140,7 +141,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         corporate_email: initialData.corporate_email || "",
         contact_email: initialData.contact_email || null,
         contact_whatsapp: initialData.contact_whatsapp || "",
-        squad_id: initialData.squad_id || null,
+        squad_ids: initialData.account_squads?.map((as: any) => as.squad_id) || [],
         niche_id: initialData.niche_id || "",
         contract_type: (initialData.contract_type as any) || "recurring",
         start_date: initialData.start_date || new Date().toISOString().split('T')[0] || "",
@@ -160,7 +161,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         corporate_email: "",
         contact_email: null,
         contact_whatsapp: "",
-        squad_id: null,
+        squad_ids: [],
         niche_id: "",
         contract_type: "recurring",
         start_date: new Date().toISOString().split('T')[0] || "",
@@ -224,7 +225,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         city: data.city,
         corporate_email: data.corporate_email,
         contact_whatsapp: data.contact_whatsapp,
-        squad_id: data.squad_id,
+        // squad_id is deprecated, we use N:N now
+        // squad_id: data.squad_id, 
         niche_id: data.niche_id,
         start_date: data.start_date,
         end_date_expected: data.end_date_expected,
@@ -304,7 +306,48 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
           // If no channels selected but was editing, clear them
           await supabase.from('client_sales_channels').delete().eq('client_id', clientId);
         }
-      }
+        }
+
+        // Handle account_squads junction table
+        if (clientId) {
+          // Find the primary account for this client
+          const { data: accounts, error: accountsError } = await supabase
+            .from('accounts')
+            .select('id')
+            .eq('client_id', clientId)
+            .limit(1);
+            
+          if (accountsError) {
+            console.error("Error fetching account for squad link:", accountsError);
+          } else if (accounts && accounts.length > 0) {
+            const accountId = accounts[0]?.id;
+            if (!accountId) throw new Error("ID da conta não encontrado");
+            const selectedSquadIds: string[] = data.squad_ids || [];
+
+            // 1. Clear existing relationships
+            await supabase
+              .from('account_squads')
+              .delete()
+              .eq('account_id', accountId);
+
+            // 2. Insert new relationships
+            if (selectedSquadIds.length > 0) {
+              const squadJunctionData = selectedSquadIds.map((sId: string) => ({
+                account_id: accountId,
+                squad_id: sId
+              }));
+
+              const { error: sqJunctionError } = await supabase
+                .from('account_squads')
+                .insert(squadJunctionData);
+
+              if (sqJunctionError) {
+                console.error("Error inserting squad relationships:", sqJunctionError);
+                throw new Error(`Erro ao vincular squads: ${sqJunctionError.message}`);
+              }
+            }
+          }
+        }
 
       toast.success(initialData ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
       onOpenChange(false);
@@ -435,18 +478,19 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Squad responsável</Label>
-                <Select onValueChange={(v) => form.setValue("squad_id", v === "none" ? null : v)} value={form.watch("squad_id") || "none"}>
-                  <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
-                    <SelectValue placeholder="Selecione o squad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum squad</SelectItem>
-                    {availableSquads.map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Squads vinculados</Label>
+                <Controller
+                  control={form.control}
+                  name="squad_ids"
+                  render={({ field }) => (
+                    <MultiSelectSquads
+                      selectedIds={field.value || []}
+                      options={availableSquads}
+                      onChange={field.onChange}
+                      placeholder="Selecionar squads..."
+                    />
+                  )}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Nicho <span className="text-red-500">*</span></Label>
