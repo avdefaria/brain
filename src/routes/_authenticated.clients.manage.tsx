@@ -81,6 +81,24 @@ function ClientsManagePage() {
     return matchesSearch && matchesRisk;
   });
 
+  if (isLoading) {
+    return (
+      <div className="p-8 space-y-8 animate-in fade-in duration-500">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-title font-bold text-[#0E0E16]">Gestão de Clientes</h1>
+            <p className="text-sm text-[#8A8FA3]">Administre sua base de clientes ativos</p>
+          </div>
+        </div>
+        <Card className="border-[#E4E6F0] shadow-sm">
+          <CardContent className="p-12 text-center text-[#8A8FA3]">
+            Carregando clientes...
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const handleEditClient = (client: any) => {
     setSelectedClient(client);
     setIsModalOpen(true);
@@ -140,9 +158,7 @@ function ClientsManagePage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? (
-            <div className="p-8 text-center text-[#8A8FA3]">Carregando clientes...</div>
-          ) : filteredClients && filteredClients.length > 0 ? (
+          {filteredClients && filteredClients.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-[#E4E6F0]">
@@ -167,7 +183,7 @@ function ClientsManagePage() {
                         {client.name}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-[#8A8FA3]">{(client.niches as any)?.name || "--"}</TableCell>
+                    <TableCell className="text-[#8A8FA3]">{(client.niches as any)?.name || (client as any).niche_name || "--"}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
                         {client.client_sales_channels && client.client_sales_channels.length > 0 ? (
