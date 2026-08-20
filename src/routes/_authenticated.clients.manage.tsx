@@ -81,10 +81,14 @@ function ClientsManagePage() {
         `)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching clients:", error);
+        throw error;
+      }
       return data;
     }
   });
+
 
   const filteredClients = clients?.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

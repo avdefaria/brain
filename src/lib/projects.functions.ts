@@ -164,9 +164,9 @@ export const createSquad = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
     const { error } = await supabase
-
       .from('squads')
       .insert({
+
         name: data.name,
         color: data.color,
         leader_id: data.leader_id
@@ -195,9 +195,9 @@ export const updateSquad = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
     const { error } = await supabase
-
       .from('squads')
       .update({
+
         name: data.name,
         color: data.color,
         leader_id: data.leader_id
@@ -223,9 +223,9 @@ export const deleteSquad = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
     const { error } = await supabase
-
       .from('squads')
       .delete()
+
       .eq('id', data.id);
 
     if (error) {
