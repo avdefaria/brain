@@ -1,6 +1,8 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,18 +14,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { createInitialAdmin } from "@/lib/setup.functions";
 
 export const Route = createFileRoute("/auth/login")({
-  beforeLoad: async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) {
-      console.log("Session found in beforeLoad, redirecting to dashboard");
-      throw redirect({ to: "/dashboard" });
-    }
-  },
   component: LoginPage,
 });
 
+
 function LoginPage() {
+  const { session, loading } = useAuth();
   const [email, setEmail] = useState("");
+
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -31,6 +29,13 @@ function LoginPage() {
   const setupAdmin = useServerFn(createInitialAdmin);
 
   useEffect(() => {
+    if (!loading && session) {
+      navigate({ to: "/dashboard", replace: true });
+    }
+  }, [session, loading, navigate]);
+
+  useEffect(() => {
+
     // Only run setup if we are in a dev/prototype environment and not logged in
     const runSetup = async () => {
       try {
