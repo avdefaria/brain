@@ -50,7 +50,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { getClientsWithChannels } from "@/lib/sales-channels.functions";
 
 export const Route = createFileRoute("/_authenticated/clients/manage")({
   component: ClientsManagePage,
@@ -62,29 +63,12 @@ function ClientsManagePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
 
+  const fetchClients = useServerFn(getClientsWithChannels);
+
   const { data: clients, isLoading, refetch } = useQuery({
     queryKey: ['clients-list'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clients")
-        .select(`
-          *,
-          client_sales_channels (
-            sales_channels (name)
-          ),
-          niches (name),
-          accounts (
-            id,
-            account_name,
-            account_squads ( squads (id, name) )
-          )
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error("Error fetching clients:", error);
-        throw error;
-      }
+      const data = await fetchClients();
       return data;
     }
   });
