@@ -131,6 +131,9 @@ export const updateTask = createServerFn({ method: "POST" })
 
     // Log changes to history
     for (const [key, value] of Object.entries(updates)) {
+      // Skip history for technical timer fields
+      if (key === 'time_tracked_seconds' || key === 'timer_started_at') continue;
+
       const oldValue = (oldTask as any)[key];
       // Normalize values for comparison (handle null vs undefined vs empty string)
       const normalizedOld = oldValue === null ? "" : oldValue;
