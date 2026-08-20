@@ -121,11 +121,11 @@ export const updateTask = createServerFn({ method: "POST" })
 
     // Log changes to history
     for (const [key, value] of Object.entries(updates)) {
-      if (oldTask && oldTask[key] !== value) {
+      if (oldTask && (oldTask as any)[key] !== value) {
         await addTaskHistory({
           taskId: id,
           action: `campo_alterado_${key}`,
-          changes: { from: oldTask[key], to: value },
+          changes: { from: (oldTask as any)[key], to: value },
           supabase,
           userId: context.userId
         });
