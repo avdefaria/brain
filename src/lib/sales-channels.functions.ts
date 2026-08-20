@@ -59,6 +59,12 @@ export const getClientsWithChannels = createServerFn({ method: "GET" })
       .select(`
         *,
         squads(name),
+        accounts(
+          id,
+          account_squads(
+            squad_id
+          )
+        ),
         client_sales_channels(
           sales_channels:sales_channel_id(id, name)
         )

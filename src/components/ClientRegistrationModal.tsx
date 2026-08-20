@@ -321,7 +321,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             console.error("Error fetching account for squad link:", accountsError);
           } else if (accounts && accounts.length > 0) {
             const accountId = accounts[0].id;
-            const selectedSquadIds = data.squad_ids || [];
+            const selectedSquadIds: string[] = data.squad_ids || [];
 
             // 1. Clear existing relationships
             await supabase
@@ -331,7 +331,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
 
             // 2. Insert new relationships
             if (selectedSquadIds.length > 0) {
-              const squadJunctionData = selectedSquadIds.map(sId => ({
+              const squadJunctionData = selectedSquadIds.map((sId: string) => ({
                 account_id: accountId,
                 squad_id: sId
               }));
