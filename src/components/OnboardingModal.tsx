@@ -79,7 +79,7 @@ export function OnboardingModal() {
               <div className="w-2 h-2 bg-white rounded-full"></div>
             </div>
             <button 
-              onClick={() => setOpen(false)}
+              onClick={handleSkip}
               className="text-[#8A8FA3] hover:text-[#0E0E16] transition-colors"
             >
               <X className="h-5 w-5" />
