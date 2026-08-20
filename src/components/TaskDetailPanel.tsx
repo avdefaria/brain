@@ -429,7 +429,6 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
               </div>
             </div>
           </div>
-          </div>
 
           <div className="space-y-4 pt-4 border-t border-[#F7F8FC]">
             <h4 className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
