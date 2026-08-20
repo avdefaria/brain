@@ -55,12 +55,12 @@ function DeliveriesPage() {
   const fetchTypes = useServerFn(getDeliverableTypes);
 
   const { data: accountData = [], isLoading: loadingAccounts } = useQuery({
-    queryKey: ["deliveries-accounts"],
-    queryFn: () => fetchAccountDeliveries(),
+    queryKey: ["deliveries-accounts", typeFilter],
+    queryFn: () => fetchAccountDeliveries({ data: { typeId: typeFilter } }),
   });
 
   const { data: typeData = [], isLoading: loadingTypes } = useQuery({
-    queryKey: ["deliveries-types", typeFilter, searchTerm], // Added searchTerm filter logic conceptually
+    queryKey: ["deliveries-types", typeFilter, searchTerm], 
     queryFn: () => fetchTypeDeliveries({ data: { typeId: typeFilter } }), 
   });
 
