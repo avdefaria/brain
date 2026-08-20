@@ -83,6 +83,7 @@ function TasksPage() {
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["tasks"],
     queryFn: () => fetchTasks(),
+    refetchInterval: 5000, // Real-time feel
   });
 
   const [localTasks, setLocalTasks] = useState<any[]>([]);
@@ -357,7 +358,7 @@ function TasksPage() {
       />
 
       <TaskDetailPanel 
-        task={selectedTask}
+        task={tasks.find((t: any) => t.id === selectedTask?.id) || selectedTask}
         isOpen={!!selectedTask}
         onOpenChange={(open) => !open && setSelectedTask(null)}
       />

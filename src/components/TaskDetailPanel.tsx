@@ -38,7 +38,8 @@ import {
   getTags, 
   getProfiles,
   addTaskAttachment,
-  deleteTaskAttachment
+  deleteTaskAttachment,
+  deleteTask
 } from "@/lib/tasks.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -72,6 +73,7 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
   const createTagFn = useServerFn(createTag);
   const addAttachmentFn = useServerFn(addTaskAttachment);
   const deleteAttachmentFn = useServerFn(deleteTaskAttachment);
+  const deleteTaskFn = useServerFn(deleteTask);
 
   useEffect(() => {
     let interval: any;
@@ -157,6 +159,30 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
     }
   };
 
+  const handleDeleteTask = async () => {
+    if (!window.confirm("Tem certeza que deseja excluir esta tarefa?")) return;
+    
+    try {
+      await deleteTaskFn({ data: { id: task.id } });
+      toast.success("Tarefa excluída");
+      onOpenChange(false);
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    } catch (error) {
+      toast.error("Erro ao excluir tarefa");
+    }
+  };
+
+  const handleShare = (type: 'email' | 'whatsapp') => {
+    const text = `Tarefa: ${task.title}\nPrioridade: ${task.priority}\nEtapa: ${task.stage}\nLink: ${window.location.href}`;
+    const subject = `Compartilhando tarefa: ${task.title}`;
+    
+    if (type === 'email') {
+      window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`);
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    }
+  };
+
   if (!task) return null;
 
   const currentTagIds = task.tags?.map((t: any) => t.id) || [];
@@ -186,10 +212,27 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
             </Select>
 
             <div className="flex gap-2">
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-[#8A8FA3] hover:bg-white rounded-full border border-transparent hover:border-[#E4E6F0]">
-                <Share2 className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-[#8A8FA3] hover:bg-white rounded-full border border-transparent hover:border-[#E4E6F0]">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-[#8A8FA3] hover:bg-white rounded-full border border-transparent hover:border-[#E4E6F0]">
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-40 p-1" align="end">
+                  <Button variant="ghost" className="w-full justify-start text-xs" onClick={() => handleShare('email')}>
+                    Via E-mail
+                  </Button>
+                  <Button variant="ghost" className="w-full justify-start text-xs" onClick={() => handleShare('whatsapp')}>
+                    Via WhatsApp
+                  </Button>
+                </PopoverContent>
+              </Popover>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-[#8A8FA3] hover:bg-white hover:text-red-500 rounded-full border border-transparent hover:border-[#E4E6F0]"
+                onClick={handleDeleteTask}
+              >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
@@ -335,13 +378,15 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
               {task.attachments?.map((file: any) => (
                 <div key={file.id} className="p-2 bg-[#F7F8FC] border border-[#E4E6F0] rounded-xl flex items-center gap-2 group relative">
                   <FileText className="h-4 w-4 text-[#8A8FA3]" />
-                  <a href={file.file_url} target="_blank" rel="noreferrer" className="text-[10px] font-medium truncate flex-1 hover:text-[#3D4FE8]">
+                  <a href={file.file_path} target="_blank" rel="noreferrer" className="text-[10px] font-medium truncate flex-1 hover:text-[#3D4FE8]">
                     {file.file_name}
                   </a>
                   <button 
                     onClick={async () => {
-                      await deleteAttachmentFn({ data: { id: file.id } });
-                      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                      if (confirm(`Excluir anexo ${file.file_name}?`)) {
+                        await deleteAttachmentFn({ data: { id: file.id, taskId: task.id, fileName: file.file_name } });
+                        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                      }
                     }}
                     className="opacity-0 group-hover:opacity-100 p-1 text-red-500"
                   >
@@ -382,6 +427,34 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-[#F7F8FC]">
+            <h4 className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
+              <History className="h-3 w-3" /> Histórico
+            </h4>
+            <div className="space-y-3">
+              {task.history?.map((entry: any) => (
+                <div key={entry.id} className="text-[10px] flex flex-col gap-0.5 border-l-2 border-[#E4E6F0] pl-3 py-1">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-[#0E0E16]">{entry.user_name}</span>
+                    <span className="text-[#8A8FA3]">{new Date(entry.created_at).toLocaleString('pt-BR')}</span>
+                  </div>
+                  <span className="text-[#8A8FA3]">
+                    {entry.action === 'campo_alterado_stage' ? `Moveu para ${entry.changes.to}` :
+                     entry.action === 'campo_alterado_priority' ? `Alterou prioridade para ${entry.changes.to}` :
+                     entry.action === 'campo_alterado_deadline' ? `Alterou prazo para ${entry.changes.to}` :
+                     entry.action === 'anexo_adicionado' ? `Adicionou anexo: ${entry.changes.fileName}` :
+                     entry.action === 'anexo_removido' ? `Removeu anexo: ${entry.changes.fileName}` :
+                     entry.action === 'tags_alteradas' ? 'Atualizou as tags' :
+                     entry.action.replace('campo_alterado_', 'Alterou ')}
+                  </span>
+                </div>
+              ))}
+              {(!task.history || task.history.length === 0) && (
+                <p className="text-[10px] text-[#8A8FA3] italic">Nenhum histórico registrado.</p>
+              )}
             </div>
           </div>
         </div>
