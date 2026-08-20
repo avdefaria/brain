@@ -40,11 +40,3 @@ function AuthenticatedLayout() {
   );
 }
 
-
-function AuthenticatedLayout() {
-  return (
-    <AppShell>
-      <Outlet />
-    </AppShell>
-  );
-}
