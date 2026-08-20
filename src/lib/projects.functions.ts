@@ -254,9 +254,9 @@ export const createSpecialProject = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
     const { error } = await supabase
-
       .from('special_projects' as any)
       .insert(data);
+
     
     if (error) throw error;
     return { success: true };
