@@ -25,7 +25,6 @@ import { Route as AuthenticatedClientsContractsRouteImport } from './routes/_aut
 import { Route as AuthenticatedClientsManageRouteImport } from './routes/_authenticated.clients.manage'
 import { Route as AuthenticatedProjectsContentApprovalRouteImport } from './routes/_authenticated.projects.content-approval'
 import { Route as AuthenticatedProjectsDeliverablesRouteImport } from './routes/_authenticated.projects.deliverables'
-import { Route as AuthenticatedProjectsDeliveriesRouteImport } from './routes/_authenticated.projects.deliveries'
 import { Route as AuthenticatedProjectsTasksRouteImport } from './routes/_authenticated.projects.tasks'
 import { Route as PublicApprovalTokenRouteImport } from './routes/public.approval.$token'
 
@@ -115,12 +114,6 @@ const AuthenticatedProjectsDeliverablesRoute =
     path: '/deliverables',
     getParentRoute: () => AuthenticatedProjectsRoute,
   } as any)
-const AuthenticatedProjectsDeliveriesRoute =
-  AuthenticatedProjectsDeliveriesRouteImport.update({
-    id: '/deliveries',
-    path: '/deliveries',
-    getParentRoute: () => AuthenticatedProjectsRoute,
-  } as any)
 const AuthenticatedProjectsTasksRoute =
   AuthenticatedProjectsTasksRouteImport.update({
     id: '/tasks',
@@ -148,7 +141,6 @@ export interface FileRoutesByFullPath {
   '/clients/manage': typeof AuthenticatedClientsManageRoute
   '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
-  '/projects/deliveries': typeof AuthenticatedProjectsDeliveriesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
   '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
@@ -168,7 +160,6 @@ export interface FileRoutesByTo {
   '/clients/manage': typeof AuthenticatedClientsManageRoute
   '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
-  '/projects/deliveries': typeof AuthenticatedProjectsDeliveriesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
   '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
@@ -190,7 +181,6 @@ export interface FileRoutesById {
   '/_authenticated/clients/manage': typeof AuthenticatedClientsManageRoute
   '/_authenticated/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/_authenticated/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
-  '/_authenticated/projects/deliveries': typeof AuthenticatedProjectsDeliveriesRoute
   '/_authenticated/projects/tasks': typeof AuthenticatedProjectsTasksRoute
   '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
@@ -212,7 +202,6 @@ export interface FileRouteTypes {
     | '/clients/manage'
     | '/projects/content-approval'
     | '/projects/deliverables'
-    | '/projects/deliveries'
     | '/projects/tasks'
     | '/public/approval/$token'
     | '/clients/'
@@ -232,7 +221,6 @@ export interface FileRouteTypes {
     | '/clients/manage'
     | '/projects/content-approval'
     | '/projects/deliverables'
-    | '/projects/deliveries'
     | '/projects/tasks'
     | '/public/approval/$token'
     | '/clients'
@@ -253,7 +241,6 @@ export interface FileRouteTypes {
     | '/_authenticated/clients/manage'
     | '/_authenticated/projects/content-approval'
     | '/_authenticated/projects/deliverables'
-    | '/_authenticated/projects/deliveries'
     | '/_authenticated/projects/tasks'
     | '/public/approval/$token'
     | '/_authenticated/clients/'
@@ -381,13 +368,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsDeliverablesRouteImport
       parentRoute: typeof AuthenticatedProjectsRoute
     }
-    '/_authenticated/projects/deliveries': {
-      id: '/_authenticated/projects/deliveries'
-      path: '/deliveries'
-      fullPath: '/projects/deliveries'
-      preLoaderRoute: typeof AuthenticatedProjectsDeliveriesRouteImport
-      parentRoute: typeof AuthenticatedProjectsRoute
-    }
     '/_authenticated/projects/tasks': {
       id: '/_authenticated/projects/tasks'
       path: '/tasks'
@@ -408,7 +388,6 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedProjectsRouteChildren {
   AuthenticatedProjectsContentApprovalRoute: typeof AuthenticatedProjectsContentApprovalRoute
   AuthenticatedProjectsDeliverablesRoute: typeof AuthenticatedProjectsDeliverablesRoute
-  AuthenticatedProjectsDeliveriesRoute: typeof AuthenticatedProjectsDeliveriesRoute
   AuthenticatedProjectsTasksRoute: typeof AuthenticatedProjectsTasksRoute
 }
 
@@ -417,7 +396,6 @@ const AuthenticatedProjectsRouteChildren: AuthenticatedProjectsRouteChildren = {
     AuthenticatedProjectsContentApprovalRoute,
   AuthenticatedProjectsDeliverablesRoute:
     AuthenticatedProjectsDeliverablesRoute,
-  AuthenticatedProjectsDeliveriesRoute: AuthenticatedProjectsDeliveriesRoute,
   AuthenticatedProjectsTasksRoute: AuthenticatedProjectsTasksRoute,
 }
 

@@ -62,7 +62,7 @@ function SidebarItem({ icon: Icon, label, href, collapsed, active, children }: S
     <div>
       <div
         className={cn(
-          "flex items-center justify-between gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium cursor-pointer group",
+          "flex items-center justify-between gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium group",
           isCurrentlyActive ? "bg-[#3D4FE8] text-white" : "text-[#8A8FA3] hover:bg-[#F7F8FC] hover:text-[#0E0E16]",
           collapsed && "justify-center px-2"
         )}
@@ -77,6 +77,7 @@ function SidebarItem({ icon: Icon, label, href, collapsed, active, children }: S
         
         {!collapsed && children && (
           <button 
+            type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -84,7 +85,7 @@ function SidebarItem({ icon: Icon, label, href, collapsed, active, children }: S
             }}
             className="p-1 hover:bg-white/10 rounded-md transition-colors"
           >
-            <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+            <ChevronDown className={cn("h-4 w-4 transition-transform", (isOpen || hasActiveChild) && "rotate-180")} />
           </button>
         )}
       </div>
@@ -176,7 +177,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               collapsed={sidebarCollapsed}
               active={location.pathname.startsWith("/projects")}
               children={[
-                { label: "Gestão de Entregas", href: "/projects/deliveries" },
                 { label: "Tarefas", href: "/projects/tasks" },
                 { label: "Gestão de Entregáveis", href: "/projects/deliverables" },
                 { label: "Aprovação de Conteúdo", href: "/projects/content-approval" },
