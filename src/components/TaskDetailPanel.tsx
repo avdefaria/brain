@@ -20,13 +20,34 @@ import {
   Flag,
   User,
   Tag as TagIcon,
-  Briefcase
+  Briefcase,
+  Plus,
+  X,
+  FileText
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { useServerFn } from "@tanstack/react-start";
+import { 
+  updateTask, 
+  updateTaskAssignees, 
+  updateTaskTags, 
+  createTag, 
+  getTags, 
+  getProfiles,
+  addTaskAttachment,
+  deleteTaskAttachment
+} from "@/lib/tasks.functions";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelectProfiles } from "./MultiSelectProfiles";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface TaskDetailPanelProps {
   task: any;
@@ -35,8 +56,22 @@ interface TaskDetailPanelProps {
 }
 
 export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelProps) {
+  const queryClient = useQueryClient();
   const [timerActive, setTimerActive] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  
+  // Queries
+  const { data: allTags = [] } = useQuery({ queryKey: ['tags'], queryFn: () => getTags() });
+  const { data: allProfiles = [] } = useQuery({ queryKey: ['profiles'], queryFn: () => getProfiles() });
+
+  // Mutations
+  const updateTaskFn = useServerFn(updateTask);
+  const updateAssigneesFn = useServerFn(updateTaskAssignees);
+  const updateTagsFn = useServerFn(updateTaskTags);
+  const createTagFn = useServerFn(createTag);
+  const addAttachmentFn = useServerFn(addTaskAttachment);
+  const deleteAttachmentFn = useServerFn(deleteTaskAttachment);
 
   useEffect(() => {
     let interval: any;
@@ -55,21 +90,101 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleUpdate = async (updates: any) => {
+    try {
+      await updateTaskFn({ data: { id: task.id, ...updates } });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success("Tarefa atualizada");
+    } catch (error) {
+      toast.error("Erro ao atualizar tarefa");
+    }
+  };
+
+  const handleAssigneesChange = async (userIds: string[]) => {
+    try {
+      await updateAssigneesFn({ data: { taskId: task.id, userIds } });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success("Responsáveis atualizados");
+    } catch (error) {
+      toast.error("Erro ao atualizar responsáveis");
+    }
+  };
+
+  const handleTagsChange = async (tagIds: string[]) => {
+    try {
+      await updateTagsFn({ data: { taskId: task.id, tagIds } });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    } catch (error) {
+      toast.error("Erro ao atualizar tags");
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${task.id}/${fileName}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('task-attachments')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('task-attachments')
+        .getPublicUrl(filePath);
+
+      await addAttachmentFn({
+        data: {
+          taskId: task.id,
+          fileName: file.name,
+          fileUrl: publicUrl
+        }
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success("Arquivo enviado");
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro no upload");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (!task) return null;
+
+  const currentTagIds = task.tags?.map((t: any) => t.id) || [];
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-[500px] border-[#E4E6F0] p-0 flex flex-col">
         <SheetHeader className="p-6 bg-[#F7F8FC] border-b border-[#E4E6F0] space-y-4">
           <div className="flex items-center justify-between">
-            <Badge className={cn(
-              "text-[9px] uppercase font-bold border-none rounded-full px-3 py-1",
-              task.priority === 'high' ? 'bg-red-100 text-red-600' : 
-              task.priority === 'medium' ? 'bg-amber-100 text-amber-600' : 
-              'bg-green-100 text-green-600'
-            )}>
-              {task.priority}
-            </Badge>
+            <Select 
+              value={task.priority} 
+              onValueChange={(val) => handleUpdate({ priority: val })}
+            >
+              <SelectTrigger className={cn(
+                "w-fit h-7 text-[9px] uppercase font-bold border-none rounded-full px-3 py-0",
+                task.priority === 'high' ? 'bg-red-100 text-red-600' : 
+                task.priority === 'medium' ? 'bg-amber-100 text-amber-600' : 
+                'bg-green-100 text-green-600'
+              )}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Baixa</SelectItem>
+                <SelectItem value="medium">Média</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
+              </SelectContent>
+            </Select>
+
             <div className="flex gap-2">
               <Button variant="ghost" size="icon" className="h-8 w-8 text-[#8A8FA3] hover:bg-white rounded-full border border-transparent hover:border-[#E4E6F0]">
                 <Share2 className="h-4 w-4" />
@@ -91,34 +206,42 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
               <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
                 <Clock className="h-3 w-3" /> Etapa
               </p>
-              <p className="text-sm font-bold text-[#0E0E16]">{task.stage}</p>
+              <Select value={task.stage} onValueChange={(val) => handleUpdate({ stage: val })}>
+                <SelectTrigger className="h-8 text-sm font-bold bg-transparent border-none p-0 focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todo">A Fazer</SelectItem>
+                  <SelectItem value="doing">Fazendo</SelectItem>
+                  <SelectItem value="review">Revisão</SelectItem>
+                  <SelectItem value="done">Concluído</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
                 <Calendar className="h-3 w-3" /> Prazo
               </p>
-              <p className="text-sm font-bold text-[#0E0E16]">{task.deadline}</p>
+              <Input 
+                type="date" 
+                className="h-8 text-xs font-bold bg-transparent border-none p-0 focus:ring-0" 
+                value={task.raw_deadline ? new Date(task.raw_deadline).toISOString().split('T')[0] : ''}
+                onChange={(e) => handleUpdate({ deadline: e.target.value })}
+              />
             </div>
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
+
+            <div className="space-y-1 col-span-2">
+              <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2 mb-2">
                 <User className="h-3 w-3" /> Responsáveis
               </p>
-              <div className="flex -space-x-2">
-                {task.assignees?.map((a: string, i: number) => (
-                  <Avatar key={i} className="h-6 w-6 border-2 border-white ring-1 ring-[#E4E6F0]">
-                    <AvatarFallback className="bg-[#3D4FE8] text-[8px] text-white font-bold">{a}</AvatarFallback>
-                  </Avatar>
-                ))}
-              </div>
+              <MultiSelectProfiles 
+                selectedIds={task.assignees?.map((a: any) => a.id) || []}
+                options={allProfiles}
+                onChange={handleAssigneesChange}
+              />
             </div>
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
-                <TagIcon className="h-3 w-3" /> Tipo de Entregável
-              </p>
-              <p className="text-sm font-bold text-[#0E0E16]">
-                {task.deliverable_types?.name || "Não definido"}
-              </p>
-            </div>
+
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
                 <Briefcase className="h-3 w-3" /> SKU / Código
@@ -127,12 +250,105 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
                 {task.sku_reference || "N/A"}
               </p>
             </div>
+
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
+                <TagIcon className="h-3 w-3" /> Tags
+              </p>
+              <div className="flex flex-wrap gap-1 items-center">
+                {task.tags?.map((tag: any) => (
+                  <Badge key={tag.id} variant="secondary" className="text-[9px] bg-[#F7F8FC] border-[#E4E6F0] text-[#8A8FA3]">
+                    {tag.name}
+                    <button onClick={() => handleTagsChange(currentTagIds.filter((id: string) => id !== tag.id))}>
+                      <X className="h-2 w-2 ml-1" />
+                    </button>
+                  </Badge>
+                ))}
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-5 w-5 rounded-full border-[#E4E6F0]">
+                      <Plus className="h-3 w-3 text-[#8A8FA3]" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48 p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar tag..." className="h-8" />
+                      <CommandList>
+                        <CommandEmpty>
+                          <Button 
+                            variant="ghost" 
+                            className="w-full text-xs justify-start"
+                            onClick={async () => {
+                              const name = prompt("Nome da nova tag:");
+                              if (name) {
+                                const newTag = await createTagFn({ data: { name } });
+                                handleTagsChange([...currentTagIds, newTag.id]);
+                              }
+                            }}
+                          >
+                            + Criar tag
+                          </Button>
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {allTags.filter((t: any) => !currentTagIds.includes(t.id)).map((tag: any) => (
+                            <CommandItem
+                              key={tag.id}
+                              onSelect={() => handleTagsChange([...currentTagIds, tag.id])}
+                              className="text-xs"
+                            >
+                              {tag.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-3">
             <h4 className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest">Descrição</h4>
-            <div className="p-4 bg-[#F7F8FC] rounded-2xl border border-[#E4E6F0] text-sm text-[#0E0E16]">
-              {task.description || "Sem descrição adicional."}
+            <Textarea 
+              className="p-4 bg-[#F7F8FC] rounded-2xl border border-[#E4E6F0] text-sm text-[#0E0E16] min-h-[100px]"
+              value={task.description || ""}
+              onChange={(e) => handleUpdate({ description: e.target.value })}
+              placeholder="Adicione uma descrição..."
+            />
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <h4 className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
+                <Paperclip className="h-3 w-3" /> Anexos
+              </h4>
+              <label className="cursor-pointer">
+                <Input type="file" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
+                <div className="text-[10px] font-bold text-[#3D4FE8] uppercase hover:underline">
+                  {isUploading ? "Enviando..." : "+ Adicionar"}
+                </div>
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {task.attachments?.map((file: any) => (
+                <div key={file.id} className="p-2 bg-[#F7F8FC] border border-[#E4E6F0] rounded-xl flex items-center gap-2 group relative">
+                  <FileText className="h-4 w-4 text-[#8A8FA3]" />
+                  <a href={file.file_url} target="_blank" rel="noreferrer" className="text-[10px] font-medium truncate flex-1 hover:text-[#3D4FE8]">
+                    {file.file_name}
+                  </a>
+                  <button 
+                    onClick={async () => {
+                      await deleteAttachmentFn({ data: { id: file.id } });
+                      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-red-500"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -171,8 +387,12 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
         </div>
 
         <div className="p-6 border-t border-[#E4E6F0] bg-[#F7F8FC] flex gap-3">
-          <Button className="flex-1 rounded-full bg-[#22C55E] hover:bg-[#22C55E]/90 font-bold">
-            <CheckCircle2 className="h-4 w-4 mr-2" /> Concluir Tarefa
+          <Button 
+            onClick={() => handleUpdate({ stage: 'done' })}
+            className="flex-1 rounded-full bg-[#22C55E] hover:bg-[#22C55E]/90 font-bold"
+            disabled={task.stage === 'done'}
+          >
+            <CheckCircle2 className="h-4 w-4 mr-2" /> {task.stage === 'done' ? 'Tarefa Concluída' : 'Concluir Tarefa'}
           </Button>
         </div>
       </SheetContent>
