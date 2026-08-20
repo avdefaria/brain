@@ -58,7 +58,6 @@ interface TaskDetailPanelProps {
 
 export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelProps) {
   const queryClient = useQueryClient();
-  const [seconds, setSeconds] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [localDescription, setLocalDescription] = useState(task?.description || "");
   const [displayTime, setDisplayTime] = useState(0);
@@ -115,7 +114,10 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
         const start = new Date(task.timer_started_at).getTime();
         const now = new Date().getTime();
         const diff = Math.floor((now - start) / 1000);
-        const newTotal = (task.time_tracked_seconds || 0) + diff;
+        
+        // CRITICAL: Accumulate with EXISTING value
+        const currentTotal = task.time_tracked_seconds || 0;
+        const newTotal = currentTotal + diff;
         
         await updateTaskFn({ 
           data: { 
@@ -124,7 +126,19 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
             timer_started_at: null 
           } 
         });
-        toast.success("Cronômetro parado e tempo salvo");
+        
+        // Log clean history entry for time tracking
+        const { userId } = await supabase.auth.getUser().then(res => ({ userId: res.data.user?.id }));
+        if (userId) {
+          await supabase.from('task_history').insert({
+            task_id: task.id,
+            user_id: userId,
+            action: `registrou ${formatTime(diff)} de trabalho`,
+            changes: { session_seconds: diff, new_total: newTotal }
+          });
+        }
+
+        toast.success(`Cronômetro parado: +${formatTime(diff)}`);
       } else {
         // Start timer
         await updateTaskFn({ 
@@ -302,33 +316,35 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
-                <Clock className="h-3 w-3" /> Etapa
-              </p>
-              <Select value={task.stage} onValueChange={(val) => handleUpdate({ stage: val })}>
-                <SelectTrigger className="h-8 text-sm font-bold bg-transparent border-none p-0 focus:ring-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todo">A Fazer</SelectItem>
-                  <SelectItem value="doing">Fazendo</SelectItem>
-                  <SelectItem value="review">Revisão</SelectItem>
-                  <SelectItem value="done">Concluído</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
-                <Calendar className="h-3 w-3" /> Prazo
-              </p>
-              <Input 
-                type="date" 
-                className="h-8 text-xs font-bold bg-transparent border-none p-0 focus:ring-0" 
-                value={task.raw_deadline ? new Date(task.raw_deadline).toISOString().split('T')[0] : ''}
-                onChange={(e) => handleUpdate({ deadline: e.target.value })}
-              />
+            <div className="flex items-center justify-between pt-4 border-t border-[#F7F8FC]">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
+                  <Clock className="h-3 w-3" /> Tempo · Total: {formatTime(displayTime)}
+                </p>
+                <Select value={task.stage} onValueChange={(val) => handleUpdate({ stage: val })}>
+                  <SelectTrigger className="h-8 text-sm font-bold bg-transparent border-none p-0 focus:ring-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todo">A Fazer</SelectItem>
+                    <SelectItem value="doing">Fazendo</SelectItem>
+                    <SelectItem value="review">Revisão</SelectItem>
+                    <SelectItem value="done">Concluído</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-widest flex items-center gap-2">
+                  <Calendar className="h-3 w-3" /> Prazo
+                </p>
+                <Input 
+                  type="date" 
+                  className="h-8 text-xs font-bold bg-transparent border-none p-0 focus:ring-0" 
+                  value={task.raw_deadline ? new Date(task.raw_deadline).toISOString().split('T')[0] : ''}
+                  onChange={(e) => handleUpdate({ deadline: e.target.value })}
+                />
+              </div>
             </div>
 
             <div className="space-y-1 col-span-2">
