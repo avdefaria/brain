@@ -23,7 +23,8 @@ import {
   Wrench,
   User,
   CreditCard,
-  Target
+  Target,
+  ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,28 +52,55 @@ interface SidebarItemProps {
 
 function SidebarItem({ icon: Icon, label, href, collapsed, active, children }: SidebarItemProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+
+  // Se houver submenus, o item principal deve expandir se um filho estiver ativo
+  const hasActiveChild = children?.some(child => location.pathname === child.href);
+  const isCurrentlyActive = active || hasActiveChild;
 
   return (
     <div>
-      <Link
-        to={href}
+      <div
         className={cn(
-          "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium",
-          active ? "bg-[#3D4FE8] text-white" : "text-[#8A8FA3] hover:bg-[#F7F8FC] hover:text-[#0E0E16]",
+          "flex items-center justify-between gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium cursor-pointer group",
+          isCurrentlyActive ? "bg-[#3D4FE8] text-white" : "text-[#8A8FA3] hover:bg-[#F7F8FC] hover:text-[#0E0E16]",
           collapsed && "justify-center px-2"
         )}
-        onClick={() => children && setIsOpen(!isOpen)}
       >
-        <Icon className="h-5 w-5 shrink-0" />
-        {!collapsed && <span>{label}</span>}
-      </Link>
-      {!collapsed && isOpen && children && (
+        <Link
+          to={href}
+          className="flex items-center gap-3 flex-1"
+        >
+          <Icon className="h-5 w-5 shrink-0" />
+          {!collapsed && <span>{label}</span>}
+        </Link>
+        
+        {!collapsed && children && (
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsOpen(!isOpen);
+            }}
+            className="p-1 hover:bg-white/10 rounded-md transition-colors"
+          >
+            <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+          </button>
+        )}
+      </div>
+
+      {!collapsed && (isOpen || hasActiveChild) && children && (
         <div className="ml-8 mt-1 space-y-1">
           {children.map((child) => (
             <Link
               key={child.href}
               to={child.href}
-              className="block px-3 py-2 text-xs text-[#8A8FA3] hover:text-[#0E0E16] transition-colors"
+              className={cn(
+                "block px-3 py-2 text-xs transition-colors rounded-md",
+                location.pathname === child.href 
+                  ? "text-[#3D4FE8] font-bold bg-[#F7F8FC]" 
+                  : "text-[#8A8FA3] hover:text-[#0E0E16] hover:bg-[#F7F8FC]"
+              )}
             >
               {child.label}
             </Link>
