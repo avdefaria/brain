@@ -23,7 +23,7 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("*");
+      .select("id, full_name, avatar_url, function, squad_id, created_at, updated_at");
 
     if (profilesError) throw profilesError;
 
