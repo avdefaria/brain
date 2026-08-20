@@ -100,7 +100,9 @@ function ClientsManagePage() {
   }
 
   const handleEditClient = (client: any) => {
-    setSelectedClient(client);
+    // Flatten account_squads from all accounts for the modal
+    const account_squads = client.accounts?.flatMap((acc: any) => acc.account_squads || []) || [];
+    setSelectedClient({ ...client, account_squads });
     setIsModalOpen(true);
   };
 

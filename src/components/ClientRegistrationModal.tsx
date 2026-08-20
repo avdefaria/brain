@@ -320,7 +320,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
           if (accountsError) {
             console.error("Error fetching account for squad link:", accountsError);
           } else if (accounts && accounts.length > 0) {
-            const accountId = accounts[0].id;
+            const accountId = accounts[0]?.id;
+            if (!accountId) throw new Error("ID da conta não encontrado");
             const selectedSquadIds: string[] = data.squad_ids || [];
 
             // 1. Clear existing relationships
