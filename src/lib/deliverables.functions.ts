@@ -20,7 +20,6 @@ export const getDeliveriesByAccount = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const supabase = context.supabase;
 
-    // 1. Get Accounts with squads, contracts and clients
     const { data: accountsData, error: accountsError } = await supabase
       .from("accounts")
       .select(`
@@ -28,6 +27,7 @@ export const getDeliveriesByAccount = createServerFn({ method: "GET" })
         account_name,
         health_score,
         status,
+        client_id,
         clients (
           id,
           name
@@ -48,15 +48,14 @@ export const getDeliveriesByAccount = createServerFn({ method: "GET" })
 
     if (accountsError) throw accountsError;
 
-    // 2. Get all tasks to calculate progress
     const { data: tasks, error: tasksError } = await supabase
       .from("tasks")
-      .select("id, stage, deliverable_type_id, client_id");
+      .select("id, stage, deliverable_type_id, client_id, account_id");
 
     if (tasksError) throw tasksError;
 
     return accountsData.map((acc: any) => {
-      const clientTasks = tasks.filter(t => t.client_id === acc.id || t.client_id === acc.clients?.id);
+      const clientTasks = tasks.filter(t => t.account_id === acc.id || t.client_id === acc.client_id);
       const total = clientTasks.length;
       const completed = clientTasks.filter(t => t.stage === 'done').length;
       const progress = total > 0 ? (completed / total) * 100 : 0;
@@ -70,7 +69,8 @@ export const getDeliveriesByAccount = createServerFn({ method: "GET" })
         contract: acc.contracts?.[0] || null,
         totalTasks: total,
         completedTasks: completed,
-        progress
+        progress,
+        client_id: acc.client_id
       };
     });
   });
@@ -78,7 +78,8 @@ export const getDeliveriesByAccount = createServerFn({ method: "GET" })
 export const getDeliverablesProgress = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({
-    accountId: z.string().optional()
+    accountId: z.string().optional(),
+    typeId: z.string().optional()
   }).parse(data))
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
@@ -90,10 +91,14 @@ export const getDeliverablesProgress = createServerFn({ method: "GET" })
 
     if (typesError) throw typesError;
 
-    let query = supabase.from("tasks").select("id, stage, deliverable_type_id, client_id");
+    let query = supabase.from("tasks").select("id, stage, deliverable_type_id, client_id, account_id");
     
     if (data.accountId) {
-      query = query.eq("client_id", data.accountId);
+      query = query.or(`client_id.eq.${data.accountId},account_id.eq.${data.accountId}`);
+    }
+
+    if (data.typeId && data.typeId !== 'all') {
+      query = query.eq("deliverable_type_id", data.typeId);
     }
 
     const { data: tasks, error: tasksError } = await query;
