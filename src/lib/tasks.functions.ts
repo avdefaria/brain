@@ -21,10 +21,7 @@ export const getTasks = createServerFn({ method: "GET" })
           tags (id, name)
         ),
         task_attachments (*),
-        task_history (
-          *,
-          profiles!task_history_user_id_profiles_fkey (full_name)
-        )
+        task_history (*)
       `)
       .order("position", { ascending: true });
     
@@ -32,6 +29,12 @@ export const getTasks = createServerFn({ method: "GET" })
       console.error("Error fetching tasks:", error);
       throw error;
     }
+
+    // Resolve history author names separately (avoids fragile embedded join)
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, full_name");
+    const nameById = new Map((profilesData || []).map((p: any) => [p.id, p.full_name]));
 
     return (data || []).map(task => ({
       id: task.id,
@@ -56,10 +59,13 @@ export const getTasks = createServerFn({ method: "GET" })
         ? task.task_tags.map((tt: any) => tt.tags).filter(Boolean)
         : [],
       attachments: task.task_attachments || [],
-      history: (task.task_history || []).map((h: any) => ({
-        ...h,
-        user_name: h.profiles?.full_name || "Sistema"
-      })),
+      history: (Array.isArray(task.task_history) ? task.task_history : [])
+        .slice()
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .map((h: any) => ({
+          ...h,
+          user_name: nameById.get(h.user_id) || "Sistema"
+        })),
       position: task.position || 0,
       deliverable_types: task.deliverable_types,
       sku_reference: task.sku_reference,
