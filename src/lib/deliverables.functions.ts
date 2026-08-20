@@ -17,7 +17,10 @@ export const getDeliverableTypes = createServerFn({ method: "GET" })
 
 export const getDeliveriesByAccount = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((data) => z.object({
+    typeId: z.string().optional()
+  }).parse(data))
+  .handler(async ({ data, context }) => {
     const supabase = context.supabase;
 
     const { data: accountsData, error: accountsError } = await supabase
@@ -48,10 +51,13 @@ export const getDeliveriesByAccount = createServerFn({ method: "GET" })
 
     if (accountsError) throw accountsError;
 
-    const { data: tasks, error: tasksError } = await supabase
-      .from("tasks")
-      .select("id, stage, deliverable_type_id, client_id, account_id");
+    let query = supabase.from("tasks").select("id, stage, deliverable_type_id, client_id, account_id");
+    
+    if (data.typeId && data.typeId !== 'all') {
+      query = query.eq("deliverable_type_id", data.typeId);
+    }
 
+    const { data: tasks, error: tasksError } = await query;
     if (tasksError) throw tasksError;
 
     return accountsData.map((acc: any) => {
