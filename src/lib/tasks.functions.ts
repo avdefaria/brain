@@ -36,7 +36,9 @@ export const getTasks = createServerFn({ method: "GET" })
       raw_deadline: task.deadline,
       stage: task.stage || "todo",
       assignees: Array.isArray(task.task_assignees) 
-        ? task.task_assignees.map((p: any) => p.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || "??") 
+        ? task.task_assignees
+            .filter((p: any) => p.profiles)
+            .map((p: any) => p.profiles.full_name?.split(' ').map((n: string) => n[0]).join('') || "??") 
         : [],
       position: task.position || 0,
       deliverable_types: task.deliverable_types,
