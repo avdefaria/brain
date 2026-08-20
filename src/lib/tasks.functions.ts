@@ -70,8 +70,8 @@ export const getTasks = createServerFn({ method: "GET" })
       deliverable_types: task.deliverable_types,
       sku_reference: task.sku_reference,
       description: task.description,
-      time_tracked_seconds: task.time_tracked_seconds || 0,
-      timer_started_at: task.timer_started_at
+      time_tracked_seconds: (task as any).time_tracked_seconds || 0,
+      timer_started_at: (task as any).timer_started_at
     }));
   });
 
