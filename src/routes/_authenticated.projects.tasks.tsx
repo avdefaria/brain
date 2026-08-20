@@ -91,7 +91,7 @@ function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<any>(null);
 
   useEffect(() => {
-    if (tasks.length > 0) {
+    if (tasks) {
       setLocalTasks(tasks);
     }
   }, [tasks]);
@@ -142,10 +142,40 @@ function TasksPage() {
   };
 
   const kpis = [
-    { label: "Tarefas", value: "42/50", icon: CheckCircle2, color: "text-[#3D4FE8]" },
-    { label: "Em progresso", value: "8", icon: Play, color: "text-[#F5A524]" },
-    { label: "Em atraso", value: "3", icon: AlertCircle, color: "text-[#EF4444]" },
-    { label: "Entregues no mês", value: "35", icon: Check, color: "text-[#22C55E]" },
+    { 
+      label: "Tarefas", 
+      value: `${tasks.filter((t: any) => t.stage === 'done').length}/${tasks.length}`, 
+      icon: CheckCircle2, 
+      color: "text-[#3D4FE8]" 
+    },
+    { 
+      label: "Em progresso", 
+      value: tasks.filter((t: any) => t.stage === 'doing').length.toString(), 
+      icon: Play, 
+      color: "text-[#F5A524]" 
+    },
+    { 
+      label: "Em atraso", 
+      value: tasks.filter((t: any) => {
+        if (t.stage === 'done' || !t.raw_deadline) return false;
+        return new Date(t.raw_deadline) < new Date();
+      }).length.toString(), 
+      icon: AlertCircle, 
+      color: "text-[#EF4444]" 
+    },
+    { 
+      label: "Entregues no mês", 
+      value: tasks.filter((t: any) => {
+        if (t.stage !== 'done') return false;
+        // Approximation using deadline as completion date is missing
+        if (!t.raw_deadline) return false;
+        const deadline = new Date(t.raw_deadline);
+        const now = new Date();
+        return deadline.getMonth() === now.getMonth() && deadline.getFullYear() === now.getFullYear();
+      }).length.toString(), 
+      icon: Check, 
+      color: "text-[#22C55E]" 
+    },
   ];
 
   return (

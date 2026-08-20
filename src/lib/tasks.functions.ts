@@ -12,27 +12,33 @@ export const getTasks = createServerFn({ method: "GET" })
       .from("tasks")
       .select(`
         *,
-        clients (name),
-        deliverable_types (name),
+        clients:client_id (name),
+        deliverable_types:deliverable_type_id (name),
         task_assignees (
           user_id,
-          profiles:profiles (full_name)
+          profiles:user_id (full_name)
         )
       `)
       .order("position", { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching tasks:", error);
+      throw error;
+    }
 
-    return data.map(task => ({
+    return (data || []).map(task => ({
       id: task.id,
-      title: task.title,
+      title: task.title || "Sem título",
       client: (task.clients as any)?.name || "Sem cliente",
       client_id: task.client_id,
-      priority: task.priority,
+      priority: task.priority || "medium",
       deadline: task.deadline ? new Date(task.deadline).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : "Sem prazo",
-      stage: task.stage,
-      assignees: (task.task_assignees as any[])?.map(p => p.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || "??") || [],
-      position: (task as any).position || 0,
+      raw_deadline: task.deadline,
+      stage: task.stage || "todo",
+      assignees: Array.isArray(task.task_assignees) 
+        ? task.task_assignees.map((p: any) => p.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || "??") 
+        : [],
+      position: task.position || 0,
       deliverable_types: task.deliverable_types,
       sku_reference: task.sku_reference,
       description: task.description
