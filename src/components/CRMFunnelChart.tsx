@@ -34,39 +34,45 @@ export function CRMFunnelChart({ leads }: CRMFunnelChartProps) {
 
   return (
     <Card className="border-[#E4E6F0] shadow-sm overflow-hidden">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-6">
         <CardTitle className="text-lg font-title font-bold text-[#0E0E16]">Funil de Vendas</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="relative w-full py-8">
+        <div className="relative w-full">
           {/* Horizontal Trapezoidal Funnel */}
-          <div className="flex w-full items-end justify-center h-32 gap-1 px-4">
+          <div className="flex w-full items-end h-32 gap-0.5">
             {data.map((stage, index) => {
-              // Calculate width based on proportion of total or minimum width
-              const widthPercentage = total > 0 ? Math.max((stage.value / total) * 100, 5) : 12.5;
+              // Calculate relative height based on percentage of max value
+              const maxVal = Math.max(...data.map(d => d.value)) || 1;
+              const heightPercent = Math.max((stage.value / maxVal) * 100, 15);
               
+              // Base polygon points (x y, ...)
+              // We want a sequence where segments connect.
+              // To make it look like a funnel, we'll use slightly different slopes
+              let clipPath = 'polygon(0% 10%, 100% 0%, 100% 100%, 0% 90%)';
+              if (index === data.length - 1) {
+                clipPath = 'polygon(0% 0%, 100% 10%, 100% 90%, 0% 100%)';
+              } else if (index > 0) {
+                // Alternating or steady slope
+                clipPath = index % 2 === 0 
+                  ? 'polygon(0% 10%, 100% 0%, 100% 100%, 0% 90%)'
+                  : 'polygon(0% 0%, 100% 10%, 100% 90%, 0% 100%)';
+              }
+
               return (
                 <div 
                   key={stage.id} 
-                  className="relative group flex flex-col items-center justify-end h-full"
-                  style={{ width: `${widthPercentage}%`, minWidth: '60px' }}
+                  className="flex-1 relative group flex flex-col items-center justify-center h-full"
                 >
-                  {/* The Trapezoidal Segment */}
                   <div 
-                    className="w-full flex items-center justify-center transition-all duration-300 hover:opacity-90"
+                    className="w-full flex items-center justify-center transition-all duration-300 hover:brightness-110"
                     style={{ 
                       backgroundColor: stage.fill,
-                      height: `${Math.max((stage.value / (Math.max(...data.map(d => d.value)) || 1)) * 100, 20)}%`,
-                      minHeight: '40px',
-                      borderRadius: '4px',
-                      clipPath: index === 0 
-                        ? 'polygon(0% 20%, 100% 0%, 100% 100%, 0% 80%)' 
-                        : index === data.length - 1
-                        ? 'polygon(0% 0%, 100% 20%, 100% 80%, 0% 100%)'
-                        : 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)' // Simplest trapezoid is a rect here for sequence
+                      height: `${heightPercent}%`,
+                      clipPath: clipPath
                     }}
                   >
-                    <span className="text-white font-bold text-sm z-10 drop-shadow-sm">
+                    <span className="text-white font-bold text-xs z-10">
                       {stage.value}
                     </span>
                   </div>
@@ -76,19 +82,20 @@ export function CRMFunnelChart({ leads }: CRMFunnelChartProps) {
           </div>
 
           {/* Legend */}
-          <div className="mt-12 flex flex-wrap justify-center gap-x-6 gap-y-3 px-4">
+          <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3">
             {data.map((stage) => (
               <div key={stage.id} className="flex items-center gap-2">
                 <div 
                   className="w-3 h-3 rounded-full shrink-0" 
                   style={{ backgroundColor: stage.fill }}
                 />
-                <span className="text-[11px] font-medium text-[#8A8FA3] whitespace-nowrap">{stage.name}</span>
+                <span className="text-[11px] font-medium text-[#8A8FA3]">{stage.name}</span>
               </div>
             ))}
           </div>
         </div>
       </CardContent>
+
     </Card>
   );
 }
