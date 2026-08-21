@@ -52,6 +52,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { getClientsWithChannels } from "@/lib/sales-channels.functions";
+import { updateClientStatus } from "@/lib/clients.functions";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/clients/manage")({
   component: ClientsManagePage,
@@ -62,8 +65,10 @@ function ClientsManagePage() {
   const [riskFilter, setRiskFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   const fetchClients = useServerFn(getClientsWithChannels);
+  const updateStatusFn = useServerFn(updateClientStatus);
 
   const { data: clients, isLoading, refetch } = useQuery({
     queryKey: ['clients-list'],
@@ -74,8 +79,8 @@ function ClientsManagePage() {
   });
 
 
-  const filteredClients = clients?.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredClients = (clients as any[])?.filter((client: any) => {
+    const matchesSearch = (client.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (client.corporate_email?.toLowerCase() || "").includes(searchTerm.toLowerCase());
     const matchesRisk = riskFilter === "all" || client.risk_level === riskFilter;
     return matchesSearch && matchesRisk;
@@ -98,6 +103,21 @@ function ClientsManagePage() {
       </div>
     );
   }
+
+  const handleToggleStatus = async (clientId: string, currentStatus: string) => {
+    try {
+      setIsUpdating(clientId);
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      await updateStatusFn({ data: { id: clientId, status: newStatus as any } });
+      toast.success(`Status atualizado para ${newStatus === 'active' ? 'Ativo' : 'Inativo'}`);
+      refetch();
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+      toast.error("Erro ao atualizar status do cliente");
+    } finally {
+      setIsUpdating(null);
+    }
+  };
 
   const handleEditClient = (client: any) => {
     // Flatten account_squads from all accounts for the modal
@@ -174,7 +194,7 @@ function ClientsManagePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredClients.map((client) => (
+                {filteredClients.map((client: any) => (
                   <TableRow key={client.id} className="border-[#E4E6F0] hover:bg-[#F7F8FC]/50">
                     <TableCell className="font-medium text-[#0E0E16]">
                       <Link 
@@ -222,14 +242,19 @@ function ClientsManagePage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <div className={cn(
-                          "w-4 h-2 rounded-full flex items-center justify-center relative",
-                          client.status === 'active' ? "bg-[#22C55E]" : "bg-[#8A8FA3]"
-                        )}>
-                          <div className="w-1 h-1 bg-white rounded-full"></div>
-                        </div>
-                        <span className="text-xs text-[#8A8FA3]">{client.status === 'active' ? 'Ativo' : 'Inativo'}</span>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={client.status === 'active'}
+                          onCheckedChange={() => handleToggleStatus(client.id, client.status)}
+                          disabled={isUpdating === client.id}
+                          className={cn(
+                            "data-[state=checked]:bg-[#22C55E] data-[state=unchecked]:bg-[#EF4444]",
+                            isUpdating === client.id && "opacity-50 cursor-not-allowed"
+                          )}
+                        />
+                        <span className="text-xs text-[#8A8FA3] min-w-[45px]">
+                          {client.status === 'active' ? 'Ativo' : 'Inativo'}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -244,7 +269,7 @@ function ClientsManagePage() {
                           <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => window.open(`https://wa.me/${(client.contact_whatsapp || '').replace(/\D/g, '')}`, '_blank')}>
                             <Smartphone className="h-4 w-4 text-green-500" /> WhatsApp
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => window.location.href = `mailto:${client.corporate_email}`}>
+                          <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => window.location.href = `mailto:${client.corporate_email || ''}`}>
                             <Mail className="h-4 w-4 text-blue-500" /> Enviar email
                           </DropdownMenuItem>
                           

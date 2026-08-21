@@ -1,0 +1,2 @@
+GRANT UPDATE(status) ON public.clients TO authenticated;
+GRANT ALL ON public.clients TO service_role;
