@@ -41,15 +41,15 @@ const leadSchema = z.object({
   company: z.string().nullable().optional(),
   email: z.string().email("E-mail inválido").or(z.literal("")).nullable().optional(),
   phone: z.string().nullable().optional(),
-  recurring_revenue: z.number().default(0),
-  one_time_revenue: z.number().default(0),
+  recurring_revenue: z.number(),
+  one_time_revenue: z.number(),
   expected_close_date: z.string().nullable().optional(),
   responsible_id: z.string().nullable().optional(),
   monthly_revenue_range: z.string().nullable().optional(),
   niche_id: z.string().nullable().optional(),
   origin: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
-  funnel_stage: z.string().default('novos_leads'),
+  funnel_stage: z.string(),
 });
 
 type LeadFormValues = z.infer<typeof leadSchema>;
