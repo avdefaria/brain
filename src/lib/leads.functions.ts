@@ -15,9 +15,10 @@ export const STAGES = [
 
 export const getLeads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .validator((data: { responsible_id?: string, startDate?: string, endDate?: string, funnel_type_id?: string } | void) => data)
+  .handler(async ({ context, data }) => {
     const supabase = context.supabase;
-    const { data, error } = await supabase
+    let query = supabase
       .from('leads')
       .select(`
         *,
@@ -26,21 +27,58 @@ export const getLeads = createServerFn({ method: "GET" })
         lead_sales_channels(
           sales_channels:sales_channel_id(id, name)
         ),
-        lead_stage_history(*)
-      `)
-      .order('position', { ascending: true });
+        lead_stage_history(*),
+        funnel_type:funnel_types(id, name)
+      `);
+
+    if (data?.responsible_id && data.responsible_id !== 'all') {
+      query = query.eq('responsible_id', data.responsible_id);
+    }
+
+    if (data?.startDate) {
+      query = query.gte('created_at', data.startDate);
+    }
+
+    if (data?.endDate) {
+      query = query.lte('created_at', data.endDate);
+    }
+
+    if (data?.funnel_type_id && data.funnel_type_id !== 'all') {
+      query = query.eq('funnel_type_id', data.funnel_type_id);
+    }
+
+    const { data: leads, error } = await query.order('position', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return leads || [];
   });
 
 export const getLeadStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .validator((data: { responsible_id?: string, startDate?: string, endDate?: string, funnel_type_id?: string } | void) => data)
+  .handler(async ({ context, data }) => {
     const supabase = context.supabase;
-    const { data: leads, error } = await supabase
+    let query = supabase
       .from('leads')
-      .select('recurring_revenue, funnel_stage');
+      .select('recurring_revenue, funnel_stage, created_at, responsible_id, funnel_type_id');
+
+    if (data?.responsible_id && data.responsible_id !== 'all') {
+      query = query.eq('responsible_id', data.responsible_id);
+    }
+
+    if (data?.startDate) {
+      query = query.gte('created_at', data.startDate);
+    }
+
+    if (data?.endDate) {
+      query = query.lte('created_at', data.endDate);
+    }
+
+    if (data?.funnel_type_id && data.funnel_type_id !== 'all') {
+      query = query.eq('funnel_type_id', data.funnel_type_id);
+    }
+
+    const { data: leads, error } = await query;
 
     if (error) throw error;
 
@@ -54,6 +92,19 @@ export const getLeadStats = createServerFn({ method: "GET" })
     };
 
     return stats;
+  });
+
+export const getFunnelTypes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
+    const { data, error } = await supabase
+      .from('funnel_types' as any)
+      .select('*')
+      .order('name');
+
+    if (error) throw error;
+    return data || [];
   });
 
 export const createLead = createServerFn({ method: "POST" })
