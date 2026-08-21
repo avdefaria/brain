@@ -230,7 +230,11 @@ export const getChurnAnalysisData = createServerFn({ method: "GET" })
 
     // Recent Churn Table
     const recentChurn = churnedClients
-      .sort((a, b) => new Date(b.cancelled_at ?? 0).getTime() - new Date(a.cancelled_at ?? 0).getTime())
+      .sort((a, b) => {
+        const timeA = a.cancelled_at ? new Date(a.cancelled_at).getTime() : 0;
+        const timeB = b.cancelled_at ? new Date(b.cancelled_at).getTime() : 0;
+        return timeB - timeA;
+      })
       .slice(0, 5)
       .map(c => ({
         name: c.name,
