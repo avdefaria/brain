@@ -153,16 +153,16 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         contact_email: initialData.contact_email || "",
         contact_whatsapp: initialData.contact_whatsapp || "",
         squad_ids: initialData.squad_ids || initialData.account_squads?.map((as: any) => as.squad_id) || [],
-        niche_id: initialData.niche_id || "",
-        contract_type: (initialData.contract_type as any) || "recurring",
+        niche_id: initialData.niche_id || initialData.niches?.id || "",
+        contract_type: (initialData.contracts?.[0]?.type as any) || "recurring",
         start_date: initialData.start_date || new Date().toISOString().split('T')[0] || "",
         end_date_expected: initialData.end_date_expected || "",
         scope_details: initialData.scope_details || "",
         extra_comments: initialData.extra_comments || "",
-        sales_channels: initialData.sales_channels || [],
+        sales_channels: initialData.sales_channels || initialData.client_sales_channels?.map((csc: any) => csc.sales_channels?.name).filter(Boolean) || [],
         health_score: initialData.health_score ?? 100,
         lead_id: initialData.lead_id || (initialData.id ? null : initialData.lead_id) || null,
-        monthly_value: initialData.monthly_value || 0,
+        monthly_value: initialData.monthly_value || initialData.contracts?.[0]?.monthly_value || 0,
       });
     } else if (!initialData && open) {
       form.reset({
