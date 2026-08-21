@@ -24,6 +24,7 @@ import { Route as AuthenticatedClientsChurnRouteImport } from './routes/_authent
 import { Route as AuthenticatedClientsContractsRouteImport } from './routes/_authenticated.clients.contracts'
 import { Route as AuthenticatedClientsManageRouteImport } from './routes/_authenticated.clients.manage'
 import { Route as AuthenticatedComercialCrmRouteImport } from './routes/_authenticated.comercial.crm'
+import { Route as AuthenticatedFinancasIndexRouteImport } from './routes/_authenticated.financas.index'
 import { Route as AuthenticatedProjectsContentApprovalRouteImport } from './routes/_authenticated.projects.content-approval'
 import { Route as AuthenticatedProjectsDeliverablesRouteImport } from './routes/_authenticated.projects.deliverables'
 import { Route as AuthenticatedProjectsTasksRouteImport } from './routes/_authenticated.projects.tasks'
@@ -109,6 +110,12 @@ const AuthenticatedComercialCrmRoute =
     path: '/comercial/crm',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedFinancasIndexRoute =
+  AuthenticatedFinancasIndexRouteImport.update({
+    id: '/financas/',
+    path: '/financas/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProjectsContentApprovalRoute =
   AuthenticatedProjectsContentApprovalRouteImport.update({
     id: '/content-approval',
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
   '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
+  '/financas/': typeof AuthenticatedFinancasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -172,6 +180,7 @@ export interface FileRoutesByTo {
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
   '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
+  '/financas': typeof AuthenticatedFinancasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -194,6 +203,7 @@ export interface FileRoutesById {
   '/_authenticated/projects/tasks': typeof AuthenticatedProjectsTasksRoute
   '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
+  '/_authenticated/financas/': typeof AuthenticatedFinancasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/projects/tasks'
     | '/public/approval/$token'
     | '/clients/'
+    | '/financas/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/projects/tasks'
     | '/public/approval/$token'
     | '/clients'
+    | '/financas'
   id:
     | '__root__'
     | '/'
@@ -257,6 +269,7 @@ export interface FileRouteTypes {
     | '/_authenticated/projects/tasks'
     | '/public/approval/$token'
     | '/_authenticated/clients/'
+    | '/_authenticated/financas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -374,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedComercialCrmRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/financas/': {
+      id: '/_authenticated/financas/'
+      path: '/financas'
+      fullPath: '/financas/'
+      preLoaderRoute: typeof AuthenticatedFinancasIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/projects/content-approval': {
       id: '/_authenticated/projects/content-approval'
       path: '/content-approval'
@@ -436,6 +456,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedClientsManageRoute: typeof AuthenticatedClientsManageRoute
   AuthenticatedComercialCrmRoute: typeof AuthenticatedComercialCrmRoute
   AuthenticatedClientsIndexRoute: typeof AuthenticatedClientsIndexRoute
+  AuthenticatedFinancasIndexRoute: typeof AuthenticatedFinancasIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -450,6 +471,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedClientsManageRoute: AuthenticatedClientsManageRoute,
   AuthenticatedComercialCrmRoute: AuthenticatedComercialCrmRoute,
   AuthenticatedClientsIndexRoute: AuthenticatedClientsIndexRoute,
+  AuthenticatedFinancasIndexRoute: AuthenticatedFinancasIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
