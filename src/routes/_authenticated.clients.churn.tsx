@@ -53,7 +53,13 @@ function ChurnAnalysisPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['churn-analysis', dateRange, selectedReasons],
-    queryFn: () => fetchChurnData()
+    queryFn: () => fetchChurnData({ 
+      data: { 
+        startDate: dateRange?.from?.toISOString() || null, 
+        endDate: dateRange?.to?.toISOString() || null,
+        reasons: selectedReasons.length > 0 ? selectedReasons : undefined
+      } 
+    })
   });
 
   const { data: churnReasons = [] } = useQuery({
