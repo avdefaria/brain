@@ -43,7 +43,7 @@ export const getLeadStats = createServerFn({ method: "GET" })
     const stats = {
       total: leads?.length || 0,
       proposals: leads?.filter(l => l.funnel_stage === 'proposta_enviada').length || 0,
-      pipeline: leads?.filter(l => !['vendas_feitas', 'vendas_perdidas'].includes(l.funnel_stage))
+      pipeline: leads?.filter(l => l.funnel_stage && !['vendas_feitas', 'vendas_perdidas'].includes(l.funnel_stage))
         .reduce((acc, l) => acc + (Number(l.recurring_revenue) || 0), 0) || 0,
       sales: leads?.filter(l => l.funnel_stage === 'vendas_feitas').length || 0,
       lost: leads?.filter(l => l.funnel_stage === 'vendas_perdidas').length || 0,
