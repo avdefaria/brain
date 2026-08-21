@@ -164,11 +164,11 @@ export const getChurnAnalysisData = createServerFn({ method: "POST" })
   .validator((data: { 
     startDate?: string | null, 
     endDate?: string | null,
-    reasons?: string[] 
+    reasons?: string[] | null
   }) => z.object({
     startDate: z.string().nullable().optional(),
     endDate: z.string().nullable().optional(),
-    reasons: z.array(z.string()).optional()
+    reasons: z.array(z.string()).nullable().optional()
   }).parse(data))
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
