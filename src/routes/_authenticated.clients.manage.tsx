@@ -79,8 +79,8 @@ function ClientsManagePage() {
   });
 
 
-  const filteredClients = clients?.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredClients = (clients as any[])?.filter((client: any) => {
+    const matchesSearch = (client.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (client.corporate_email?.toLowerCase() || "").includes(searchTerm.toLowerCase());
     const matchesRisk = riskFilter === "all" || client.risk_level === riskFilter;
     return matchesSearch && matchesRisk;
@@ -194,7 +194,7 @@ function ClientsManagePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredClients.map((client) => (
+                {filteredClients.map((client: any) => (
                   <TableRow key={client.id} className="border-[#E4E6F0] hover:bg-[#F7F8FC]/50">
                     <TableCell className="font-medium text-[#0E0E16]">
                       <Link 
@@ -269,7 +269,7 @@ function ClientsManagePage() {
                           <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => window.open(`https://wa.me/${(client.contact_whatsapp || '').replace(/\D/g, '')}`, '_blank')}>
                             <Smartphone className="h-4 w-4 text-green-500" /> WhatsApp
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => window.location.href = `mailto:${client.corporate_email}`}>
+                          <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => window.location.href = `mailto:${client.corporate_email || ''}`}>
                             <Mail className="h-4 w-4 text-blue-500" /> Enviar email
                           </DropdownMenuItem>
                           
