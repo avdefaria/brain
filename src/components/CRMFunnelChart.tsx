@@ -2,7 +2,6 @@ import React from 'react';
 import { ResponsiveContainer, FunnelChart, Funnel, LabelList, Cell, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { STAGES } from "@/lib/leads.functions";
-import { cn } from "@/lib/utils";
 
 interface CRMFunnelChartProps {
   leads: any[];
@@ -26,7 +25,7 @@ export function CRMFunnelChart({ leads }: CRMFunnelChartProps) {
       return {
         name: stage.label,
         value: count,
-        fill: COLORS[index % COLORS.length]
+        fill: COLORS[index % COLORS.length] as string
       };
     });
   }, [leads]);
@@ -69,7 +68,7 @@ export function CRMFunnelChart({ leads }: CRMFunnelChartProps) {
         </div>
         
         <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3">
-          {data.map((stage, index) => (
+          {data.map((stage) => (
             <div key={stage.name} className="flex items-center gap-2">
               <div 
                 className="w-3 h-3 rounded-full" 

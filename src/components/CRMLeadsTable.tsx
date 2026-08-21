@@ -1,12 +1,12 @@
 import React from 'react';
 import { 
   useReactTable, 
-  getCoreRowModel, 
+  createCoreRowModel, 
   flexRender, 
   getPaginationRowModel,
-  getSortedRowModel,
+  createSortedRowModel,
   SortingState,
-  getFilteredRowModel
+  createFilteredRowModel
 } from "@tanstack/react-table";
 import { 
   Table, 
@@ -30,7 +30,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { STAGES } from "@/lib/leads.functions";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 interface CRMLeadsTableProps {
   leads: any[];
@@ -149,11 +148,11 @@ export function CRMLeadsTable({ leads, onEdit, onDelete }: CRMLeadsTableProps) {
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
+    getCoreRowModel: createCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn: (row, columnId, filterValue) => {
+    getSortedRowModel: createSortedRowModel(),
+    getFilteredRowModel: createFilteredRowModel(),
+    globalFilterFn: (row: any, columnId: any, filterValue: any) => {
       const name = String(row.original.name || "").toLowerCase();
       const company = String(row.original.company || "").toLowerCase();
       const search = String(filterValue).toLowerCase();
@@ -185,9 +184,9 @@ export function CRMLeadsTable({ leads, onEdit, onDelete }: CRMLeadsTableProps) {
       <div className="rounded-2xl border border-[#E4E6F0] bg-white overflow-hidden shadow-sm">
         <Table>
           <TableHeader className="bg-[#F7F8FC]">
-            {table.getHeaderGroups().map((headerGroup) => (
+            {table.getHeaderGroups().map((headerGroup: any) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent border-[#E4E6F0]">
-                {headerGroup.headers.map((header) => (
+                {headerGroup.headers.map((header: any) => (
                   <TableHead key={header.id} className="h-12 text-[10px] font-bold text-[#8A8FA3] uppercase tracking-wider px-6">
                     {header.isPlaceholder
                       ? null
@@ -202,12 +201,12 @@ export function CRMLeadsTable({ leads, onEdit, onDelete }: CRMLeadsTableProps) {
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
+              table.getRowModel().rows.map((row: any) => (
                 <TableRow
                   key={row.id}
                   className="hover:bg-[#F7F8FC]/50 border-[#E4E6F0] transition-colors"
                 >
-                  {row.getVisibleCells().map((cell) => (
+                  {row.getVisibleCells().map((cell: any) => (
                     <TableCell key={cell.id} className="px-6 py-4 text-xs">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
