@@ -15,7 +15,7 @@ export const STAGES = [
 
 export const getLeads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { responsible_id?: string | null, startDate?: string | null, endDate?: string | null, funnel_type_id?: string | null } | void) => data)
+  .validator((data: { responsible_id?: string | null, startDate?: string | null, endDate?: string | null, funnel_type_id?: string | null, showConverted?: boolean } | void) => data)
   .handler(async ({ context, data }) => {
     const supabase = context.supabase;
     let query = supabase
@@ -47,6 +47,10 @@ export const getLeads = createServerFn({ method: "GET" })
       query = query.eq('funnel_type_id', data.funnel_type_id);
     }
 
+    if (!data?.showConverted) {
+      query = query.is('converted_at', null);
+    }
+
     const { data: leads, error } = await query.order('position', { ascending: true });
 
     if (error) throw error;
@@ -55,7 +59,7 @@ export const getLeads = createServerFn({ method: "GET" })
 
 export const getLeadStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { responsible_id?: string | null, startDate?: string | null, endDate?: string | null, funnel_type_id?: string | null } | void) => data)
+  .validator((data: { responsible_id?: string | null, startDate?: string | null, endDate?: string | null, funnel_type_id?: string | null, showConverted?: boolean } | void) => data)
   .handler(async ({ context, data }) => {
     const supabase = context.supabase;
     let query = supabase
@@ -76,6 +80,10 @@ export const getLeadStats = createServerFn({ method: "GET" })
 
     if (data?.funnel_type_id && data.funnel_type_id !== 'all') {
       query = query.eq('funnel_type_id', data.funnel_type_id);
+    }
+
+    if (!data?.showConverted) {
+      query = query.is('converted_at', null);
     }
 
     const { data: leads, error } = await query;
