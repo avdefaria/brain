@@ -60,6 +60,8 @@ export const createLead = createServerFn({ method: "POST" })
   .validator((data: any) => data)
   .handler(async ({ context, data }) => {
     const supabase = context.supabase;
+    const { sales_channels, ...updates } = data;
+    
     const { data: lead, error } = await supabase
       .from('leads')
       .insert([updates])
@@ -80,7 +82,7 @@ export const createLead = createServerFn({ method: "POST" })
           lead_id: lead.id,
           sales_channel_id: c.id
         }));
-        await supabase.from('lead_sales_channels').insert(junctionData);
+        await supabase.from('lead_sales_channels' as any).insert(junctionData as any);
       }
     }
     return lead;
@@ -105,7 +107,7 @@ export const updateLead = createServerFn({ method: "POST" })
     // Update sales channels N:N
     if (sales_channels !== undefined) {
       // Remove old
-      await supabase.from('lead_sales_channels').delete().eq('lead_id', id);
+      await supabase.from('lead_sales_channels' as any).delete().eq('lead_id', id);
 
       // Insert new
       if (sales_channels.length > 0) {
@@ -119,7 +121,7 @@ export const updateLead = createServerFn({ method: "POST" })
             lead_id: id,
             sales_channel_id: c.id
           }));
-          await supabase.from('lead_sales_channels').insert(junctionData);
+          await supabase.from('lead_sales_channels' as any).insert(junctionData as any);
         }
       }
     }

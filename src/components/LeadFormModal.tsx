@@ -53,7 +53,7 @@ const leadSchema = z.object({
   origin: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   funnel_stage: z.string(),
-  sales_channels: z.array(z.string()).default([]),
+  sales_channels: z.array(z.string()),
 });
 
 type LeadFormValues = z.infer<typeof leadSchema>;
@@ -115,7 +115,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
   };
 
   const form = useForm<LeadFormValues>({
-    resolver: zodResolver(leadSchema),
+    resolver: zodResolver(leadSchema as any),
     defaultValues: {
       name: "",
       company: null,
@@ -135,6 +135,8 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
 
   useEffect(() => {
     if (lead && isOpen) {
+      const channels = lead.lead_sales_channels?.map((lsc: any) => lsc.sales_channels?.name).filter(Boolean) || [];
+      
       form.reset({
         name: lead.name || "",
         company: lead.company || null,
@@ -149,6 +151,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         origin: lead.origin || null,
         notes: lead.notes || null,
         funnel_stage: lead.funnel_stage || "novos_leads",
+        sales_channels: channels,
       });
     } else if (!lead && isOpen) {
       form.reset({
@@ -165,6 +168,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         origin: null,
         notes: null,
         funnel_stage: "novos_leads",
+        sales_channels: [],
       });
     }
   }, [lead, isOpen, form]);
