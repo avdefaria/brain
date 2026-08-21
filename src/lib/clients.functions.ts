@@ -159,19 +159,67 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
     };
   });
 
+export const getChurnReasons = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
+    const { data, error } = await supabase
+      .from("churn_reasons")
+      .select("*")
+      .order("name");
+
+    if (error) throw error;
+    return data;
+  });
+
 export const updateClientStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { id: string, status: 'active' | 'inactive' | 'churn' }) => z.object({
+  .validator((data: { 
+    id: string, 
+    status: 'active' | 'inactive' | 'churn',
+    churnReasonId?: string 
+  }) => z.object({
     id: z.string(),
-    status: z.enum(['active', 'inactive', 'churn'])
+    status: z.enum(['active', 'inactive', 'churn']),
+    churnReasonId: z.string().optional()
   }).parse(data))
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
+    
+    const updatePayload: any = { status: data.status };
+    
+    if (data.status === 'inactive' || data.status === 'churn') {
+      updatePayload.cancelled_at = new Date().toISOString();
+      if (data.churnReasonId) {
+        updatePayload.churn_reason_id = data.churnReasonId;
+      }
+    } else {
+      updatePayload.cancelled_at = null;
+      updatePayload.churn_reason_id = null;
+    }
+
     const { error } = await supabase
       .from("clients")
-      .update({ status: data.status })
+      .update(updatePayload)
       .eq("id", data.id);
 
     if (error) throw error;
     return { success: true };
+  });
+
+export const createChurnReason = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { name: string }) => z.object({
+    name: z.string().min(1)
+  }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
+    const { data: reason, error } = await supabase
+      .from("churn_reasons")
+      .insert({ name: data.name })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return reason;
   });
