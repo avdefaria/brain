@@ -21,6 +21,19 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { 
   User, 
   Building2, 
   Mail, 
@@ -28,10 +41,14 @@ import {
   TrendingUp, 
   DollarSign, 
   Calendar,
-  Trash2
+  Trash2,
+  Check,
+  ChevronsUpDown,
+  Plus
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { createLead, updateLead, deleteLead, getFunnelTypes, STAGES } from "@/lib/leads.functions";
+import { createLead, updateLead, deleteLead, getFunnelTypes, addFunnelType, STAGES } from "@/lib/leads.functions";
 import { getNiches } from "@/lib/niches.functions";
 import { getCollaborators } from "@/lib/squads.functions";
 import { getSalesChannels, addSalesChannel } from "@/lib/sales-channels.functions";
