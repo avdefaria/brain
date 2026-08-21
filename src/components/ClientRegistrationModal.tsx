@@ -144,16 +144,18 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         state: initialData.state || "",
         city: initialData.city || "",
         corporate_email: initialData.corporate_email || "",
-        contact_email: initialData.contact_email || null,
+        contact_email: initialData.contact_email || "",
         contact_whatsapp: initialData.contact_whatsapp || "",
         squad_ids: initialData.account_squads?.map((as: any) => as.squad_id) || [],
         niche_id: initialData.niche_id || "",
         contract_type: (initialData.contract_type as any) || "recurring",
         start_date: initialData.start_date || new Date().toISOString().split('T')[0] || "",
         end_date_expected: initialData.end_date_expected || "",
-        scope_details: initialData.scope_details || null,
-        extra_comments: initialData.extra_comments || null,
+        scope_details: initialData.scope_details || "",
+        extra_comments: initialData.extra_comments || "",
         sales_channels: initialData.sales_channels || [],
+        health_score: initialData.health_score ?? 100,
+        lead_id: initialData.lead_id || null,
       });
     } else if (!initialData && open) {
       form.reset({
