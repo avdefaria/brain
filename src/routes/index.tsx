@@ -26,7 +26,7 @@ function IndexComponent() {
         <div className="w-4 h-4 bg-white rounded-full"></div>
       </div>
       <div className="max-w-md text-sm text-gray-500 whitespace-pre-wrap font-mono p-4 bg-white rounded-lg shadow-sm border border-gray-100">
-        REGRAS OBRIGATÓRIAS:
+        {`REGRAS OBRIGATÓRIAS:
 - Não corrija nada ainda. Apenas adicione log temporário e me devolva o 
   resultado.
 
@@ -45,7 +45,7 @@ O QUE FAZER:
 3. Também me mostre a linha exata do código no server 
    (createServerFn/handler de criação de cliente) onde o INSERT ou 
    UPDATE no Supabase é executado, para eu confirmar qual campo da 
-   tabela está recebendo o "undefined".
+   tabela está recebendo o "undefined".`}
       </div>
     </div>
   );
