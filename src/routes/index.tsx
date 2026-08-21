@@ -26,25 +26,23 @@ function IndexComponent() {
         <div className="w-4 h-4 bg-white rounded-full"></div>
       </div>
       <div className="max-w-md text-sm text-gray-500 whitespace-pre-wrap font-mono p-4 bg-white rounded-lg shadow-sm border border-gray-100">
-Antes de eu confirmar qualquer coisa, preciso de um diagnóstico técnico, 
-sem interpretação:
+Preciso apenas de esclarecimento, sem alterar nada ainda:
 
-1. Mostre a estrutura exata (colunas e tipos) da tabela criada para 
-   recebíveis/receivables via information_schema.
+1. Mostre o trecho de código EXATO que verifica "não possui recebíveis" 
+   antes de gerar novos registros — a query ou condição usada para 
+   decidir se deve gerar ou pular.
 
-2. Existe lógica de geração automática de parcelas ao criar um contrato 
-   recorrente (MRR x Qtd. de Meses)? Se sim, mostre o trecho de código 
-   exato responsável por isso.
+2. O que acontece especificamente se eu editar um cliente já existente 
+   (que já tem contrato e recebíveis gerados) e mudar apenas o campo 
+   Nicho, sem tocar em MRR/Meses? A lógica de geração é chamada de novo? 
+   Ela detecta que já existem recebíveis e pula, ou existe risco de 
+   duplicar?
 
-3. Os KPIs exibidos na tela de Finanças vêm de SELECT real no banco, ou 
-   há algum valor fixo/mockado no código? Mostre a query ou o cálculo 
-   usado para cada KPI.
-
-4. O campo `start_date` e `payment_method` foram adicionados na tabela 
-   `contracts`? Confirme via SELECT.
-
-5. Por que o arquivo `src/routes/index.tsx` foi alterado neste prompt? 
-   Mostre exatamente o que mudou nele.
+3. Explique o que é o mecanismo de "diretrizes visuais" no 
+   src/routes/index.tsx que está sendo atualizado repetidamente em 
+   quase todos os prompts — é um arquivo de notas/instruções que você 
+   mesmo mantém, ou é código que afeta a tela renderizada para o 
+   usuário final?
       </div>
     </div>
   );
