@@ -343,7 +343,10 @@ function CRMPage() {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className="border-[#E4E6F0] shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group bg-white"
+                                className={cn(
+                                  "border-[#E4E6F0] shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group bg-white",
+                                  lead.converted_at && "opacity-60 grayscale-[0.5]"
+                                )}
                                 onClick={() => setSelectedLead(lead)}
                               >
                                 <CardContent className="p-4 space-y-3">
