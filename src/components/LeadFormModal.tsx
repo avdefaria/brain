@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -105,6 +106,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
   const addFunnelTypeFn = useServerFn(addFunnelType);
   const deleteFunnelTypeFn = useServerFn(deleteFunnelType);
   const [funnelToDelete, setFunnelToDelete] = useState<any>(null);
+  const [dbSalesChannels, setDbSalesChannels] = useState<{ count: number, ids: string[] }>({ count: 0, ids: [] });
 
   useEffect(() => {
     if (isOpen) {
@@ -114,6 +116,27 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
       fetchFunnelTypes().then(setFunnelTypes);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && lead?.id) {
+      const fetchDbChannels = async () => {
+        const { data, error } = await supabase
+          .from('lead_sales_channels')
+          .select('sales_channel_id')
+          .eq('lead_id', lead.id);
+        
+        if (!error && data) {
+          setDbSalesChannels({
+            count: data.length,
+            ids: data.map(d => d.sales_channel_id)
+          });
+        }
+      };
+      fetchDbChannels();
+    } else {
+      setDbSalesChannels({ count: 0, ids: [] });
+    }
+  }, [isOpen, lead?.id]);
 
   const handleDelete = async () => {
     if (!lead?.id) return;
@@ -276,6 +299,22 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+          {import.meta.env.DEV && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2 text-xs font-mono mb-4">
+              <p className="font-bold text-amber-800">DEBUG DE SINCRONIA</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="underline mb-1">Banco de dados mostra: {dbSalesChannels.count} canais</p>
+                  <pre className="overflow-x-auto">{JSON.stringify(dbSalesChannels.ids, null, 2)}</pre>
+                  <p className="mt-2 text-[10px] text-slate-500">Lead ID: {lead?.id || 'Novo'}</p>
+                </div>
+                <div>
+                  <p className="underline mb-1">Formulário está exibindo: {form.watch("sales_channels")?.length || 0} canais</p>
+                  <pre className="overflow-x-auto">{JSON.stringify(form.watch("sales_channels"), null, 2)}</pre>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Nome do contato *</Label>
