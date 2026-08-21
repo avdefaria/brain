@@ -156,7 +156,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         extra_comments: initialData.extra_comments || "",
         sales_channels: initialData.sales_channels || [],
         health_score: initialData.health_score ?? 100,
-        lead_id: initialData.lead_id || null,
+        lead_id: initialData.lead_id || (initialData.id ? null : initialData.lead_id) || null,
       });
     } else if (!initialData && open) {
       form.reset({
