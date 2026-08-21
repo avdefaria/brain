@@ -31,7 +31,7 @@ import {
   Trash2
 } from "lucide-react";
 import { toast } from "sonner";
-import { createLead, updateLead, deleteLead, STAGES } from "@/lib/leads.functions";
+import { createLead, updateLead, deleteLead, getFunnelTypes, STAGES } from "@/lib/leads.functions";
 import { getNiches } from "@/lib/niches.functions";
 import { getCollaborators } from "@/lib/squads.functions";
 import { getSalesChannels, addSalesChannel } from "@/lib/sales-channels.functions";
@@ -55,6 +55,7 @@ const leadSchema = z.object({
   notes: z.string().nullable().optional(),
   funnel_stage: z.string(),
   sales_channels: z.array(z.string()),
+  funnel_type_id: z.string().nullable().optional(),
 });
 
 type LeadFormValues = z.infer<typeof leadSchema>;
@@ -74,11 +75,13 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
   const [niches, setNiches] = useState<any[]>([]);
   const [collaborators, setCollaborators] = useState<any[]>([]);
   const [salesChannelOptions, setSalesChannelOptions] = useState<any[]>([]);
+  const [funnelTypes, setFunnelTypes] = useState<any[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const fetchNiches = useServerFn(getNiches);
   const fetchCollaborators = useServerFn(getCollaborators);
   const fetchSalesChannels = useServerFn(getSalesChannels);
+  const fetchFunnelTypes = useServerFn(getFunnelTypes);
   const addSalesChannelFn = useServerFn(addSalesChannel);
 
   useEffect(() => {
@@ -86,6 +89,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
       fetchNiches().then(setNiches);
       fetchCollaborators().then(setCollaborators);
       fetchSalesChannels().then(setSalesChannelOptions);
+      fetchFunnelTypes().then(setFunnelTypes);
     }
   }, [isOpen]);
 
@@ -133,6 +137,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
       notes: null,
       funnel_stage: "novos_leads",
       sales_channels: [],
+      funnel_type_id: null,
     }
   });
 
@@ -156,6 +161,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         notes: lead.notes || null,
         funnel_stage: lead.funnel_stage || "novos_leads",
         sales_channels: channels,
+        funnel_type_id: lead.funnel_type_id || null,
       });
     } else if (!lead && isOpen) {
       form.reset({
@@ -174,6 +180,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         notes: null,
         funnel_stage: "novos_leads",
         sales_channels: [],
+        funnel_type_id: null,
       });
     }
   }, [lead, isOpen, form]);
@@ -371,6 +378,23 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
                 <SelectContent>
                   {STAGES.map((s) => (
                     <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo de Funil</Label>
+              <Select 
+                onValueChange={(v) => form.setValue("funnel_type_id", v)} 
+                value={form.watch("funnel_type_id") || ""}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo de funil" />
+                </SelectTrigger>
+                <SelectContent>
+                  {funnelTypes.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

@@ -487,6 +487,24 @@ export type Database = {
         }
         Relationships: []
       }
+      funnel_types: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       lead_sales_channels: {
         Row: {
           lead_id: string
@@ -556,6 +574,7 @@ export type Database = {
           email: string | null
           expected_close_date: string | null
           funnel_stage: string | null
+          funnel_type_id: string | null
           id: string
           last_contact_at: string | null
           monthly_revenue_range: string | null
@@ -576,6 +595,7 @@ export type Database = {
           email?: string | null
           expected_close_date?: string | null
           funnel_stage?: string | null
+          funnel_type_id?: string | null
           id?: string
           last_contact_at?: string | null
           monthly_revenue_range?: string | null
@@ -596,6 +616,7 @@ export type Database = {
           email?: string | null
           expected_close_date?: string | null
           funnel_stage?: string | null
+          funnel_type_id?: string | null
           id?: string
           last_contact_at?: string | null
           monthly_revenue_range?: string | null
@@ -611,6 +632,13 @@ export type Database = {
           responsible_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "leads_funnel_type_id_fkey"
+            columns: ["funnel_type_id"]
+            isOneToOne: false
+            referencedRelation: "funnel_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "leads_niche_id_fkey"
             columns: ["niche_id"]
