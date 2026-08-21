@@ -24,7 +24,8 @@ import {
   Trash2, 
   ChevronLeft, 
   ChevronRight,
-  ArrowUpDown
+  ArrowUpDown,
+  ArrowRightLeft
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -38,7 +39,7 @@ interface CRMLeadsTableProps {
   onConvert: (lead: any) => void;
 }
 
-export function CRMLeadsTable({ leads, onEdit, onDelete }: CRMLeadsTableProps) {
+export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
 
