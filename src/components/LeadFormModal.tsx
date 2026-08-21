@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { createLead, updateLead, deleteLead, getFunnelTypes, addFunnelType, STAGES } from "@/lib/leads.functions";
+import { createLead, updateLead, deleteLead, getFunnelTypes, addFunnelType, deleteFunnelType, STAGES } from "@/lib/leads.functions";
 import { getNiches } from "@/lib/niches.functions";
 import { getCollaborators } from "@/lib/squads.functions";
 import { getSalesChannels, addSalesChannel } from "@/lib/sales-channels.functions";
@@ -103,6 +103,8 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
   const fetchFunnelTypes = useServerFn(getFunnelTypes);
   const addSalesChannelFn = useServerFn(addSalesChannel);
   const addFunnelTypeFn = useServerFn(addFunnelType);
+  const deleteFunnelTypeFn = useServerFn(deleteFunnelType);
+  const [funnelToDelete, setFunnelToDelete] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -150,6 +152,22 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
       toast.success("Tipo de funil criado!");
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar tipo de funil");
+    }
+  };
+
+  const handleDeleteFunnelType = async (id: string) => {
+    try {
+      await deleteFunnelTypeFn({ data: id });
+      setFunnelTypes(prev => prev.filter(f => f.id !== id));
+      if (form.getValues("funnel_type_id") === id) {
+        form.setValue("funnel_type_id", null);
+      }
+      queryClient.invalidateQueries({ queryKey: ["funnel-types"] });
+      toast.success("Tipo de funil excluído!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao excluir tipo de funil");
+    } finally {
+      setFunnelToDelete(null);
     }
   };
 
@@ -452,14 +470,29 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
                               setIsFunnelPopoverOpen(false);
                               setFunnelSearch("");
                             }}
+                            className="group/item flex items-center justify-between"
                           >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                form.watch("funnel_type_id") === f.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {f.name}
+                            <div className="flex items-center">
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  form.watch("funnel_type_id") === f.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {f.name}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-0 group-hover/item:opacity-100 hover:text-red-500 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFunnelToDelete(f);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -572,6 +605,30 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
             Cancelar
           </Button>
           <Button onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white rounded-full">
+            Excluir
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={!!funnelToDelete} onOpenChange={(open) => !open && setFunnelToDelete(null)}>
+      <DialogContent className="sm:max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-bold">Excluir tipo de funil</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <p className="text-sm text-[#8A8FA3]">
+            Excluir tipo de funil '{funnelToDelete?.name}'? Esta ação removerá o tipo do catálogo.
+          </p>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="ghost" onClick={() => setFunnelToDelete(null)} className="rounded-full">
+            Cancelar
+          </Button>
+          <Button 
+            onClick={() => funnelToDelete && handleDeleteFunnelType(funnelToDelete.id)} 
+            className="bg-red-500 hover:bg-red-600 text-white rounded-full"
+          >
             Excluir
           </Button>
         </DialogFooter>
