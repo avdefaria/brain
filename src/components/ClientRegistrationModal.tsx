@@ -67,6 +67,7 @@ const clientSchema = z.object({
   extra_comments: z.string(),
   health_score: z.number().min(0).max(100),
   lead_id: z.string().uuid().optional().nullable(),
+  monthly_value: z.number().optional().nullable(),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
