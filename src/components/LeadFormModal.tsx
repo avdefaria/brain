@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { createLead, updateLead, deleteLead, getFunnelTypes, addFunnelType, STAGES } from "@/lib/leads.functions";
+import { createLead, updateLead, deleteLead, getFunnelTypes, addFunnelType, deleteFunnelType, STAGES } from "@/lib/leads.functions";
 import { getNiches } from "@/lib/niches.functions";
 import { getCollaborators } from "@/lib/squads.functions";
 import { getSalesChannels, addSalesChannel } from "@/lib/sales-channels.functions";
@@ -103,6 +103,8 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
   const fetchFunnelTypes = useServerFn(getFunnelTypes);
   const addSalesChannelFn = useServerFn(addSalesChannel);
   const addFunnelTypeFn = useServerFn(addFunnelType);
+  const deleteFunnelTypeFn = useServerFn(deleteFunnelType);
+  const [funnelToDelete, setFunnelToDelete] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -150,6 +152,22 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
       toast.success("Tipo de funil criado!");
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar tipo de funil");
+    }
+  };
+
+  const handleDeleteFunnelType = async (id: string) => {
+    try {
+      await deleteFunnelTypeFn({ data: id });
+      setFunnelTypes(prev => prev.filter(f => f.id !== id));
+      if (form.getValues("funnel_type_id") === id) {
+        form.setValue("funnel_type_id", null);
+      }
+      queryClient.invalidateQueries({ queryKey: ["funnel-types"] });
+      toast.success("Tipo de funil excluído!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao excluir tipo de funil");
+    } finally {
+      setFunnelToDelete(null);
     }
   };
 

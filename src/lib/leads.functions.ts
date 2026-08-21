@@ -134,6 +134,33 @@ export const addFunnelType = createServerFn({ method: "POST" })
     return data;
   });
 
+export const deleteFunnelType = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((id: string) => z.string().parse(id))
+  .handler(async ({ context, data: id }) => {
+    const supabase = context.supabase;
+
+    // Check if any leads are using this funnel type
+    const { count, error: countError } = await supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('funnel_type_id', id);
+
+    if (countError) throw countError;
+
+    if (count && count > 0) {
+      throw new Error(`Não é possível excluir: ${count} ${count === 1 ? 'lead está' : 'leads estão'} usando este tipo de funil.`);
+    }
+
+    const { error } = await supabase
+      .from('funnel_types' as any)
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
+  });
+
 export const createLead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: any) => data)
