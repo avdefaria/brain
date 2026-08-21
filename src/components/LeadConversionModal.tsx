@@ -46,14 +46,13 @@ export function LeadConversionModal({ lead, isOpen, onOpenChange }: LeadConversi
     corporate_email: lead.email || "",
     contact_email: lead.email || "",
     contact_whatsapp: lead.phone || "",
-    niche_id: lead.niche_id || "",
+    niche_id: lead.niche_id || null,
     lead_id: lead.id,
     extra_comments: lead.notes || "",
     sales_channels: channels,
     contract_type: recurring > 0 ? "recurring" : (oneTime > 0 ? "one-off" : "recurring"),
-    scope_details: recurring > 0 
-      ? `MRR: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(recurring)} (${mrrMonths} meses).`
-      : (oneTime > 0 ? `Receita Única: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(oneTime)}.` : ""),
+    scope_details: "", // Limpo conforme solicitado
+    monthly_value: recurring > 0 ? recurring : (oneTime > 0 ? oneTime : 0),
     _warning_both_revenues: (recurring > 0 && oneTime > 0) ? oneTime : null,
   };
 
