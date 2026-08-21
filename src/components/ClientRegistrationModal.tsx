@@ -451,7 +451,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                 .eq('contract_id', contractId);
               
               if (count === 0) {
-                const receivables = [];
+                const receivables: any[] = [];
                 const startDate = new Date(data.start_date);
                 
                 if (data.contract_type === 'recurring') {
@@ -691,7 +691,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
 
               <div className="space-y-2">
                 <Label>Método de Pagamento</Label>
-                <Select onValueChange={(v) => form.setValue("payment_method", v)} value={form.watch("payment_method")}>
+                <Select onValueChange={(v) => form.setValue("payment_method", v)} value={form.watch("payment_method") || ""}>
                   <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
