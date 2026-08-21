@@ -233,6 +233,10 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
 
   const onSubmit = async (data: any) => {
     try {
+      console.log("DEBUG: Full Payload stringified (including undefined):", 
+        JSON.stringify(data, (key, value) => value === undefined ? "UNDEFINED_AQUI" : value, 2)
+      );
+      
       console.log("Submitting Client Registration Payload:", data);
 
       // Crucial fix: ensure UUID fields are null, not "undefined" string
