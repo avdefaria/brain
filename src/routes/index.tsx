@@ -33,7 +33,7 @@ function IndexComponent() {
           <div className="space-y-4">
             <section>
               <h3 className="font-bold border-b border-[#F7F8FC] pb-1 mb-2">1. Dados dos Clientes (TechFlow & Empresa Teste)</h3>
-              <pre className="bg-[#F7F8FC] p-3 rounded overflow-x-auto text-[10px] leading-tight">
+              <pre className="bg-[#F7F8FC] p-3 rounded overflow-x-auto text-[10px] leading-tight text-gray-700">
 {`[TechFlow Systems]
 - ID: 1b7bd635-ad7d-42af-b389-4cf5b4b8d1b0
 - Início: 2026-08-19 | Fim Exp: 2026-09-30
@@ -46,12 +46,13 @@ function IndexComponent() {
 - Início: 2026-08-21 | Fim Exp: 2027-07-31
 - Status: inactive (Cancelado em 21/08 - Motivo: Teste)
 - Lead Vinculado: 4568b5b2-d814-4e0a-93e9-cb015571c14a`}
-              </pre> section>
+              </pre>
+            </section>
 
             <section>
               <h3 className="font-bold border-b border-[#F7F8FC] pb-1 mb-2">2. Localização do Valor Real (Lead Originário)</h3>
-              <p className="mb-2 italic text-[#8A8FA3]">O valor real digitado na conversão do lead "Empresa Teste" está em:</p>
-              <pre className="bg-[#F7F8FC] p-3 rounded overflow-x-auto text-[10px] leading-tight">
+              <p className="mb-2 italic text-[#8A8FA3]">{"O valor real digitado na conversão do lead \"Empresa Teste\" está em:"}</p>
+              <pre className="bg-[#F7F8FC] p-3 rounded overflow-x-auto text-[10px] leading-tight text-gray-700">
 {`Tabela: public.leads
 - recurring_revenue: 5000 (R$ 5.000,00)
 - one_time_revenue: 0
@@ -65,7 +66,7 @@ function IndexComponent() {
               <p className="mb-2 italic text-[#8A8FA3]">Tabelas com client_id como FK:</p>
               <div className="grid grid-cols-3 gap-2 text-[10px]">
                 {["contracts", "receivables", "client_sales_channels", "accounts", "project_deliveries", "tasks", "content_posts", "special_projects", "client_public_access"].map(t => (
-                  <span key={t} className="bg-[#F7F8FC] px-2 py-1 rounded border border-[#E4E6F0]">{t}</span>
+                  <span key={t} className="bg-[#F7F8FC] px-2 py-1 rounded border border-[#E4E6F0] text-gray-600">{t}</span>
                 ))}
               </div>
             </section>
