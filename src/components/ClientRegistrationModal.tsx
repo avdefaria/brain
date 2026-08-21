@@ -61,13 +61,15 @@ const clientSchema = z.object({
   niche_id: z.string().min(1, "Nicho é obrigatório"),
   contract_type: z.enum(["recurring", "one-off"]),
   sales_channels: z.array(z.string()),
-  start_date: z.string().optional().or(z.literal("")),
+  start_date: z.string().min(1, "Data de início é obrigatória"),
   end_date_expected: z.string().optional().or(z.literal("")),
   scope_details: z.string(),
   extra_comments: z.string(),
   health_score: z.number().min(0).max(100),
   lead_id: z.string().uuid().optional().nullable(),
   monthly_value: z.number().optional().nullable(),
+  mrr_months: z.number().min(1, "Meses de MRR é obrigatório").optional().nullable(),
+  payment_method: z.string().optional().or(z.literal("")),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
@@ -136,6 +138,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
       health_score: initialData?.health_score ?? 100,
       lead_id: initialData?.lead_id || null,
       monthly_value: initialData?.contracts?.[0]?.monthly_value || 0,
+      mrr_months: initialData?.contracts?.[0]?.mrr_months || 12,
+      payment_method: initialData?.contracts?.[0]?.payment_method || "Pix",
     }
   });
 
@@ -163,6 +167,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         health_score: initialData.health_score ?? 100,
         lead_id: initialData.lead_id || (initialData.id ? null : initialData.lead_id) || null,
         monthly_value: initialData.monthly_value || initialData.contracts?.[0]?.monthly_value || 0,
+        mrr_months: initialData.mrr_months || initialData.contracts?.[0]?.mrr_months || 12,
+        payment_method: initialData.payment_method || initialData.contracts?.[0]?.payment_method || "Pix",
       });
     } else if (!initialData && open) {
       form.reset({
@@ -186,6 +192,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         health_score: 100,
         lead_id: null,
         monthly_value: 0,
+        mrr_months: 12,
+        payment_method: "Pix",
       });
     }
   }, [initialData, open, form]);
