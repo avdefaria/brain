@@ -308,6 +308,7 @@ function CRMPage() {
                     <h3 className="font-title font-bold text-[#0E0E16] text-sm whitespace-nowrap">{stage.label}</h3>
                     <span className="text-xs font-bold text-[#8A8FA3] bg-[#F7F8FC] px-2 py-0.5 rounded-full border border-[#E4E6F0]">
                       {leads.filter((l: any) => l.funnel_stage === stage.id).length}
+
                     </span>
                   </div>
                 </div>
