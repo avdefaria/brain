@@ -35,6 +35,7 @@ interface CRMLeadsTableProps {
   leads: any[];
   onEdit: (lead: any) => void;
   onDelete: (lead: any) => void;
+  onConvert: (lead: any) => void;
 }
 
 export function CRMLeadsTable({ leads, onEdit, onDelete }: CRMLeadsTableProps) {
@@ -122,6 +123,15 @@ export function CRMLeadsTable({ leads, onEdit, onDelete }: CRMLeadsTableProps) {
             variant="ghost" 
             size="icon" 
             className="h-8 w-8 text-[#8A8FA3] hover:text-[#3D4FE8] hover:bg-[#3D4FE8]/10 rounded-full"
+            onClick={() => onConvert(row.original)}
+            title="Converter em Cliente"
+          >
+            <ArrowRightLeft className="h-3.5 w-3.5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-[#8A8FA3] hover:text-[#3D4FE8] hover:bg-[#3D4FE8]/10 rounded-full"
             onClick={() => onEdit(row.original)}
           >
             <Edit2 className="h-3.5 w-3.5" />
@@ -137,7 +147,7 @@ export function CRMLeadsTable({ leads, onEdit, onDelete }: CRMLeadsTableProps) {
         </div>
       ),
     },
-  ], [onEdit, onDelete]);
+  ], [onEdit, onDelete, onConvert]);
 
   const table = useReactTable({
     data: leads,

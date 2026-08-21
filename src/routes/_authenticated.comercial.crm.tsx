@@ -451,6 +451,7 @@ function CRMPage() {
             leads={leads} 
             onEdit={setSelectedLead} 
             onDelete={setLeadToDelete} 
+            onConvert={setLeadToConvert}
           />
         </>
       )}
