@@ -49,19 +49,19 @@ O QUE FAZER:
    - due_date (date)
    - installment_number (integer, nullable — ex: 3 de 12, null se avulso)
    - status (enum: pendente, pago, atrasado — calculado dinamicamente: 
-     "atrasado" = due_date < hoje E status ainda não é "pago")
+     {"atrasado"} = due_date {"<"} hoje E status ainda não é {"pago"})
    - paid_at (timestamp, nullable)
    - payment_method (texto, nullable — pode diferir do padrão do 
      contrato caso pago diferente)
    - notes (texto, nullable)
 
 3. Lógica de geração automática:
-   - Ao criar/editar um contrato do tipo "Recorrente" com start_date, 
+   - Ao criar/editar um contrato do tipo {"Recorrente"} com start_date, 
      monthly_value e mrr_months preenchidos: gerar automaticamente N 
      registros em `receivables` (um por mês, começando em start_date), 
      cada um com amount = monthly_value, due_date incrementando 1 mês por 
      parcela, installment_number de 1 até mrr_months.
-   - Ao criar/editar um contrato do tipo "Projeto Avulso": gerar um único 
+   - Ao criar/editar um contrato do tipo {"Projeto Avulso"}: gerar um único 
      registro em `receivables` com amount = valor do projeto, due_date = 
      start_date, installment_number = null.
    - Se o contrato for editado DEPOIS de já ter recebíveis gerados (ex: 
