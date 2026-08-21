@@ -245,7 +245,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         status: initialData ? initialData.status : 'active',
         risk_level: initialData ? initialData.risk_level : 'low',
         health_score: initialData ? initialData.health_score : 100,
-        lead_id: data.lead_id || (initialData ? initialData.lead_id : null)
+        lead_id: data.lead_id || (initialData?.lead_id ? initialData.lead_id : null)
       };
 
       let clientId = initialData?.id;
