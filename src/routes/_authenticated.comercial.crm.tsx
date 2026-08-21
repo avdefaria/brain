@@ -54,7 +54,7 @@ import { getLeads, getLeadStats, updateLeadPosition, getFunnelTypes, STAGES, del
 import { getCollaborators } from "@/lib/squads.functions";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { LeadConversionModal } from "@/components/LeadConversionModal";
-import { CRMFunnelChart } from "@/components/CRMFunnelChart";
+import { CRMFunnelChart, STAGE_COLORS } from "@/components/CRMFunnelChart";
 import { CRMLeadsTable } from "@/components/CRMLeadsTable";
 import { 
   AlertDialog,
@@ -301,9 +301,14 @@ function CRMPage() {
               <div key={stage.id} className="flex-1 min-w-[300px]">
                 <div className="flex items-center justify-between mb-4 px-2">
                   <div className="flex items-center gap-2">
+                    <div 
+                      className="w-2.5 h-2.5 rounded-full shrink-0" 
+                      style={{ backgroundColor: STAGE_COLORS[stage.id] || "#8A8FA3" }}
+                    />
                     <h3 className="font-title font-bold text-[#0E0E16] text-sm whitespace-nowrap">{stage.label}</h3>
                     <span className="text-xs font-bold text-[#8A8FA3] bg-[#F7F8FC] px-2 py-0.5 rounded-full border border-[#E4E6F0]">
                       {leads.filter((l: any) => l.funnel_stage === stage.id).length}
+
                     </span>
                   </div>
                 </div>
