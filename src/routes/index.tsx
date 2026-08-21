@@ -27,25 +27,40 @@ function IndexComponent() {
       </div>
       <div className="max-w-md text-sm text-gray-500 whitespace-pre-wrap font-mono p-4 bg-white rounded-lg shadow-sm border border-gray-100">
         {`REGRAS OBRIGATÓRIAS:
-- Não corrija nada ainda. Apenas adicione log temporário e me devolva o 
-  resultado.
+- Altere APENAS a lógica de submit do ClientRegistrationModal.tsx, 
+  especificamente a decisão entre criar (INSERT) e atualizar (UPDATE) 
+  cliente. Não altere os campos do formulário nem o payload em si, que 
+  já está correto.
+- Pode remover o console.log de debug temporário depois de confirmar a 
+  correção.
+
+DIAGNÓSTICO CONFIRMADO:
+A requisição está sendo enviada como PATCH para 
+\`/clients?id=eq.undefined\` — ou seja, o código está chamando a função de 
+ATUALIZAR um cliente existente, mas o ID do cliente está undefined 
+porque esse cliente ainda não foi criado. Isso acontece ao converter um 
+lead em cliente NOVO — deveria ser um INSERT (criar), não um UPDATE 
+(atualizar).
 
 O QUE FAZER:
 
-1. No ClientRegistrationModal.tsx, antes de enviar o payload de criação/
-   atualização de cliente para o servidor, adicione um console.log 
-   completo (JSON.stringify) de TODOS os campos do payload, incluindo 
-   valores undefined explicitamente visíveis (use 
-   JSON.stringify(payload, (key, value) => value === undefined ? "UNDEFINED_AQUI" : value)).
+1. Encontre no ClientRegistrationModal.tsx (ou na função de submit que 
+   ele chama) a lógica que decide entre criar e atualizar cliente. 
+   Corrija para que, no fluxo de CONVERSÃO DE LEAD, sempre seja feito um 
+   INSERT (criação de cliente novo), nunca um UPDATE — a menos que o 
+   modal também seja reaproveitado para editar cliente já existente, 
+   caso em que a lógica precisa checar corretamente se já existe um 
+   \`client.id\` válido antes de decidir qual operação fazer.
 
-2. Reproduza o erro (tente converter o mesmo lead que está dando erro) e 
-   me cole aqui o conteúdo EXATO desse console.log — todos os campos e 
-   valores, sem resumir ou interpretar.
+2. Depois do INSERT bem-sucedido, usar o ID retornado pelo Supabase para 
+   qualquer operação seguinte (ex: criar o registro em \`contracts\` com o 
+   monthly_value).
 
-3. Também me mostre a linha exata do código no server 
-   (createServerFn/handler de criação de cliente) onde o INSERT ou 
-   UPDATE no Supabase é executado, para eu confirmar qual campo da 
-   tabela está recebendo o "undefined".`}
+3. Remover o console.log de debug do payload (já cumpriu seu papel).
+
+Depois de aplicar, teste convertendo o mesmo lead de novo e confirme que 
+o cliente é criado sem erro de UUID. Me devolva a lista de arquivos 
+alterados.`}
       </div>
     </div>
   );
