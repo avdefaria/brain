@@ -61,13 +61,15 @@ const clientSchema = z.object({
   niche_id: z.string().min(1, "Nicho é obrigatório"),
   contract_type: z.enum(["recurring", "one-off"]),
   sales_channels: z.array(z.string()),
-  start_date: z.string().optional().or(z.literal("")),
+  start_date: z.string().min(1, "Data de início é obrigatória"),
   end_date_expected: z.string().optional().or(z.literal("")),
   scope_details: z.string(),
   extra_comments: z.string(),
   health_score: z.number().min(0).max(100),
   lead_id: z.string().uuid().optional().nullable(),
   monthly_value: z.number().optional().nullable(),
+  mrr_months: z.number().min(1, "Meses de MRR é obrigatório").optional().nullable(),
+  payment_method: z.string().optional().or(z.literal("")),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
@@ -136,6 +138,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
       health_score: initialData?.health_score ?? 100,
       lead_id: initialData?.lead_id || null,
       monthly_value: initialData?.contracts?.[0]?.monthly_value || 0,
+      mrr_months: initialData?.contracts?.[0]?.mrr_months || 12,
+      payment_method: initialData?.contracts?.[0]?.payment_method || "Pix",
     }
   });
 
@@ -163,6 +167,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         health_score: initialData.health_score ?? 100,
         lead_id: initialData.lead_id || (initialData.id ? null : initialData.lead_id) || null,
         monthly_value: initialData.monthly_value || initialData.contracts?.[0]?.monthly_value || 0,
+        mrr_months: initialData.mrr_months || initialData.contracts?.[0]?.mrr_months || 12,
+        payment_method: initialData.payment_method || initialData.contracts?.[0]?.payment_method || "Pix",
       });
     } else if (!initialData && open) {
       form.reset({
@@ -186,6 +192,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         health_score: 100,
         lead_id: null,
         monthly_value: 0,
+        mrr_months: 12,
+        payment_method: "Pix",
       });
     }
   }, [initialData, open, form]);
@@ -398,6 +406,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
               stage: 'Convertido em Cliente',
               entered_at: new Date().toISOString()
             } as any);
+        }
+
         // 4. Create or update contract record with financial data
         if (clientId) {
           // Find or create account for this client
@@ -418,20 +428,70 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
               type: data.contract_type,
               monthly_value: data.monthly_value || 0,
               start_date: data.start_date || new Date().toISOString(),
+              mrr_months: data.contract_type === 'recurring' ? data.mrr_months : null,
+              payment_method: data.payment_method,
               status: 'active'
             };
 
             // Check if contract exists
             const { data: existingContracts } = await supabase.from('contracts').select('id').eq('client_id', clientId).limit(1);
             
+            let contractId;
             if (existingContracts && existingContracts.length > 0) {
-              await supabase.from('contracts').update(contractData as any).eq('id', (existingContracts[0] as any).id);
+              contractId = (existingContracts[0] as any).id;
+              await supabase.from('contracts').update(contractData as any).eq('id', contractId);
             } else {
-              await supabase.from('contracts').insert([contractData] as any);
+              const { data: newContract } = await supabase.from('contracts').insert([contractData] as any).select('id').single();
+              contractId = newContract?.id;
+            }
+
+            // Generate receivables if new or no receivables exist
+            if (contractId) {
+              const { count } = await supabase
+                .from('receivables')
+                .select('*', { count: 'exact', head: true })
+                .eq('contract_id', contractId);
+              
+              if (count === 0) {
+                const receivables: any[] = [];
+                const startDateStr = data.start_date || new Date().toISOString().split('T')[0];
+                
+                if (data.contract_type === 'recurring') {
+                  const months = data.mrr_months || 1;
+                  for (let i = 0; i < months; i++) {
+                    const dueDate = new Date(startDateStr + 'T00:00:00');
+                    dueDate.setMonth(dueDate.getMonth() + i);
+                    
+                    receivables.push({
+                      client_id: clientId,
+                      contract_id: contractId,
+                      amount: data.monthly_value || 0,
+                      due_date: dueDate.toISOString().split('T')[0],
+                      installment_number: i + 1,
+                      status: 'pendente',
+                      payment_method: data.payment_method
+                    });
+                  }
+                } else {
+                  receivables.push({
+                    client_id: clientId,
+                    contract_id: contractId,
+                    amount: data.monthly_value || 0,
+                    due_date: startDateStr,
+                    installment_number: null,
+                    status: 'pendente',
+                    payment_method: data.payment_method
+                  });
+                }
+
+                if (receivables.length > 0) {
+                  const { error: recError } = await supabase.from('receivables').insert(receivables);
+                  if (recError) console.error("Error generating receivables:", recError);
+                }
+              }
             }
           }
         }
-      }
       }
 
       toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
@@ -615,6 +675,36 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                 </Select>
                 {form.formState.errors.contract_type && <p className="text-xs text-red-500">{form.formState.errors.contract_type.message}</p>}
               </div>
+              
+              {form.watch("contract_type") === 'recurring' && (
+                <div className="space-y-2">
+                  <Label>Meses de MRR <span className="text-red-500">*</span></Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    {...form.register("mrr_months", { valueAsNumber: true })}
+                    className="bg-white dark:bg-[#1A1A24]"
+                    placeholder="Ex: 12"
+                  />
+                  {form.formState.errors.mrr_months && <p className="text-xs text-red-500">{form.formState.errors.mrr_months.message}</p>}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Método de Pagamento</Label>
+                <Select onValueChange={(v) => form.setValue("payment_method", v)} value={form.watch("payment_method") || ""}>
+                  <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pix">Pix</SelectItem>
+                    <SelectItem value="Boleto">Boleto</SelectItem>
+                    <SelectItem value="Cartão">Cartão</SelectItem>
+                    <SelectItem value="Transferência">Transferência</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label>Valor {form.watch("contract_type") === 'recurring' ? 'Mensal (MRR)' : 'do Projeto'}</Label>
                 <Controller
