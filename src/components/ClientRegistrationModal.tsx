@@ -126,16 +126,16 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
       contact_email: initialData?.contact_email || "",
       contact_whatsapp: initialData?.contact_whatsapp || "",
       squad_ids: initialData?.account_squads?.map((as: any) => as.squad_id) || [],
-      niche_id: initialData?.niche_id || "",
-      contract_type: (initialData?.contract_type as any) || "recurring",
+      niche_id: initialData?.niche_id || (initialData?.niches?.id) || "",
+      contract_type: initialData?.contracts?.[0]?.type === 'one-off' ? 'one-off' : 'recurring',
       start_date: initialData?.start_date || new Date().toISOString().split('T')[0] || "",
       end_date_expected: initialData?.end_date_expected || "",
       scope_details: initialData?.scope_details || "",
       extra_comments: initialData?.extra_comments || "",
-      sales_channels: initialData?.sales_channels || [],
+      sales_channels: initialData?.client_sales_channels?.map((csc: any) => csc.sales_channels?.name).filter(Boolean) || [],
       health_score: initialData?.health_score ?? 100,
       lead_id: initialData?.lead_id || null,
-      monthly_value: initialData?.monthly_value || 0,
+      monthly_value: initialData?.contracts?.[0]?.monthly_value || 0,
     }
   });
 
@@ -153,16 +153,16 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         contact_email: initialData.contact_email || "",
         contact_whatsapp: initialData.contact_whatsapp || "",
         squad_ids: initialData.squad_ids || initialData.account_squads?.map((as: any) => as.squad_id) || [],
-        niche_id: initialData.niche_id || "",
-        contract_type: (initialData.contract_type as any) || "recurring",
+        niche_id: initialData.niche_id || initialData.niches?.id || "",
+        contract_type: (initialData.contracts?.[0]?.type as any) || "recurring",
         start_date: initialData.start_date || new Date().toISOString().split('T')[0] || "",
         end_date_expected: initialData.end_date_expected || "",
         scope_details: initialData.scope_details || "",
         extra_comments: initialData.extra_comments || "",
-        sales_channels: initialData.sales_channels || [],
+        sales_channels: initialData.sales_channels || initialData.client_sales_channels?.map((csc: any) => csc.sales_channels?.name).filter(Boolean) || [],
         health_score: initialData.health_score ?? 100,
         lead_id: initialData.lead_id || (initialData.id ? null : initialData.lead_id) || null,
-        monthly_value: initialData.monthly_value || 0,
+        monthly_value: initialData.monthly_value || initialData.contracts?.[0]?.monthly_value || 0,
       });
     } else if (!initialData && open) {
       form.reset({
@@ -452,7 +452,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
       <DialogContent className="sm:max-w-[800px] h-[90vh] overflow-y-auto p-0 border-[#E4E6F0] dark:border-[#2A2A36] dark:bg-[#1A1A24]">
         <div className="sticky top-0 bg-white dark:bg-[#1A1A24] z-10 px-8 py-6 border-b border-[#E4E6F0] dark:border-[#2A2A36]">
           <DialogTitle className="text-2xl font-title font-bold text-[#0E0E16] dark:text-white">
-            {initialData?.lead_id ? "Converter Lead em Cliente" : initialData ? "Editar cliente" : "Cadastrar cliente"}
+            {initialData?.lead_id && !initialData?.id ? "Converter Lead em Cliente" : initialData?.id ? "Editar Cliente" : "Cadastrar Cliente"}
           </DialogTitle>
         </div>
 

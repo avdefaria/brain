@@ -27,29 +27,37 @@ function IndexComponent() {
       </div>
       <div className="max-w-md text-sm text-gray-500 whitespace-pre-wrap font-mono p-4 bg-white rounded-lg shadow-sm border border-gray-100">
         {`REGRAS OBRIGATÓRIAS:
-- Altere APENAS a lógica que preenche os campos do ClientRegistrationModal 
-  ao ABRIR o modal (não a lógica de submit/salvar, que já foi corrigida e 
-  está funcionando). Não reintroduza o bug de UUID.
-- Confirme antes: a correção anterior (INSERT vs UPDATE) removeu ou 
-  quebrou o useEffect/estado inicial que populava os campos a partir do 
-  lead? Me diga sim ou não.
+- Altere APENAS a lógica de carregamento de dados ao abrir o modal de 
+  edição de cliente a partir de "Gestão de Clientes" → Editar. Não altere 
+  o fluxo de conversão de lead (LeadConversionModal), nem a listagem de 
+  Gestão de Clientes que já está exibindo os dados corretos.
+- Antes de corrigir, me diga: o botão "Editar" em Gestão de Clientes está 
+  abrindo o componente ClientRegistrationModal.tsx (o mesmo usado na 
+  conversão de lead) ou existe um componente separado de edição de 
+  cliente? Se for o mesmo componente reaproveitado, confirme se ele tem 
+  lógica para diferenciar "criando a partir de lead" vs "editando cliente 
+  já existente".
 
 O QUE FAZER:
 
-1. Ao abrir o modal de conversão a partir de um lead, pré-preencher:
-   - Squads vinculados: os mesmos squads já vinculados ao lead, se 
-     houver esse dado no lead (se não houver campo de squad no lead, 
-     apenas ignore este item e me avise).
-   - Canais de Vendas: os mesmos já marcados no lead.
-   - Tipo de Contrato: "Recorrente" se o lead tiver MRR preenchido, 
-     "Projeto Avulso" se tiver apenas Receita Única.
-   - Valor Mensal (MRR): valor do MRR do lead.
+1. Se for o mesmo componente reaproveitado: corrigir para que, ao abrir 
+   em modo EDIÇÃO (cliente já existe, não veio de conversão de lead), 
+   ele carregue os dados REAIS do cliente do banco — incluindo Canais de 
+   Vendas (via JOIN com a tabela de junção do cliente) e Valor Mensal 
+   (MRR) do contrato — e NÃO tente puxar dados de um lead.
 
-2. Todos os campos continuam editáveis — é só preenchimento inicial.
+2. Corrigir também o título do modal: deve mostrar "Editar Cliente" 
+   quando estiver editando, e "Converter Lead em Cliente" apenas quando 
+   estiver de fato convertendo um lead novo.
 
-Depois de aplicar, teste convertendo um lead com squad, canais e MRR 
-preenchidos, confirme que tudo aparece pré-preenchido no popup, e me 
-devolva a lista de arquivos alterados.`}
+3. Confirme com SELECT real que os dados de Canais de Vendas e MRR 
+   realmente existem salvos no banco para os clientes "Empresa Teste - 
+   CONVERSÃO" e "TechFlow Systems" antes de mexer no carregamento (para 
+   confirmar que o problema é só de leitura/exibição, não de persistência).
+
+Depois de aplicar, teste abrindo "Editar" em um cliente que já tem canais 
+e MRR salvos, e confirme que os campos aparecem preenchidos corretamente. 
+Me devolva a resposta do diagnóstico e a lista de arquivos alterados.`}
       </div>
     </div>
   );
