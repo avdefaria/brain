@@ -410,7 +410,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
           if (accounts && accounts.length > 0) {
             accountId = accounts[0].id;
           } else {
-            const { data: newAccount } = await supabase.from('accounts').insert({ client_id: clientId, name: data.name }).select('id').single();
+            const { data: newAccount } = await supabase.from('accounts').insert({ client_id: clientId, name: data.name } as any).select('id').single();
             accountId = newAccount?.id;
           }
 
@@ -428,9 +428,9 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             const { data: existingContracts } = await supabase.from('contracts').select('id').eq('client_id', clientId).limit(1);
             
             if (existingContracts && existingContracts.length > 0) {
-              await supabase.from('contracts').update(contractData).eq('id', existingContracts[0].id);
+              await supabase.from('contracts').update(contractData as any).eq('id', (existingContracts[0] as any).id);
             } else {
-              await supabase.from('contracts').insert([contractData]);
+              await supabase.from('contracts').insert([contractData] as any);
             }
           }
         }
