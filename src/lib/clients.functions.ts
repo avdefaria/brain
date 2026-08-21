@@ -221,7 +221,7 @@ export const getChurnAnalysisData = createServerFn({ method: "GET" })
       monthIndex.setMonth(monthIndex.getMonth() - (5 - i));
       const count = churnedClients.filter(c => {
         if (!c.cancelled_at) return false;
-        const cancelDate = new Date(c.cancelled_at);
+        const cancelDate = new Date(c.cancelled_at as string);
         return cancelDate.getMonth() === monthIndex.getMonth() && 
                cancelDate.getFullYear() === monthIndex.getFullYear();
       }).length;
