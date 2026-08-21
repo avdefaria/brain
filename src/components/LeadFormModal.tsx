@@ -610,7 +610,6 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         </DialogFooter>
       </DialogContent>
     </Dialog>
-    </Dialog>
 
     <Dialog open={!!funnelToDelete} onOpenChange={(open) => !open && setFunnelToDelete(null)}>
       <DialogContent className="sm:max-w-[400px]">
