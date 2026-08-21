@@ -51,7 +51,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
-import { getClientsWithChannels, updateClientStatus } from "@/lib/clients.functions";
+import { getClientsWithChannels } from "@/lib/sales-channels.functions";
+import { updateClientStatus } from "@/lib/clients.functions";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
