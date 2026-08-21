@@ -216,7 +216,7 @@ function CRMPage() {
 
       <LeadFormModal 
         isOpen={isCreateModalOpen || !!selectedLead} 
-        onOpenChange={(open) => {
+        onOpenChange={(open: boolean) => {
           if (!open) {
             setIsCreateModalOpen(false);
             setSelectedLead(null);
@@ -228,7 +228,7 @@ function CRMPage() {
       <LeadConversionModal 
         lead={leadToConvert}
         isOpen={!!leadToConvert}
-        onOpenChange={(open) => !open && setLeadToConvert(null)}
+        onOpenChange={(open: boolean) => !open && setLeadToConvert(null)}
       />
     </div>
   );
