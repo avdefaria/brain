@@ -234,7 +234,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         extra_comments: data.extra_comments,
         status: initialData ? initialData.status : 'active',
         risk_level: initialData ? initialData.risk_level : 'low',
-        health_score: initialData ? initialData.health_score : 100
+        health_score: initialData ? initialData.health_score : 100,
+        lead_id: initialData ? initialData.lead_id : null
       };
 
       let clientId = initialData?.id;
