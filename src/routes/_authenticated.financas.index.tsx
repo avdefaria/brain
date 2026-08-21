@@ -14,7 +14,9 @@ import {
   Download,
   Wallet,
   Building2,
-  Trash2
+  Trash2,
+  Check,
+  ChevronsUpDown
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -23,6 +25,19 @@ import { getFinanceSummary, getReceivables, updateReceivableStatus, deleteReceiv
 import { getClientsWithChannels } from "@/lib/sales-channels.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -61,6 +76,7 @@ function FinancesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [clientFilter, setClientFilter] = useState("all");
+  const [openClientCombo, setOpenClientCombo] = useState(false);
 
   const fetchSummary = useServerFn(getFinanceSummary);
   const fetchReceivables = useServerFn(getReceivables);
@@ -241,17 +257,66 @@ function FinancesPage() {
                 </SelectContent>
               </Select>
 
-              <Select defaultValue="all" onValueChange={setClientFilter}>
-                <SelectTrigger className="w-[180px] border-[#E4E6F0] rounded-full text-xs">
-                  <SelectValue placeholder="Cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos Clientes</SelectItem>
-                  {clients?.map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={openClientCombo} onOpenChange={setOpenClientCombo}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openClientCombo}
+                    className="w-[200px] justify-between border-[#E4E6F0] rounded-full text-xs font-normal"
+                  >
+                    {clientFilter === "all"
+                      ? "Todos Clientes"
+                      : clients?.find((c: any) => c.id === clientFilter)?.name}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[200px] p-0 border-[#E4E6F0] rounded-xl overflow-hidden" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar cliente..." className="h-9" />
+                    <CommandList>
+                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            setClientFilter("all");
+                            setOpenClientCombo(false);
+                          }}
+                          className="text-xs cursor-pointer"
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              clientFilter === "all" ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          Todos Clientes
+                        </CommandItem>
+                        {clients?.map((c: any) => (
+                          <CommandItem
+                            key={c.id}
+                            value={c.name}
+                            onSelect={() => {
+                              setClientFilter(c.id);
+                              setOpenClientCombo(false);
+                            }}
+                            className="text-xs cursor-pointer"
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                clientFilter === c.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {c.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </CardHeader>
