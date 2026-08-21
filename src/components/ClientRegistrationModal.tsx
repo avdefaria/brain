@@ -119,15 +119,18 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
       state: "",
       city: "",
       corporate_email: "",
-      contact_email: null,
+      contact_email: "",
+      contact_whatsapp: "",
       squad_ids: [],
       niche_id: "",
       contract_type: "recurring",
       start_date: new Date().toISOString().split('T')[0] || "",
       end_date_expected: "",
-      scope_details: null,
-      extra_comments: null,
+      scope_details: "",
+      extra_comments: "",
       sales_channels: [],
+      health_score: 100,
+      lead_id: null,
     }
   });
 
