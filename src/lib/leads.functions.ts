@@ -192,12 +192,15 @@ export const createLead = createServerFn({ method: "POST" })
         .select('id')
         .in('name', sales_channels);
 
-      if (channels) {
+      if (channels && channels.length > 0) {
         const junctionData = channels.map(c => ({
           lead_id: lead.id,
           sales_channel_id: c.id
         }));
-        await supabase.from('lead_sales_channels' as any).insert(junctionData as any);
+        const { error: junctionError } = await supabase
+          .from('lead_sales_channels')
+          .insert(junctionData);
+        if (junctionError) console.error("Error inserting lead sales channels:", junctionError);
       }
     }
     return lead;
@@ -247,7 +250,7 @@ export const updateLead = createServerFn({ method: "POST" })
     // Update sales channels N:N
     if (sales_channels !== undefined) {
       // Remove old
-      await supabase.from('lead_sales_channels' as any).delete().eq('lead_id', id);
+      await supabase.from('lead_sales_channels').delete().eq('lead_id', id);
 
       // Insert new
       if (sales_channels.length > 0) {
@@ -256,12 +259,15 @@ export const updateLead = createServerFn({ method: "POST" })
           .select('id')
           .in('name', sales_channels);
 
-        if (channels) {
+        if (channels && channels.length > 0) {
           const junctionData = channels.map(c => ({
             lead_id: id,
             sales_channel_id: c.id
           }));
-          await supabase.from('lead_sales_channels' as any).insert(junctionData as any);
+          const { error: junctionError } = await supabase
+            .from('lead_sales_channels')
+            .insert(junctionData);
+          if (junctionError) console.error("Error updating lead sales channels:", junctionError);
         }
       }
     }
