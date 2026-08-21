@@ -50,10 +50,22 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { getLeads, getLeadStats, updateLeadPosition, getFunnelTypes, STAGES } from "@/lib/leads.functions";
+import { getLeads, getLeadStats, updateLeadPosition, getFunnelTypes, STAGES, deleteLead } from "@/lib/leads.functions";
 import { getCollaborators } from "@/lib/squads.functions";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { LeadConversionModal } from "@/components/LeadConversionModal";
+import { CRMFunnelChart } from "@/components/CRMFunnelChart";
+import { CRMLeadsTable } from "@/components/CRMLeadsTable";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/comercial/crm")({
   component: CRMPage,
@@ -110,7 +122,23 @@ function CRMPage() {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [leadToDelete, setLeadToDelete] = useState<any>(null);
   const [leadToConvert, setLeadToConvert] = useState<any>(null);
+
+  const deleteLeadFn = useServerFn(deleteLead);
+
+  const handleDeleteLead = async () => {
+    if (!leadToDelete?.id) return;
+    try {
+      await deleteLeadFn({ data: leadToDelete.id });
+      toast.success("Lead excluído com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["leads", filterParams] });
+      queryClient.invalidateQueries({ queryKey: ["lead-stats", filterParams] });
+      setLeadToDelete(null);
+    } catch (error) {
+      toast.error("Erro ao excluir lead");
+    }
+  };
 
   const onDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -387,6 +415,17 @@ function CRMPage() {
         </DragDropContext>
       )}
 
+      {!isLoading && (
+        <>
+          <CRMFunnelChart leads={leads} />
+          <CRMLeadsTable 
+            leads={leads} 
+            onEdit={setSelectedLead} 
+            onDelete={setLeadToDelete} 
+          />
+        </>
+      )}
+
       <LeadFormModal 
         isOpen={isCreateModalOpen || !!selectedLead} 
         onOpenChange={(open: boolean) => {
@@ -403,6 +442,26 @@ function CRMPage() {
         isOpen={!!leadToConvert}
         onOpenChange={(open: boolean) => !open && setLeadToConvert(null)}
       />
+
+      <AlertDialog open={!!leadToDelete} onOpenChange={(open) => !open && setLeadToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Lead</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o lead <strong>{leadToDelete?.name}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteLead}
+              className="bg-[#EF4444] hover:bg-[#EF4444]/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
