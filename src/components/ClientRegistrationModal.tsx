@@ -7,8 +7,11 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter 
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -383,6 +386,14 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="px-8 py-8 space-y-8">
+          {initialData?._warning_both_revenues && (
+            <Alert className="bg-amber-50 border-amber-200 text-amber-800">
+              <InfoIcon className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-xs font-medium">
+                Este lead possui Receita Única de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(initialData._warning_both_revenues)} que não foi mapeada automaticamente. Caso deseje, registre-a separadamente ou adicione nos detalhes do escopo abaixo.
+              </AlertDescription>
+            </Alert>
+          )}
           <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
               <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
