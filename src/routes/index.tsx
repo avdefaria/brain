@@ -27,37 +27,39 @@ function IndexComponent() {
       </div>
       <div className="max-w-md text-sm text-gray-500 whitespace-pre-wrap font-mono p-4 bg-white rounded-lg shadow-sm border border-gray-100">
         {`REGRAS OBRIGATÓRIAS:
-- Altere APENAS a lógica de carregamento de dados ao abrir o modal de 
-  edição de cliente a partir de "Gestão de Clientes" → Editar. Não altere 
-  o fluxo de conversão de lead (LeadConversionModal), nem a listagem de 
-  Gestão de Clientes que já está exibindo os dados corretos.
-- Antes de corrigir, me diga: o botão "Editar" em Gestão de Clientes está 
-  abrindo o componente ClientRegistrationModal.tsx (o mesmo usado na 
-  conversão de lead) ou existe um componente separado de edição de 
-  cliente? Se for o mesmo componente reaproveitado, confirme se ele tem 
-  lógica para diferenciar "criando a partir de lead" vs "editando cliente 
-  já existente".
+- Altere APENAS o componente de toggle "Status" (Ativo/Inativo) na 
+  listagem de Gestão de Clientes e a função que salva essa mudança. Não 
+  altere outras colunas (Nicho, Canais, Health Score, Risco), nem o 
+  modal de edição de cliente.
+- RLS explícito de UPDATE na tabela clients para o campo de status, caso 
+  ainda não exista.
+- Antes de corrigir, confirme: o campo de status do cliente já existe 
+  na tabela (ex: \`is_active\` boolean, ou \`status\` texto)? O clique no 
+  toggle está de fato disparando uma chamada ao servidor, ou é só um 
+  toggle visual sem estado conectado ao banco?
 
 O QUE FAZER:
 
-1. Se for o mesmo componente reaproveitado: corrigir para que, ao abrir 
-   em modo EDIÇÃO (cliente já existe, não veio de conversão de lead), 
-   ele carregue os dados REAIS do cliente do banco — incluindo Canais de 
-   Vendas (via JOIN com a tabela de junção do cliente) e Valor Mensal 
-   (MRR) do contrato — e NÃO tente puxar dados de um lead.
+1. Corrigir o toggle para que, ao clicar, ele realmente atualize o campo 
+   de status do cliente no banco via server function (contexto 
+   autenticado, seguindo o mesmo padrão já corrigido em outros módulos).
 
-2. Corrigir também o título do modal: deve mostrar "Editar Cliente" 
-   quando estiver editando, e "Converter Lead em Cliente" apenas quando 
-   estiver de fato convertendo um lead novo.
+2. Cores do toggle:
+   - Ativo: fundo verde #22C55E, bolinha à direita.
+   - Inativo: fundo vermelho #EF4444, bolinha à esquerda.
 
-3. Confirme com SELECT real que os dados de Canais de Vendas e MRR 
-   realmente existem salvos no banco para os clientes "Empresa Teste - 
-   CONVERSÃO" e "TechFlow Systems" antes de mexer no carregamento (para 
-   confirmar que o problema é só de leitura/exibição, não de persistência).
+3. Confirmar com SELECT real, depois do clique, que o valor mudou no 
+   banco — não confiar apenas na mudança visual do toggle.
 
-Depois de aplicar, teste abrindo "Editar" em um cliente que já tem canais 
-e MRR salvos, e confirme que os campos aparecem preenchidos corretamente. 
-Me devolva a resposta do diagnóstico e a lista de arquivos alterados.`}
+4. Se desativar um cliente tiver alguma implicação em outras telas (ex: 
+   não aparecer mais em listagens de "clientes ativos" usadas em outros 
+   módulos), me avise antes de implementar qualquer filtro adicional — 
+   não presuma esse comportamento sem confirmação.
+
+Depois de aplicar, teste clicando no toggle de um cliente, recarregue a 
+página (F5) e confirme que o status mudou e PERSISTIU (não voltou ao 
+estado anterior). Me devolva o resultado do diagnóstico inicial e a 
+lista de arquivos alterados.`}
       </div>
     </div>
   );
