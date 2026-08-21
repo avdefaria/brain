@@ -15,7 +15,7 @@ export const STAGES = [
 
 export const getLeads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { responsible_id?: string, startDate?: string, endDate?: string, funnel_type_id?: string } | void) => data)
+  .validator((data: { responsible_id?: string | null, startDate?: string | null, endDate?: string | null, funnel_type_id?: string | null } | void) => data)
   .handler(async ({ context, data }) => {
     const supabase = context.supabase;
     let query = supabase
@@ -55,7 +55,7 @@ export const getLeads = createServerFn({ method: "GET" })
 
 export const getLeadStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { responsible_id?: string, startDate?: string, endDate?: string, funnel_type_id?: string } | void) => data)
+  .validator((data: { responsible_id?: string | null, startDate?: string | null, endDate?: string | null, funnel_type_id?: string | null } | void) => data)
   .handler(async ({ context, data }) => {
     const supabase = context.supabase;
     let query = supabase

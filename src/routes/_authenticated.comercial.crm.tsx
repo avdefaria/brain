@@ -76,10 +76,10 @@ function CRMPage() {
   });
 
   const filterParams = useMemo(() => ({
-    responsible_id: responsibleId,
-    funnel_type_id: funnelTypeId,
-    startDate: dateRange.from?.toISOString(),
-    endDate: dateRange.to?.toISOString()
+    responsible_id: responsibleId === "all" ? null : responsibleId,
+    funnel_type_id: funnelTypeId === "all" ? null : funnelTypeId,
+    startDate: dateRange?.from?.toISOString() || null,
+    endDate: dateRange?.to?.toISOString() || null
   }), [responsibleId, funnelTypeId, dateRange]);
 
   const { data: leads = [], isLoading } = useQuery({
@@ -212,10 +212,10 @@ function CRMPage() {
               <Calendar
                 initialFocus
                 mode="range"
-                defaultMonth={dateRange?.from}
+                defaultMonth={dateRange?.from || new Date()}
                 selected={{
-                  from: dateRange.from,
-                  to: dateRange.to,
+                  from: dateRange?.from || undefined,
+                  to: dateRange?.to || undefined,
                 }}
                 onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
                 numberOfMonths={2}
