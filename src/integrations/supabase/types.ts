@@ -517,6 +517,38 @@ export type Database = {
           },
         ]
       }
+      lead_stage_history: {
+        Row: {
+          entered_at: string
+          exited_at: string | null
+          id: string
+          lead_id: string
+          stage: string
+        }
+        Insert: {
+          entered_at?: string
+          exited_at?: string | null
+          id?: string
+          lead_id: string
+          stage: string
+        }
+        Update: {
+          entered_at?: string
+          exited_at?: string | null
+          id?: string
+          lead_id?: string
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_stage_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           company: string | null
