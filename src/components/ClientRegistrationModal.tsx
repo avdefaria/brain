@@ -362,6 +362,39 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             }
           }
         }
+      }
+
+      // Mark lead as converted if this was a conversion
+      if (data.lead_id) {
+        console.log("Marking lead as converted:", data.lead_id);
+        
+        // 1. Update lead record
+        const { error: leadUpdateError } = await supabase
+          .from('leads')
+          .update({ converted_at: new Date().toISOString() })
+          .eq('id', data.lead_id);
+        
+        if (leadUpdateError) {
+          console.error("Error updating lead converted_at:", leadUpdateError);
+        }
+
+        // 2. Register stage history final entry
+        // First close previous
+        await supabase
+          .from('lead_stage_history' as any)
+          .update({ exited_at: new Date().toISOString() } as any)
+          .eq('lead_id', data.lead_id)
+          .is('exited_at', null);
+
+        // Then insert new "Converted" stage
+        await supabase
+          .from('lead_stage_history' as any)
+          .insert({
+            lead_id: data.lead_id,
+            stage: 'Convertido em Cliente',
+            entered_at: new Date().toISOString()
+          } as any);
+      }
 
       toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
       onOpenChange(false);
