@@ -320,22 +320,20 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
           // If no channels selected but was editing, clear them
           await supabase.from('client_sales_channels').delete().eq('client_id', clientId);
         }
-        }
 
         // Handle account_squads junction table
-        if (clientId) {
-          // Find the primary account for this client
-          const { data: accounts, error: accountsError } = await supabase
-            .from('accounts')
-            .select('id')
-            .eq('client_id', clientId)
-            .limit(1);
-            
-          if (accountsError) {
-            console.error("Error fetching account for squad link:", accountsError);
-          } else if (accounts && accounts.length > 0) {
-            const accountId = accounts[0]?.id;
-            if (!accountId) throw new Error("ID da conta não encontrado");
+        // Find the primary account for this client
+        const { data: accounts, error: accountsError } = await supabase
+          .from('accounts')
+          .select('id')
+          .eq('client_id', clientId)
+          .limit(1);
+          
+        if (accountsError) {
+          console.error("Error fetching account for squad link:", accountsError);
+        } else if (accounts && accounts.length > 0) {
+          const accountId = accounts[0]?.id;
+          if (accountId) {
             const selectedSquadIds: string[] = data.squad_ids || [];
 
             // 1. Clear existing relationships
@@ -360,7 +358,6 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                 throw new Error(`Erro ao vincular squads: ${sqJunctionError.message}`);
               }
             }
-          }
           }
         }
 
