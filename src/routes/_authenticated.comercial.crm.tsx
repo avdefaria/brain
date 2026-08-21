@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
   Plus, 
   Search, 
@@ -11,15 +11,31 @@ import {
   Briefcase,
   AlertCircle,
   MoreVertical,
-  Calendar,
+  Calendar as CalendarIcon,
   MessageSquare,
   User,
   Loader2,
   ArrowRightLeft,
   ChevronRight,
   Clock,
-  MessageCircle
+  MessageCircle,
+  X
 } from "lucide-react";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +50,8 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { getLeads, getLeadStats, updateLeadPosition, STAGES } from "@/lib/leads.functions";
+import { getLeads, getLeadStats, updateLeadPosition, getFunnelTypes, STAGES } from "@/lib/leads.functions";
+import { getCollaborators } from "@/lib/squads.functions";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { LeadConversionModal } from "@/components/LeadConversionModal";
 
@@ -46,17 +63,50 @@ function CRMPage() {
   const queryClient = useQueryClient();
   const fetchLeads = useServerFn(getLeads);
   const fetchStats = useServerFn(getLeadStats);
+  const fetchCollaborators = useServerFn(getCollaborators);
+  const fetchFunnelTypes = useServerFn(getFunnelTypes);
   const updatePosition = useServerFn(updateLeadPosition);
 
+  // Filter states
+  const [responsibleId, setResponsibleId] = useState<string>("all");
+  const [funnelTypeId, setFunnelTypeId] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined
+  });
+
+  const filterParams = useMemo(() => ({
+    responsible_id: responsibleId,
+    funnel_type_id: funnelTypeId,
+    startDate: dateRange.from?.toISOString(),
+    endDate: dateRange.to?.toISOString()
+  }), [responsibleId, funnelTypeId, dateRange]);
+
   const { data: leads = [], isLoading } = useQuery({
-    queryKey: ["leads"],
-    queryFn: () => fetchLeads(),
+    queryKey: ["leads", filterParams],
+    queryFn: () => fetchLeads({ data: filterParams }),
   });
 
   const { data: stats } = useQuery({
-    queryKey: ["lead-stats"],
-    queryFn: () => fetchStats(),
+    queryKey: ["lead-stats", filterParams],
+    queryFn: () => fetchStats({ data: filterParams }),
   });
+
+  const { data: collaborators = [] } = useQuery({
+    queryKey: ["collaborators"],
+    queryFn: () => fetchCollaborators(),
+  });
+
+  const { data: funnelTypes = [] } = useQuery({
+    queryKey: ["funnel-types"],
+    queryFn: () => fetchFunnelTypes(),
+  });
+
+  const resetFilters = () => {
+    setResponsibleId("all");
+    setFunnelTypeId("all");
+    setDateRange({ from: undefined, to: undefined });
+  };
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
@@ -76,8 +126,8 @@ function CRMPage() {
           position: destination.index
         }
       });
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
-      queryClient.invalidateQueries({ queryKey: ["lead-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["leads", filterParams] });
+      queryClient.invalidateQueries({ queryKey: ["lead-stats", filterParams] });
     } catch (error) {
       toast.error("Erro ao atualizar posição do lead");
     }
@@ -98,17 +148,102 @@ function CRMPage() {
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-title font-bold text-[#0E0E16]">CRM</h1>
           <p className="text-sm text-[#8A8FA3]">Gestão do funil de vendas e novos negócios</p>
         </div>
-        <Button 
-          className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 gap-2 font-bold"
-          onClick={() => setIsCreateModalOpen(true)}
-        >
-          <Plus className="h-4 w-4" /> Novo Lead
-        </Button>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Responsible Filter */}
+          <Select value={responsibleId} onValueChange={setResponsibleId}>
+            <SelectTrigger className="w-[200px] h-10 rounded-full border-[#E4E6F0] bg-white text-xs font-medium">
+              <div className="flex items-center gap-2">
+                <User className="h-3.5 w-3.5 text-[#8A8FA3]" />
+                <SelectValue placeholder="Responsável" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os responsáveis</SelectItem>
+              {collaborators.map((c: any) => (
+                <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Funnel Filter */}
+          <Select value={funnelTypeId} onValueChange={setFunnelTypeId}>
+            <SelectTrigger className="w-[180px] h-10 rounded-full border-[#E4E6F0] bg-white text-xs font-medium">
+              <div className="flex items-center gap-2">
+                <Filter className="h-3.5 w-3.5 text-[#8A8FA3]" />
+                <SelectValue placeholder="Funil" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os funis</SelectItem>
+              {funnelTypes.map((f: any) => (
+                <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Period Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="h-10 px-4 rounded-full border-[#E4E6F0] bg-white text-xs font-medium gap-2 hover:bg-[#F7F8FC]"
+              >
+                <CalendarIcon className="h-3.5 w-3.5 text-[#8A8FA3]" />
+                {dateRange.from ? (
+                  dateRange.to ? (
+                    <>
+                      {format(dateRange.from, "dd/MM/yy")} - {format(dateRange.to, "dd/MM/yy")}
+                    </>
+                  ) : (
+                    format(dateRange.from, "dd/MM/yy")
+                  )
+                ) : (
+                  "Período"
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange?.from}
+                selected={{
+                  from: dateRange.from,
+                  to: dateRange.to,
+                }}
+                onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
+                numberOfMonths={2}
+                locale={ptBR}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* Reset Filters */}
+          {(responsibleId !== "all" || funnelTypeId !== "all" || dateRange.from) && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="h-10 w-10 rounded-full text-[#EF4444] hover:bg-red-50 hover:text-[#EF4444]"
+              onClick={resetFilters}
+              title="Limpar filtros"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+
+          <Button 
+            className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 gap-2 font-bold h-10"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <Plus className="h-4 w-4" /> Novo Lead
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
