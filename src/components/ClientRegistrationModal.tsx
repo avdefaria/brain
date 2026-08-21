@@ -396,7 +396,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                 {form.formState.errors.name && <p className="text-xs text-red-500">{form.formState.errors.name.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cnpj_cpf">CNPJ/CPF <span className="text-red-500">*</span></Label>
+                <Label htmlFor="cnpj_cpf">CNPJ/CPF</Label>
                 <Controller
                   control={form.control}
                   name="cnpj_cpf"
@@ -413,7 +413,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                 {form.formState.errors.cnpj_cpf && <p className="text-xs text-red-500">{form.formState.errors.cnpj_cpf.message}</p>}
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Endereço completo <span className="text-red-500">*</span></Label>
+                <Label htmlFor="address">Endereço completo</Label>
                 <Input id="address" {...form.register("address")} placeholder="Rua, número, complemento, bairro" className="bg-white dark:bg-[#1A1A24]" />
                 {form.formState.errors.address && <p className="text-xs text-red-500">{form.formState.errors.address.message}</p>}
               </div>
@@ -432,16 +432,16 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="state">Estado/Província <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="state">Estado/Província</Label>
                   <Input id="state" {...form.register("state")} placeholder="UF" className="bg-white dark:bg-[#1A1A24]" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="city">Cidade <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="city">Cidade</Label>
                   <Input id="city" {...form.register("city")} placeholder="Cidade" className="bg-white dark:bg-[#1A1A24]" />
                 </div>
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="corporate_email">Email corporativo <span className="text-red-500">*</span></Label>
+                <Label htmlFor="corporate_email">Email corporativo</Label>
                 <Input id="corporate_email" type="email" {...form.register("corporate_email")} placeholder="contato@empresa.com.br" className="bg-white dark:bg-[#1A1A24]" />
                 {form.formState.errors.corporate_email && <p className="text-xs text-red-500">{form.formState.errors.corporate_email.message}</p>}
               </div>
@@ -461,7 +461,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                 <Input id="contact_email" type="email" {...form.register("contact_email")} placeholder="email@responsavel.com" className="bg-white dark:bg-[#1A1A24]" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contact_whatsapp">WhatsApp do responsável <span className="text-red-500">*</span></Label>
+                <Label htmlFor="contact_whatsapp">WhatsApp do responsável</Label>
                 <Controller
                   control={form.control}
                   name="contact_whatsapp"
@@ -559,11 +559,11 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="start_date">Data de início <span className="text-red-500">*</span></Label>
+                <Label htmlFor="start_date">Data de início</Label>
                 <Input id="start_date" type="date" {...form.register("start_date")} className="bg-white dark:bg-[#1A1A24]" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="end_date_expected">Data de encerramento previsto <span className="text-red-500">*</span></Label>
+                <Label htmlFor="end_date_expected">Data de encerramento previsto</Label>
                 <Input id="end_date_expected" type="date" {...form.register("end_date_expected")} className="bg-white dark:bg-[#1A1A24]" />
               </div>
             </CardContent>
