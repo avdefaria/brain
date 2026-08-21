@@ -107,6 +107,33 @@ export const getFunnelTypes = createServerFn({ method: "GET" })
     return data || [];
   });
 
+export const addFunnelType = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((name: string) => z.string().min(1).parse(name))
+  .handler(async ({ context, data: name }) => {
+    const supabase = context.supabase;
+
+    // Check for duplicates (case insensitive)
+    const { data: existing } = await supabase
+      .from('funnel_types' as any)
+      .select('id')
+      .ilike('name', name)
+      .maybeSingle();
+
+    if (existing) {
+      throw new Error("Este tipo de funil já existe.");
+    }
+
+    const { data, error } = await supabase
+      .from('funnel_types' as any)
+      .insert([{ name }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  });
+
 export const createLead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: any) => data)

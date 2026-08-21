@@ -21,6 +21,19 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { 
   User, 
   Building2, 
   Mail, 
@@ -28,10 +41,14 @@ import {
   TrendingUp, 
   DollarSign, 
   Calendar,
-  Trash2
+  Trash2,
+  Check,
+  ChevronsUpDown,
+  Plus
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { createLead, updateLead, deleteLead, getFunnelTypes, STAGES } from "@/lib/leads.functions";
+import { createLead, updateLead, deleteLead, getFunnelTypes, addFunnelType, STAGES } from "@/lib/leads.functions";
 import { getNiches } from "@/lib/niches.functions";
 import { getCollaborators } from "@/lib/squads.functions";
 import { getSalesChannels, addSalesChannel } from "@/lib/sales-channels.functions";
@@ -77,12 +94,15 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
   const [salesChannelOptions, setSalesChannelOptions] = useState<any[]>([]);
   const [funnelTypes, setFunnelTypes] = useState<any[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isFunnelPopoverOpen, setIsFunnelPopoverOpen] = useState(false);
+  const [funnelSearch, setFunnelSearch] = useState("");
 
   const fetchNiches = useServerFn(getNiches);
   const fetchCollaborators = useServerFn(getCollaborators);
   const fetchSalesChannels = useServerFn(getSalesChannels);
   const fetchFunnelTypes = useServerFn(getFunnelTypes);
   const addSalesChannelFn = useServerFn(addSalesChannel);
+  const addFunnelTypeFn = useServerFn(addFunnelType);
 
   useEffect(() => {
     if (isOpen) {
@@ -116,6 +136,20 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
       toast.success("Canal adicionado!");
     } catch (error) {
       toast.error("Erro ao adicionar canal");
+    }
+  };
+
+  const handleCreateFunnelType = async (name: string) => {
+    if (!name.trim()) return;
+    try {
+      const newFunnel = await addFunnelTypeFn({ data: name.trim() }) as any;
+      setFunnelTypes(prev => [...prev, newFunnel].sort((a, b) => a.name.localeCompare(b.name)));
+      form.setValue("funnel_type_id", newFunnel.id);
+      setIsFunnelPopoverOpen(false);
+      setFunnelSearch("");
+      toast.success("Tipo de funil criado!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao criar tipo de funil");
     }
   };
 
@@ -385,19 +419,65 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
 
             <div className="space-y-2">
               <Label>Tipo de Funil</Label>
-              <Select 
-                onValueChange={(v) => form.setValue("funnel_type_id", v)} 
-                value={form.watch("funnel_type_id") || ""}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo de funil" />
-                </SelectTrigger>
-                <SelectContent>
-                  {funnelTypes.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={isFunnelPopoverOpen} onOpenChange={setIsFunnelPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={isFunnelPopoverOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {form.watch("funnel_type_id")
+                      ? funnelTypes.find((f) => f.id === form.watch("funnel_type_id"))?.name
+                      : "Selecione o tipo de funil"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Pesquisar tipo..." 
+                      value={funnelSearch}
+                      onValueChange={setFunnelSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>Nenhum tipo encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {funnelTypes.map((f) => (
+                          <CommandItem
+                            key={f.id}
+                            value={f.name}
+                            onSelect={() => {
+                              form.setValue("funnel_type_id", f.id);
+                              setIsFunnelPopoverOpen(false);
+                              setFunnelSearch("");
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                form.watch("funnel_type_id") === f.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {f.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                      {funnelSearch && !funnelTypes.some(f => f.name.toLowerCase() === funnelSearch.toLowerCase()) && (
+                        <CommandGroup className="border-t border-[#E4E6F0]">
+                          <CommandItem
+                            onSelect={() => handleCreateFunnelType(funnelSearch)}
+                            className="text-[#3D4FE8] font-medium"
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Criar "{funnelSearch}"
+                          </CommandItem>
+                        </CommandGroup>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
