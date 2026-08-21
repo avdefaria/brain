@@ -234,7 +234,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
               <Label>Responsável</Label>
               <Select 
                 onValueChange={(v) => form.setValue("responsible_id", v)} 
-                value={form.watch("responsible_id") || undefined}
+                value={form.watch("responsible_id") || ""}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um responsável" />
@@ -251,7 +251,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
               <Label>Nicho</Label>
               <Select 
                 onValueChange={(v) => form.setValue("niche_id", v)} 
-                value={form.watch("niche_id") || undefined}
+                value={form.watch("niche_id") || ""}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um nicho" />
