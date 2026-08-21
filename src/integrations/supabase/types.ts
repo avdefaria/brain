@@ -117,6 +117,24 @@ export type Database = {
           },
         ]
       }
+      churn_reasons: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       client_public_access: {
         Row: {
           client_id: string
@@ -182,6 +200,8 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          cancelled_at: string | null
+          churn_reason_id: string | null
           city: string | null
           cnpj_cpf: string | null
           contact_name: string | null
@@ -208,6 +228,8 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          cancelled_at?: string | null
+          churn_reason_id?: string | null
           city?: string | null
           cnpj_cpf?: string | null
           contact_name?: string | null
@@ -234,6 +256,8 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          cancelled_at?: string | null
+          churn_reason_id?: string | null
           city?: string | null
           cnpj_cpf?: string | null
           contact_name?: string | null
@@ -259,6 +283,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "clients_churn_reason_id_fkey"
+            columns: ["churn_reason_id"]
+            isOneToOne: false
+            referencedRelation: "churn_reasons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clients_lead_id_fkey"
             columns: ["lead_id"]
