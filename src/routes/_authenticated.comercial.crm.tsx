@@ -82,6 +82,7 @@ function CRMPage() {
   // Filter states
   const [responsibleId, setResponsibleId] = useState<string>("all");
   const [funnelTypeId, setFunnelTypeId] = useState<string>("all");
+  const [showConverted, setShowConverted] = useState(false);
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
     to: undefined
@@ -90,9 +91,10 @@ function CRMPage() {
   const filterParams = useMemo(() => ({
     responsible_id: responsibleId === "all" ? null : responsibleId,
     funnel_type_id: funnelTypeId === "all" ? null : funnelTypeId,
+    showConverted,
     startDate: dateRange?.from?.toISOString() || null,
     endDate: dateRange?.to?.toISOString() || null
-  }), [responsibleId, funnelTypeId, dateRange]);
+  }), [responsibleId, funnelTypeId, showConverted, dateRange]);
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ["leads", filterParams],
@@ -117,6 +119,7 @@ function CRMPage() {
   const resetFilters = () => {
     setResponsibleId("all");
     setFunnelTypeId("all");
+    setShowConverted(false);
     setDateRange({ from: undefined, to: undefined });
   };
 
@@ -252,8 +255,19 @@ function CRMPage() {
             </PopoverContent>
           </Popover>
 
+          {/* Toggle Converted */}
+          <div className="flex items-center gap-2 bg-white px-4 h-10 rounded-full border border-[#E4E6F0]">
+            <span className="text-xs font-medium text-[#8A8FA3]">Mostrar convertidos</span>
+            <input 
+              type="checkbox" 
+              checked={showConverted}
+              onChange={(e) => setShowConverted(e.target.checked)}
+              className="w-4 h-4 rounded border-[#E4E6F0] text-[#3D4FE8] focus:ring-[#3D4FE8]"
+            />
+          </div>
+
           {/* Reset Filters */}
-          {(responsibleId !== "all" || funnelTypeId !== "all" || dateRange.from) && (
+          {(responsibleId !== "all" || funnelTypeId !== "all" || showConverted || dateRange.from) && (
             <Button 
               variant="ghost" 
               size="icon"
