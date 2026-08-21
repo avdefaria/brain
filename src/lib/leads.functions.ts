@@ -25,7 +25,8 @@ export const getLeads = createServerFn({ method: "GET" })
         niche:niches(id, name),
         lead_sales_channels(
           sales_channels:sales_channel_id(id, name)
-        )
+        ),
+        lead_stage_history(*)
       `)
       .order('position', { ascending: true });
 
@@ -70,6 +71,15 @@ export const createLead = createServerFn({ method: "POST" })
 
     if (error) throw error;
 
+    // Log initial stage history
+    if (lead) {
+      await supabase.from('lead_stage_history' as any).insert({
+        lead_id: lead.id,
+        stage: lead.funnel_stage,
+        entered_at: new Date().toISOString()
+      } as any);
+    }
+
     // Handle sales channels N:N
     if (sales_channels && sales_channels.length > 0) {
       const { data: channels } = await supabase
@@ -95,6 +105,12 @@ export const updateLead = createServerFn({ method: "POST" })
     const supabase = context.supabase;
     const { id, sales_channels, ...updates } = data;
     
+    const { data: oldLead } = await supabase
+      .from('leads')
+      .select('funnel_stage')
+      .eq('id', id)
+      .single();
+
     const { data: lead, error } = await supabase
       .from('leads')
       .update(updates)
@@ -103,6 +119,25 @@ export const updateLead = createServerFn({ method: "POST" })
       .single();
 
     if (error) throw error;
+
+    // Log stage history if changed
+    if (lead && oldLead && lead.funnel_stage !== oldLead.funnel_stage) {
+      // Close previous entry
+      await supabase
+        .from('lead_stage_history' as any)
+        .update({ exited_at: new Date().toISOString() } as any)
+        .eq('lead_id', id)
+        .is('exited_at', null);
+
+      // Create new entry
+      await supabase
+        .from('lead_stage_history' as any)
+        .insert({
+          lead_id: id,
+          stage: lead.funnel_stage,
+          entered_at: new Date().toISOString()
+        } as any);
+    }
 
     // Update sales channels N:N
     if (sales_channels !== undefined) {
