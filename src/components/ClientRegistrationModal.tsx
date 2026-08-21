@@ -136,6 +136,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
 
   useEffect(() => {
     if (initialData && open) {
+      console.log("Resetting form with initialData:", initialData);
       form.reset({
         name: initialData.name || "",
         cnpj_cpf: initialData.cnpj_cpf || "",
