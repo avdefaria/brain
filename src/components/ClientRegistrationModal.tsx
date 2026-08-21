@@ -452,7 +452,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
       <DialogContent className="sm:max-w-[800px] h-[90vh] overflow-y-auto p-0 border-[#E4E6F0] dark:border-[#2A2A36] dark:bg-[#1A1A24]">
         <div className="sticky top-0 bg-white dark:bg-[#1A1A24] z-10 px-8 py-6 border-b border-[#E4E6F0] dark:border-[#2A2A36]">
           <DialogTitle className="text-2xl font-title font-bold text-[#0E0E16] dark:text-white">
-            {initialData?.lead_id ? "Converter Lead em Cliente" : initialData ? "Editar cliente" : "Cadastrar cliente"}
+            {initialData?.lead_id && !initialData?.id ? "Converter Lead em Cliente" : initialData?.id ? "Editar Cliente" : "Cadastrar Cliente"}
           </DialogTitle>
         </div>
 
