@@ -350,6 +350,11 @@ function CRMPage() {
                                 onClick={() => setSelectedLead(lead)}
                               >
                                 <CardContent className="p-4 space-y-3">
+                                  {lead.converted_at && (
+                                    <Badge className="bg-[#22C55E]/10 text-[#22C55E] text-[8px] font-bold border-[#22C55E]/20 rounded-full px-2 mb-1">
+                                      CONVERTIDO
+                                    </Badge>
+                                  )}
                                   <div className="flex justify-between items-start">
                                     <h4 className="text-sm font-bold text-[#0E0E16] leading-tight">{lead.name}</h4>
                                     <Badge className="bg-[#F7F8FC] text-[#3D4FE8] text-[8px] uppercase font-bold border-none rounded-full px-2 py-0">
