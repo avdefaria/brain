@@ -67,6 +67,7 @@ const clientSchema = z.object({
   extra_comments: z.string(),
   health_score: z.number().min(0).max(100),
   lead_id: z.string().uuid().optional().nullable(),
+  monthly_value: z.number().optional().nullable(),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
@@ -134,6 +135,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
       sales_channels: initialData?.sales_channels || [],
       health_score: initialData?.health_score ?? 100,
       lead_id: initialData?.lead_id || null,
+      monthly_value: initialData?.monthly_value || 0,
     }
   });
 
@@ -160,6 +162,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         sales_channels: initialData.sales_channels || [],
         health_score: initialData.health_score ?? 100,
         lead_id: initialData.lead_id || (initialData.id ? null : initialData.lead_id) || null,
+        monthly_value: initialData.monthly_value || 0,
       });
     } else if (!initialData && open) {
       form.reset({
@@ -182,6 +185,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         sales_channels: [],
         health_score: 100,
         lead_id: null,
+        monthly_value: 0,
       });
     }
   }, [initialData, open, form]);
@@ -229,6 +233,14 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
 
   const onSubmit = async (data: any) => {
     try {
+      console.log("Submitting Client Registration Payload:", data);
+
+      // Crucial fix: ensure UUID fields are null, not "undefined" string
+      const cleanUuid = (val: any) => {
+        if (!val || val === "undefined" || val === "") return null;
+        return val;
+      };
+
       const payload = {
         name: data.name,
         cnpj_cpf: data.cnpj_cpf,
@@ -238,9 +250,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         city: data.city,
         corporate_email: data.corporate_email,
         contact_whatsapp: data.contact_whatsapp,
-        // squad_id is deprecated, we use N:N now
-        // squad_id: data.squad_id, 
-        niche_id: data.niche_id,
+        niche_id: cleanUuid(data.niche_id),
         start_date: data.start_date,
         end_date_expected: data.end_date_expected,
         scope_details: data.scope_details,
@@ -248,7 +258,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         status: initialData ? initialData.status : 'active',
         risk_level: initialData ? initialData.risk_level : 'low',
         health_score: initialData ? initialData.health_score : 100,
-        lead_id: data.lead_id || (initialData?.lead_id ? initialData.lead_id : null)
+        lead_id: cleanUuid(data.lead_id || initialData?.lead_id)
       };
 
       let clientId = initialData?.id;
@@ -391,7 +401,40 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
               stage: 'Convertido em Cliente',
               entered_at: new Date().toISOString()
             } as any);
+        // 4. Create or update contract record with financial data
+        if (clientId) {
+          // Find or create account for this client
+          let accountId;
+          const { data: accounts } = await supabase.from('accounts').select('id').eq('client_id', clientId).limit(1);
+          
+          if (accounts && accounts.length > 0) {
+            accountId = (accounts[0] as any).id;
+          } else {
+            const { data: newAccount } = await supabase.from('accounts').insert({ client_id: clientId, name: data.name } as any).select('id').single();
+            accountId = newAccount?.id;
+          }
+
+          if (accountId) {
+            const contractData = {
+              client_id: clientId,
+              account_id: accountId,
+              type: data.contract_type,
+              monthly_value: data.monthly_value || 0,
+              start_date: data.start_date || new Date().toISOString(),
+              status: 'active'
+            };
+
+            // Check if contract exists
+            const { data: existingContracts } = await supabase.from('contracts').select('id').eq('client_id', clientId).limit(1);
+            
+            if (existingContracts && existingContracts.length > 0) {
+              await supabase.from('contracts').update(contractData as any).eq('id', (existingContracts[0] as any).id);
+            } else {
+              await supabase.from('contracts').insert([contractData] as any);
+            }
+          }
         }
+      }
       }
 
       toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
@@ -574,6 +617,26 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                   </SelectContent>
                 </Select>
                 {form.formState.errors.contract_type && <p className="text-xs text-red-500">{form.formState.errors.contract_type.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label>Valor {form.watch("contract_type") === 'recurring' ? 'Mensal (MRR)' : 'do Projeto'}</Label>
+                <Controller
+                  control={form.control}
+                  name="monthly_value"
+                  render={({ field }) => (
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A8FA3] text-sm">R$</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className="pl-9 bg-white dark:bg-[#1A1A24]"
+                        placeholder="0,00"
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                  )}
+                />
               </div>
               <div className="space-y-2 md:col-span-3">
                 <Label>Canais de vendas</Label>
