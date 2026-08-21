@@ -196,8 +196,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarItem
               icon={DollarSign}
               label="Finanças"
-              href="/em-breve"
+              href="/financas"
               collapsed={sidebarCollapsed}
+              active={location.pathname.startsWith("/financas")}
             />
             <SidebarItem
               icon={UserCheck}
