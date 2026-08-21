@@ -1,12 +1,12 @@
 import React from 'react';
 import { 
-  useReactTable, 
-  getCoreRowModel, 
+  useTable, 
+  createCoreRowModel, 
   flexRender, 
-  getPaginationRowModel,
-  getSortedRowModel,
+  createPaginatedRowModel,
+  createSortedRowModel,
   SortingState,
-  getFilteredRowModel
+  createFilteredRowModel
 } from "@tanstack/react-table";
 import { 
   Table, 
@@ -139,7 +139,7 @@ export function CRMLeadsTable({ leads, onEdit, onDelete }: CRMLeadsTableProps) {
     },
   ], [onEdit, onDelete]);
 
-  const table = useReactTable({
+  const table = useTable({
     data: leads,
     columns,
     state: {
@@ -148,10 +148,10 @@ export function CRMLeadsTable({ leads, onEdit, onDelete }: CRMLeadsTableProps) {
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
+    getCoreRowModel: createCoreRowModel(),
+    getPaginationRowModel: createPaginatedRowModel(),
+    getSortedRowModel: createSortedRowModel(),
+    getFilteredRowModel: createFilteredRowModel(),
     globalFilterFn: (row: any, columnId: any, filterValue: any) => {
       const name = String(row.original.name || "").toLowerCase();
       const company = String(row.original.company || "").toLowerCase();
