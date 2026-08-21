@@ -406,6 +406,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
               stage: 'Convertido em Cliente',
               entered_at: new Date().toISOString()
             } as any);
+        }
+
         // 4. Create or update contract record with financial data
         if (clientId) {
           // Find or create account for this client
@@ -452,13 +454,13 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
               
               if (count === 0) {
                 const receivables: any[] = [];
-                const startDate = new Date(data.start_date);
+                const startDateStr = data.start_date || new Date().toISOString().split('T')[0];
                 
                 if (data.contract_type === 'recurring') {
                   const months = data.mrr_months || 1;
                   for (let i = 0; i < months; i++) {
-                    const dueDate = new Date(startDate);
-                    dueDate.setMonth(startDate.getMonth() + i);
+                    const dueDate = new Date(startDateStr + 'T00:00:00');
+                    dueDate.setMonth(dueDate.getMonth() + i);
                     
                     receivables.push({
                       client_id: clientId,
@@ -475,7 +477,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                     client_id: clientId,
                     contract_id: contractId,
                     amount: data.monthly_value || 0,
-                    due_date: startDate.toISOString().split('T')[0],
+                    due_date: startDateStr,
                     installment_number: null,
                     status: 'pendente',
                     payment_method: data.payment_method
