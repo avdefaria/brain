@@ -320,22 +320,20 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
           // If no channels selected but was editing, clear them
           await supabase.from('client_sales_channels').delete().eq('client_id', clientId);
         }
-        }
 
         // Handle account_squads junction table
-        if (clientId) {
-          // Find the primary account for this client
-          const { data: accounts, error: accountsError } = await supabase
-            .from('accounts')
-            .select('id')
-            .eq('client_id', clientId)
-            .limit(1);
-            
-          if (accountsError) {
-            console.error("Error fetching account for squad link:", accountsError);
-          } else if (accounts && accounts.length > 0) {
-            const accountId = accounts[0]?.id;
-            if (!accountId) throw new Error("ID da conta não encontrado");
+        // Find the primary account for this client
+        const { data: accounts, error: accountsError } = await supabase
+          .from('accounts')
+          .select('id')
+          .eq('client_id', clientId)
+          .limit(1);
+          
+        if (accountsError) {
+          console.error("Error fetching account for squad link:", accountsError);
+        } else if (accounts && accounts.length > 0) {
+          const accountId = accounts[0]?.id;
+          if (accountId) {
             const selectedSquadIds: string[] = data.squad_ids || [];
 
             // 1. Clear existing relationships
@@ -362,6 +360,39 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             }
           }
         }
+
+        // Mark lead as converted if this was a conversion
+        if (data.lead_id) {
+          console.log("Marking lead as converted:", data.lead_id);
+          
+          // 1. Update lead record
+          const { error: leadUpdateError } = await supabase
+            .from('leads')
+            .update({ converted_at: new Date().toISOString() })
+            .eq('id', data.lead_id);
+          
+          if (leadUpdateError) {
+            console.error("Error updating lead converted_at:", leadUpdateError);
+          }
+
+          // 2. Register stage history final entry
+          // First close previous
+          await supabase
+            .from('lead_stage_history' as any)
+            .update({ exited_at: new Date().toISOString() } as any)
+            .eq('lead_id', data.lead_id)
+            .is('exited_at', null);
+
+          // Then insert new "Converted" stage
+          await supabase
+            .from('lead_stage_history' as any)
+            .insert({
+              lead_id: data.lead_id,
+              stage: 'Convertido em Cliente',
+              entered_at: new Date().toISOString()
+            } as any);
+        }
+      }
 
       toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
       onOpenChange(false);

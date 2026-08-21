@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from "@/lib/utils";
 import { 
   useReactTable, 
   getCoreRowModel, 
@@ -73,10 +74,18 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
       header: "ETAPA ATUAL",
       cell: ({ row }: any) => {
         const stage = STAGES.find(s => s.id === row.getValue("funnel_stage"));
+        const isConverted = !!row.original.converted_at;
         return (
-          <Badge className="bg-[#F7F8FC] text-[#3D4FE8] text-[10px] font-bold border-[#E4E6F0] rounded-full px-3">
-            {stage?.label || "N/A"}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge className={cn(
+              "text-[10px] font-bold rounded-full px-3",
+              isConverted 
+                ? "bg-[#22C55E]/10 text-[#22C55E] border-[#22C55E]/20" 
+                : "bg-[#F7F8FC] text-[#3D4FE8] border-[#E4E6F0]"
+            )}>
+              {isConverted ? "Convertido" : (stage?.label || "N/A")}
+            </Badge>
+          </div>
         );
       },
     },
@@ -120,15 +129,17 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
       header: "AÇÕES",
       cell: ({ row }: any) => (
         <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-[#8A8FA3] hover:text-[#3D4FE8] hover:bg-[#3D4FE8]/10 rounded-full"
-            onClick={() => onConvert(row.original)}
-            title="Converter em Cliente"
-          >
-            <ArrowRightLeft className="h-3.5 w-3.5" />
-          </Button>
+          {!row.original.converted_at && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-[#8A8FA3] hover:text-[#3D4FE8] hover:bg-[#3D4FE8]/10 rounded-full"
+              onClick={() => onConvert(row.original)}
+              title="Converter em Cliente"
+            >
+              <ArrowRightLeft className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button 
             variant="ghost" 
             size="icon" 

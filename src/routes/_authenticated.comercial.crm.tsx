@@ -82,6 +82,7 @@ function CRMPage() {
   // Filter states
   const [responsibleId, setResponsibleId] = useState<string>("all");
   const [funnelTypeId, setFunnelTypeId] = useState<string>("all");
+  const [showConverted, setShowConverted] = useState(false);
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
     to: undefined
@@ -90,9 +91,10 @@ function CRMPage() {
   const filterParams = useMemo(() => ({
     responsible_id: responsibleId === "all" ? null : responsibleId,
     funnel_type_id: funnelTypeId === "all" ? null : funnelTypeId,
+    showConverted,
     startDate: dateRange?.from?.toISOString() || null,
     endDate: dateRange?.to?.toISOString() || null
-  }), [responsibleId, funnelTypeId, dateRange]);
+  }), [responsibleId, funnelTypeId, showConverted, dateRange]);
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ["leads", filterParams],
@@ -117,6 +119,7 @@ function CRMPage() {
   const resetFilters = () => {
     setResponsibleId("all");
     setFunnelTypeId("all");
+    setShowConverted(false);
     setDateRange({ from: undefined, to: undefined });
   };
 
@@ -252,8 +255,19 @@ function CRMPage() {
             </PopoverContent>
           </Popover>
 
+          {/* Toggle Converted */}
+          <div className="flex items-center gap-2 bg-white px-4 h-10 rounded-full border border-[#E4E6F0]">
+            <span className="text-xs font-medium text-[#8A8FA3]">Mostrar convertidos</span>
+            <input 
+              type="checkbox" 
+              checked={showConverted}
+              onChange={(e) => setShowConverted(e.target.checked)}
+              className="w-4 h-4 rounded border-[#E4E6F0] text-[#3D4FE8] focus:ring-[#3D4FE8]"
+            />
+          </div>
+
           {/* Reset Filters */}
-          {(responsibleId !== "all" || funnelTypeId !== "all" || dateRange.from) && (
+          {(responsibleId !== "all" || funnelTypeId !== "all" || showConverted || dateRange.from) && (
             <Button 
               variant="ghost" 
               size="icon"
@@ -308,7 +322,6 @@ function CRMPage() {
                     <h3 className="font-title font-bold text-[#0E0E16] text-sm whitespace-nowrap">{stage.label}</h3>
                     <span className="text-xs font-bold text-[#8A8FA3] bg-[#F7F8FC] px-2 py-0.5 rounded-full border border-[#E4E6F0]">
                       {leads.filter((l: any) => l.funnel_stage === stage.id).length}
-
                     </span>
                   </div>
                 </div>
@@ -330,10 +343,18 @@ function CRMPage() {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className="border-[#E4E6F0] shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group bg-white"
+                                className={cn(
+                                  "border-[#E4E6F0] shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group bg-white",
+                                  lead.converted_at && "opacity-60 grayscale-[0.5]"
+                                )}
                                 onClick={() => setSelectedLead(lead)}
                               >
                                 <CardContent className="p-4 space-y-3">
+                                  {lead.converted_at && (
+                                    <Badge className="bg-[#22C55E]/10 text-[#22C55E] text-[8px] font-bold border-[#22C55E]/20 rounded-full px-2 mb-1">
+                                      CONVERTIDO
+                                    </Badge>
+                                  )}
                                   <div className="flex justify-between items-start">
                                     <h4 className="text-sm font-bold text-[#0E0E16] leading-tight">{lead.name}</h4>
                                     <Badge className="bg-[#F7F8FC] text-[#3D4FE8] text-[8px] uppercase font-bold border-none rounded-full px-2 py-0">
