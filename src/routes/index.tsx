@@ -27,39 +27,43 @@ function IndexComponent() {
       </div>
       <div className="max-w-md text-sm text-gray-500 whitespace-pre-wrap font-mono p-4 bg-white rounded-lg shadow-sm border border-gray-100">
         REGRAS OBRIGATÓRIAS:
-- Não corrija o visual ainda. Foco é: diagnosticar e criar a estrutura 
-  de dados real, se não existir.
-- Não altere a tabela `clients` além do necessário (campos de 
-  cancelamento), nem outros módulos.
+- Altere APENAS a tela de Análise de Churn: filtros do topo, estilo dos 
+  gráficos/cards, e os dois KPIs/gráficos que dependem de histórico 
+  financeiro. Não altere a estrutura de dados de churn_reasons nem 
+  cancelled_at.
+- Identidade visual obrigatória: paleta Ongo Indigo #3D4FE8 / Ongo Ink 
+  #0E0E16 / Paper #F7F8FC / Slate #8A8FA3 / bordas #E4E6F0, semânticas 
+  verde #22C55E / âmbar #F5A524 / vermelho #EF4444. Tipografia Sora + 
+  Plus Jakarta Sans. Siga o MESMO padrão visual de cards e gráficos já 
+  usado na tela "Início" (Dashboard) — confirme esse padrão antes de 
+  estilizar.
 
 O QUE FAZER:
 
-1. Confirme via information_schema se já existe alguma estrutura para 
-   registrar cancelamento de cliente (ex: campo `status`, `cancelled_at`, 
-   `churn_reason` em `clients`, ou tabela separada). Me diga o que 
-   encontrar.
+1. Substituir o filtro "Mensal/Anual" por um seletor de "Período" 
+   (intervalo de datas), mesmo padrão de UI já usado no filtro "Período" 
+   do CRM.
 
-2. Se não existir, criar:
-   - Campo `cancelled_at` (timestamp, nullable) em `clients`.
-   - Campo `churn_reason` (texto, nullable) em `clients`, com catálogo 
-     extensível de motivos (mesmo padrão de Nicho): Preço, Concorrência, 
-     Suporte, Outros — mas permitindo adicionar novos motivos no futuro, 
-     não hardcoded.
-   - Garantir que ao mudar o Status do cliente para "Inativo" (aquele 
-     toggle que acabamos de corrigir), o sistema pergunte o motivo do 
-     cancelamento e grave `cancelled_at` = now() + o motivo escolhido.
+2. Adicionar filtro "Motivo" (dropdown multi-select), populado a partir 
+   da tabela `churn_reasons`.
 
-3. Substituir TODOS os dados fictícios da tela de Análise de Churn 
-   (KPIs, gráfico "Churn por Mês", "Motivos de Churn", tabela "Clientes 
-   com Churn Recente", "Análise de Cohort de Retenção") por cálculos 
-   reais em cima dos dados de `clients`. Se a Análise de Cohort de 
-   Retenção exigir dado histórico que ainda não temos (ex: quantos 
-   clientes entraram por mês ao longo do tempo), me avise antes de 
-   inventar qualquer número — prefiro a seção vazia com "aguardando 
-   dados" a mostrar número fictício.
+3. Os dois filtros devem funcionar em conjunto e atualizar os KPIs e 
+   componentes que JÁ funcionam com dado real (Taxa de Churn, Total de 
+   Churn, Tempo Médio até Churn, Motivos de Churn, Clientes com Churn 
+   Recente).
 
-Depois de aplicar, me devolva o resultado do diagnóstico do item 1 e a 
-lista de arquivos alterados/criados.
+4. Para "Receita Perdida" e o gráfico "Churn por Mês": como dependem de 
+   histórico financeiro que ainda não existe (módulo Finanças → 
+   Recebimentos não construído), substitua o valor fictício por um 
+   estado vazio claro: card cinza/neutro com texto "Disponível após 
+   Finanças → Recebimentos" no lugar do número, sem quebrar o layout.
+
+5. Restilizar os gráficos de linha e barras para usar as cores da 
+   paleta permitida.
+
+Depois de aplicar, teste os filtros de Período + Motivo nos KPIs que já 
+funcionam, confirme que os dois cards financeiros mostram o estado vazio 
+corretamente, e me devolva a lista de arquivos alterados.
       </div>
     </div>
   );
