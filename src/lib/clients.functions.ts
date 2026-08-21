@@ -158,3 +158,20 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
       totalClients: activeClientsCount
     };
   });
+
+export const updateClientStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { id: string, status: 'active' | 'inactive' | 'churn' }) => z.object({
+    id: z.string(),
+    status: z.enum(['active', 'inactive', 'churn'])
+  }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
+    const { error } = await supabase
+      .from("clients")
+      .update({ status: data.status })
+      .eq("id", data.id);
+
+    if (error) throw error;
+    return { success: true };
+  });
