@@ -43,7 +43,7 @@ export function LeadConversionModal({ lead, isOpen, onOpenChange }: LeadConversi
     contact_whatsapp: lead.phone || "",
     niche_id: lead.niche_id || "",
     lead_id: lead.id,
-    extra_comments: `Lead convertido do CRM. Notas originais: ${lead.notes || 'Sem notas.'}`,
+    extra_comments: lead.notes || "",
   };
 
   return (

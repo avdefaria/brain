@@ -46,22 +46,24 @@ import { NicheSelector } from "./NicheSelector";
 
 const clientSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
-  cnpj_cpf: z.string().min(11, "CNPJ/CPF inválido"),
-  address: z.string().min(5, "Endereço é obrigatório"),
-  country: z.string(),
-  state: z.string().min(2, "Estado é obrigatório"),
-  city: z.string().min(2, "Cidade é obrigatória"),
-  corporate_email: z.string().email("E-mail corporativo inválido"),
-  contact_email: z.string().email("E-mail do responsável inválido").optional().nullable(),
-  contact_whatsapp: z.string().min(10, "WhatsApp inválido"),
-  squad_ids: z.array(z.string()).optional(),
+  cnpj_cpf: z.string().optional().or(z.literal("")),
+  address: z.string().optional().or(z.literal("")),
+  country: z.string().min(1, "Obrigatório"),
+  state: z.string().optional().or(z.literal("")),
+  city: z.string().optional().or(z.literal("")),
+  corporate_email: z.string().email("E-mail corporativo inválido").optional().or(z.literal("")),
+  contact_email: z.string().email("E-mail do responsável inválido").optional().or(z.literal("")),
+  contact_whatsapp: z.string().optional().or(z.literal("")),
+  squad_ids: z.array(z.string()),
   niche_id: z.string().min(1, "Nicho é obrigatório"),
   contract_type: z.enum(["recurring", "one-off"]),
-  sales_channels: z.array(z.string()).optional(),
-  start_date: z.string(),
-  end_date_expected: z.string().min(1, "Data de encerramento é obrigatória"),
-  scope_details: z.string().nullable().optional(),
-  extra_comments: z.string().nullable().optional(),
+  sales_channels: z.array(z.string()),
+  start_date: z.string().optional().or(z.literal("")),
+  end_date_expected: z.string().optional().or(z.literal("")),
+  scope_details: z.string(),
+  extra_comments: z.string(),
+  health_score: z.number().min(0).max(100),
+  lead_id: z.string().uuid().optional().nullable(),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
@@ -110,27 +112,31 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
-      name: "",
-      cnpj_cpf: "",
-      address: "",
-      country: "Brasil",
-      state: "",
-      city: "",
-      corporate_email: "",
-      contact_email: null,
-      squad_ids: [],
-      niche_id: "",
-      contract_type: "recurring",
-      start_date: new Date().toISOString().split('T')[0] || "",
-      end_date_expected: "",
-      scope_details: null,
-      extra_comments: null,
-      sales_channels: [],
+      name: initialData?.name || "",
+      cnpj_cpf: initialData?.cnpj_cpf || "",
+      address: initialData?.address || "",
+      country: initialData?.country || "Brasil",
+      state: initialData?.state || "",
+      city: initialData?.city || "",
+      corporate_email: initialData?.corporate_email || "",
+      contact_email: initialData?.contact_email || "",
+      contact_whatsapp: initialData?.contact_whatsapp || "",
+      squad_ids: initialData?.account_squads?.map((as: any) => as.squad_id) || [],
+      niche_id: initialData?.niche_id || "",
+      contract_type: (initialData?.contract_type as any) || "recurring",
+      start_date: initialData?.start_date || new Date().toISOString().split('T')[0] || "",
+      end_date_expected: initialData?.end_date_expected || "",
+      scope_details: initialData?.scope_details || "",
+      extra_comments: initialData?.extra_comments || "",
+      sales_channels: initialData?.sales_channels || [],
+      health_score: initialData?.health_score ?? 100,
+      lead_id: initialData?.lead_id || null,
     }
   });
 
   useEffect(() => {
     if (initialData && open) {
+      console.log("Resetting form with initialData:", initialData);
       form.reset({
         name: initialData.name || "",
         cnpj_cpf: initialData.cnpj_cpf || "",
@@ -139,16 +145,18 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         state: initialData.state || "",
         city: initialData.city || "",
         corporate_email: initialData.corporate_email || "",
-        contact_email: initialData.contact_email || null,
+        contact_email: initialData.contact_email || "",
         contact_whatsapp: initialData.contact_whatsapp || "",
         squad_ids: initialData.account_squads?.map((as: any) => as.squad_id) || [],
         niche_id: initialData.niche_id || "",
         contract_type: (initialData.contract_type as any) || "recurring",
         start_date: initialData.start_date || new Date().toISOString().split('T')[0] || "",
         end_date_expected: initialData.end_date_expected || "",
-        scope_details: initialData.scope_details || null,
-        extra_comments: initialData.extra_comments || null,
+        scope_details: initialData.scope_details || "",
+        extra_comments: initialData.extra_comments || "",
         sales_channels: initialData.sales_channels || [],
+        health_score: initialData.health_score ?? 100,
+        lead_id: initialData.lead_id || (initialData.id ? null : initialData.lead_id) || null,
       });
     } else if (!initialData && open) {
       form.reset({
@@ -159,16 +167,18 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         state: "",
         city: "",
         corporate_email: "",
-        contact_email: null,
+        contact_email: "",
         contact_whatsapp: "",
         squad_ids: [],
         niche_id: "",
         contract_type: "recurring",
         start_date: new Date().toISOString().split('T')[0] || "",
         end_date_expected: "",
-        scope_details: null,
-        extra_comments: null,
+        scope_details: "",
+        extra_comments: "",
         sales_channels: [],
+        health_score: 100,
+        lead_id: null,
       });
     }
   }, [initialData, open, form]);
@@ -234,7 +244,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         extra_comments: data.extra_comments,
         status: initialData ? initialData.status : 'active',
         risk_level: initialData ? initialData.risk_level : 'low',
-        health_score: initialData ? initialData.health_score : 100
+        health_score: initialData ? initialData.health_score : 100,
+        lead_id: data.lead_id || (initialData?.lead_id ? initialData.lead_id : null)
       };
 
       let clientId = initialData?.id;
@@ -349,7 +360,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
           }
         }
 
-      toast.success(initialData ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
+      toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
       onOpenChange(false);
       form.reset();
       setFile(null);
@@ -367,7 +378,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
       <DialogContent className="sm:max-w-[800px] h-[90vh] overflow-y-auto p-0 border-[#E4E6F0] dark:border-[#2A2A36] dark:bg-[#1A1A24]">
         <div className="sticky top-0 bg-white dark:bg-[#1A1A24] z-10 px-8 py-6 border-b border-[#E4E6F0] dark:border-[#2A2A36]">
           <DialogTitle className="text-2xl font-title font-bold text-[#0E0E16] dark:text-white">
-            {initialData ? "Editar cliente" : "Cadastrar cliente"}
+            {initialData?.lead_id ? "Converter Lead em Cliente" : initialData ? "Editar cliente" : "Cadastrar cliente"}
           </DialogTitle>
         </div>
 
@@ -386,7 +397,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                 {form.formState.errors.name && <p className="text-xs text-red-500">{form.formState.errors.name.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cnpj_cpf">CNPJ/CPF <span className="text-red-500">*</span></Label>
+                <Label htmlFor="cnpj_cpf">CNPJ/CPF</Label>
                 <Controller
                   control={form.control}
                   name="cnpj_cpf"
@@ -395,7 +406,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                       mask={[{ mask: '000.000.000-00' }, { mask: '00.000.000/0000-00' }]}
                       className="flex h-10 w-full rounded-md border border-input bg-white dark:bg-[#1A1A24] px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       placeholder="00.000.000/0000-00"
-                      value={field.value}
+                      value={field.value || ""}
                       onAccept={(value) => field.onChange(value)}
                     />
                   )}
@@ -403,7 +414,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                 {form.formState.errors.cnpj_cpf && <p className="text-xs text-red-500">{form.formState.errors.cnpj_cpf.message}</p>}
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Endereço completo <span className="text-red-500">*</span></Label>
+                <Label htmlFor="address">Endereço completo</Label>
                 <Input id="address" {...form.register("address")} placeholder="Rua, número, complemento, bairro" className="bg-white dark:bg-[#1A1A24]" />
                 {form.formState.errors.address && <p className="text-xs text-red-500">{form.formState.errors.address.message}</p>}
               </div>
@@ -422,16 +433,16 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="state">Estado/Província <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="state">Estado/Província</Label>
                   <Input id="state" {...form.register("state")} placeholder="UF" className="bg-white dark:bg-[#1A1A24]" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="city">Cidade <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="city">Cidade</Label>
                   <Input id="city" {...form.register("city")} placeholder="Cidade" className="bg-white dark:bg-[#1A1A24]" />
                 </div>
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="corporate_email">Email corporativo <span className="text-red-500">*</span></Label>
+                <Label htmlFor="corporate_email">Email corporativo</Label>
                 <Input id="corporate_email" type="email" {...form.register("corporate_email")} placeholder="contato@empresa.com.br" className="bg-white dark:bg-[#1A1A24]" />
                 {form.formState.errors.corporate_email && <p className="text-xs text-red-500">{form.formState.errors.corporate_email.message}</p>}
               </div>
@@ -451,7 +462,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                 <Input id="contact_email" type="email" {...form.register("contact_email")} placeholder="email@responsavel.com" className="bg-white dark:bg-[#1A1A24]" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contact_whatsapp">WhatsApp do responsável <span className="text-red-500">*</span></Label>
+                <Label htmlFor="contact_whatsapp">WhatsApp do responsável</Label>
                 <Controller
                   control={form.control}
                   name="contact_whatsapp"
@@ -460,7 +471,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                       mask="(00) 00000-0000"
                       className="flex h-10 w-full rounded-md border border-input bg-white dark:bg-[#1A1A24] px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       placeholder="(11) 99999-9999"
-                      value={field.value}
+                      value={field.value || ""}
                       onAccept={(value) => field.onChange(value)}
                     />
                   )}
@@ -549,11 +560,11 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="start_date">Data de início <span className="text-red-500">*</span></Label>
+                <Label htmlFor="start_date">Data de início</Label>
                 <Input id="start_date" type="date" {...form.register("start_date")} className="bg-white dark:bg-[#1A1A24]" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="end_date_expected">Data de encerramento previsto <span className="text-red-500">*</span></Label>
+                <Label htmlFor="end_date_expected">Data de encerramento previsto</Label>
                 <Input id="end_date_expected" type="date" {...form.register("end_date_expected")} className="bg-white dark:bg-[#1A1A24]" />
               </div>
             </CardContent>

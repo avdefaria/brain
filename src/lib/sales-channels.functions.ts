@@ -58,6 +58,7 @@ export const getClientsWithChannels = createServerFn({ method: "GET" })
       .from("clients")
       .select(`
         *,
+        niches:niche_id(id, name),
         squads(name),
         accounts(
           id,
@@ -68,7 +69,8 @@ export const getClientsWithChannels = createServerFn({ method: "GET" })
         client_sales_channels(
           sales_channels:sales_channel_id(id, name)
         )
-      `);
+      `)
+      .order('created_at', { ascending: false });
     if (error) throw error;
     return data;
   });
