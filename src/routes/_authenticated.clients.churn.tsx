@@ -57,7 +57,7 @@ function ChurnAnalysisPage() {
       data: { 
         startDate: dateRange?.from?.toISOString() || null, 
         endDate: dateRange?.to?.toISOString() || null,
-        reasons: selectedReasons.length > 0 ? selectedReasons : undefined
+        reasons: selectedReasons.length > 0 ? selectedReasons : null
       } 
     })
   });
