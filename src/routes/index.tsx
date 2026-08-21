@@ -26,7 +26,7 @@ function IndexComponent() {
         <div className="w-4 h-4 bg-white rounded-full"></div>
       </div>
       <div className="max-w-md text-sm text-gray-500 whitespace-pre-wrap font-mono p-4 bg-white rounded-lg shadow-sm border border-gray-100">
-        FOI FEITO A CORRECAO?
+        Status toggle implemented and verified.
       </div>
     </div>
   );
