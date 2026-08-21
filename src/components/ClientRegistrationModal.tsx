@@ -405,7 +405,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                       mask={[{ mask: '000.000.000-00' }, { mask: '00.000.000/0000-00' }]}
                       className="flex h-10 w-full rounded-md border border-input bg-white dark:bg-[#1A1A24] px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       placeholder="00.000.000/0000-00"
-                      value={field.value}
+                      value={field.value || ""}
                       onAccept={(value) => field.onChange(value)}
                     />
                   )}
@@ -470,7 +470,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                       mask="(00) 00000-0000"
                       className="flex h-10 w-full rounded-md border border-input bg-white dark:bg-[#1A1A24] px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       placeholder="(11) 99999-9999"
-                      value={field.value}
+                      value={field.value || ""}
                       onAccept={(value) => field.onChange(value)}
                     />
                   )}
