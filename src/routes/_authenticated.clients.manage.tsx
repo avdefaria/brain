@@ -22,6 +22,7 @@ import {
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ClientRegistrationModal } from "@/components/ClientRegistrationModal";
+import { ChurnReasonModal } from "@/components/ChurnReasonModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,8 @@ function ClientsManagePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [churnModalOpen, setChurnModalOpen] = useState(false);
+  const [pendingChurnClient, setPendingChurnClient] = useState<any>(null);
 
   const fetchClients = useServerFn(getClientsWithChannels);
   const updateStatusFn = useServerFn(updateClientStatus);
@@ -105,15 +108,45 @@ function ClientsManagePage() {
   }
 
   const handleToggleStatus = async (clientId: string, currentStatus: string) => {
+    if (currentStatus === 'active') {
+      const client = (clients as any[])?.find(c => c.id === clientId);
+      setPendingChurnClient(client);
+      setChurnModalOpen(true);
+      return;
+    }
+
     try {
       setIsUpdating(clientId);
-      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-      await updateStatusFn({ data: { id: clientId, status: newStatus as any } });
-      toast.success(`Status atualizado para ${newStatus === 'active' ? 'Ativo' : 'Inativo'}`);
+      await updateStatusFn({ data: { id: clientId, status: 'active' } });
+      toast.success("Cliente reativado com sucesso");
       refetch();
     } catch (error) {
-      console.error("Erro ao atualizar status:", error);
-      toast.error("Erro ao atualizar status do cliente");
+      console.error("Erro ao reativar cliente:", error);
+      toast.error("Erro ao reativar cliente");
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  const handleConfirmChurn = async (reasonId: string) => {
+    if (!pendingChurnClient) return;
+    
+    try {
+      setIsUpdating(pendingChurnClient.id);
+      await updateStatusFn({ 
+        data: { 
+          id: pendingChurnClient.id, 
+          status: 'inactive',
+          churnReasonId: reasonId 
+        } 
+      });
+      toast.success("Cliente desativado com sucesso");
+      setChurnModalOpen(false);
+      setPendingChurnClient(null);
+      refetch();
+    } catch (error) {
+      console.error("Erro ao desativar cliente:", error);
+      toast.error("Erro ao desativar cliente");
     } finally {
       setIsUpdating(null);
     }
@@ -322,6 +355,12 @@ function ClientsManagePage() {
         onOpenChange={setIsModalOpen} 
         initialData={selectedClient}
         onSuccess={() => refetch()}
+      />
+      <ChurnReasonModal
+        open={churnModalOpen}
+        onOpenChange={setChurnModalOpen}
+        onConfirm={handleConfirmChurn}
+        isLoading={isUpdating === pendingChurnClient?.id}
       />
     </div>
   );
