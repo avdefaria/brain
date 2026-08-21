@@ -526,6 +526,7 @@ export type Database = {
           funnel_stage: string | null
           id: string
           monthly_revenue_range: string | null
+          mrr_months: number | null
           name: string
           niche_id: string | null
           notes: string | null
@@ -544,6 +545,7 @@ export type Database = {
           funnel_stage?: string | null
           id?: string
           monthly_revenue_range?: string | null
+          mrr_months?: number | null
           name: string
           niche_id?: string | null
           notes?: string | null
@@ -562,6 +564,7 @@ export type Database = {
           funnel_stage?: string | null
           id?: string
           monthly_revenue_range?: string | null
+          mrr_months?: number | null
           name?: string
           niche_id?: string | null
           notes?: string | null
