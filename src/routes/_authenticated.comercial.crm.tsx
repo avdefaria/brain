@@ -16,7 +16,9 @@ import {
   User,
   Loader2,
   ArrowRightLeft,
-  ChevronRight
+  ChevronRight,
+  Clock,
+  MessageCircle
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -179,6 +181,42 @@ function CRMPage() {
                                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.recurring_revenue || 0)}
                                     </p>
                                   </div>
+
+                                  {(() => {
+                                    const history = lead.lead_stage_history || [];
+                                    const currentStageEntry = history
+                                      .filter((h: any) => h.stage === lead.funnel_stage && !h.exited_at)
+                                      .sort((a: any, b: any) => new Date(b.entered_at).getTime() - new Date(a.entered_at).getTime())[0];
+                                    
+                                    const enteredAt = currentStageEntry?.entered_at ? new Date(currentStageEntry.entered_at) : new Date();
+                                    const daysInStage = Math.floor((new Date().getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24));
+                                    const isAlert = daysInStage > 5;
+
+                                    const lastContact = lead.last_contact_at ? new Date(lead.last_contact_at) : null;
+                                    const daysSinceContact = lastContact ? Math.floor((new Date().getTime() - lastContact.getTime()) / (1000 * 60 * 60 * 24)) : null;
+
+                                    return (
+                                      <div className="flex flex-wrap gap-2 pt-1">
+                                        <Badge 
+                                          variant="outline" 
+                                          className={cn(
+                                            "h-5 text-[9px] font-bold gap-1 px-2 border-[#E4E6F0] rounded-full",
+                                            isAlert ? "text-[#F5A524] border-[#F5A524]/30 bg-[#F5A524]/5" : "text-[#8A8FA3] bg-[#F7F8FC]"
+                                          )}
+                                        >
+                                          <Clock className="h-3 w-3" />
+                                          {daysInStage} {daysInStage === 1 ? 'dia' : 'dias'}
+                                        </Badge>
+
+                                        {daysSinceContact !== null && (
+                                          <div className="text-[9px] text-[#8A8FA3] flex items-center gap-1 font-medium italic">
+                                            <MessageCircle className="h-2.5 w-2.5" />
+                                            Último contato: {daysSinceContact === 0 ? 'hoje' : `há ${daysSinceContact} ${daysSinceContact === 1 ? 'dia' : 'dias'}`}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
 
                                   <div className="flex items-center justify-between pt-3 border-t border-[#F7F8FC]">
                                     <div className="flex items-center gap-1.5">

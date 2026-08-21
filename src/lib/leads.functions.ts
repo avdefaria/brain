@@ -187,7 +187,8 @@ export const updateLeadPosition = createServerFn({ method: "POST" })
       .from('leads')
       .update({ 
         funnel_stage: data.funnel_stage,
-        position: data.position
+        position: data.position,
+        last_contact_at: new Date().toISOString()
       })
       .eq('id', data.id);
 

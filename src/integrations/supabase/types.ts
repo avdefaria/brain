@@ -557,6 +557,7 @@ export type Database = {
           expected_close_date: string | null
           funnel_stage: string | null
           id: string
+          last_contact_at: string | null
           monthly_revenue_range: string | null
           mrr_months: number | null
           name: string
@@ -576,6 +577,7 @@ export type Database = {
           expected_close_date?: string | null
           funnel_stage?: string | null
           id?: string
+          last_contact_at?: string | null
           monthly_revenue_range?: string | null
           mrr_months?: number | null
           name: string
@@ -595,6 +597,7 @@ export type Database = {
           expected_close_date?: string | null
           funnel_stage?: string | null
           id?: string
+          last_contact_at?: string | null
           monthly_revenue_range?: string | null
           mrr_months?: number | null
           name?: string
