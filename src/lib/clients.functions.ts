@@ -193,8 +193,8 @@ export const getChurnAnalysisData = createServerFn({ method: "GET" })
     const timesToChurn = churnedClients
       .filter(c => c.start_date && c.cancelled_at)
       .map(c => {
-        const start = new Date(c.start_date);
-        const end = new Date(c.cancelled_at);
+        const start = new Date(c.start_date as string);
+        const end = new Date(c.cancelled_at as string);
         return (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30);
       });
     const avgTimeToChurn = timesToChurn.length > 0 
