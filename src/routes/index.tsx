@@ -28,45 +28,38 @@ function IndexComponent() {
         </div>
         
         <div className="max-w-2xl p-6 bg-white rounded-xl border border-[#E4E6F0] shadow-sm text-sm font-sans text-[#0E0E16]">
-          <h2 className="font-bold text-[#3D4FE8] mb-4 uppercase tracking-wider">Resultado da Geração de Contratos</h2>
+          <h2 className="font-bold text-[#3D4FE8] mb-4 uppercase tracking-wider">Diagnóstico Técnico: TechFlow Systems</h2>
           
           <div className="space-y-4">
             <section>
-              <h3 className="font-bold border-b border-[#F7F8FC] pb-1 mb-2">1. Recuperação de Dados Reais</h3>
-              <p className="mb-2 text-[#8A8FA3]">Dados extraídos do lead original da <strong>Empresa Teste</strong>:</p>
+              <h3 className="font-bold border-b border-[#F7F8FC] pb-1 mb-2">1. Dados do Cliente</h3>
               <pre className="bg-[#F7F8FC] p-3 rounded overflow-x-auto text-[10px] leading-tight text-gray-700">
-{`Lead: Lead Teste Playwright
-- Valor MRR: R$ 5.000,00
-- Meses: 12
-- Método: Pix
-- Data Referência: 2026-08-21 (Conversão)`}
+{`Cliente: TechFlow Systems
+ID: 1b7bd635-ad7d-42af-b389-4cf5b4b8d1b0
+lead_id: NULL (Confirmado)
+Data Criação: 2026-08-19 21:10
+Status: active
+CNPJ: 12.345.678/0001-90`}
               </pre>
             </section>
 
             <section>
-              <h3 className="font-bold border-b border-[#F7F8FC] pb-1 mb-2">2. Confirmação de Execução (SQL Result)</h3>
-              <table className="w-full text-[10px] text-left border-collapse">
-                <thead>
-                  <tr className="bg-[#F7F8FC]">
-                    <th className="p-2 border border-[#E4E6F0]">Cliente</th>
-                    <th className="p-2 border border-[#E4E6F0]">Contrato</th>
-                    <th className="p-2 border border-[#E4E6F0]">Valor/Mês</th>
-                    <th className="p-2 border border-[#E4E6F0]">Parcelas Geradas</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="p-2 border border-[#E4E6F0]">Empresa Teste</td>
-                    <td className="p-2 border border-[#E4E6F0]">Recorrente (12 meses)</td>
-                    <td className="p-2 border border-[#E4E6F0]">R$ 5.000,00</td>
-                    <td className="p-2 border border-[#E4E6F0] font-bold text-green-600">12 Recebíveis</td>
-                  </tr>
-                </tbody>
-              </table>
+              <h3 className="font-bold border-b border-[#F7F8FC] pb-1 mb-2">2. Conclusão do lead_id</h3>
+              <p className="text-gray-600 italic">
+                O campo <strong>lead_id</strong> deste cliente é nulo. Isso confirma que a TechFlow Systems foi criada via <strong>cadastro direto</strong> (manual) e não através de uma conversão de lead do CRM.
+              </p>
             </section>
 
-            <div className="mt-4 p-3 bg-green-50 text-green-700 rounded border border-green-100 font-medium">
-              SUCESSO: Contrato criado e 12 recebíveis gerados com base no dado real do lead. A TechFlow Systems não possui lead vinculado no banco para extração automática de MRR.
+            <section>
+              <h3 className="font-bold border-b border-[#F7F8FC] pb-1 mb-2">3. Por que foi pulado no backfill?</h3>
+              <div className="p-3 bg-amber-50 text-amber-700 rounded border border-amber-100">
+                <p className="mb-2"><strong>Motivo:</strong> Ausência de fonte de dados financeira real.</p>
+                <p>Como o cliente não possui vínculo com lead, não há registro de <code>recurring_revenue</code> ou <code>mrr_months</code> no banco de dados para este ID. Seguindo a regra de "Não inventar valores", o sistema não pode assumir um MRR para gerar os recebíveis sem uma entrada manual ou vínculo de lead.</p>
+              </div>
+            </section>
+
+            <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded border border-blue-100 font-medium text-center">
+              Aguardando definição manual de MRR/Meses para este cliente.
             </div>
           </div>
         </div>
