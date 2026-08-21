@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -381,6 +381,65 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
             <Label>Notas</Label>
             <Textarea {...form.register("notes")} placeholder="Observações adicionais sobre o lead..." className="min-h-[100px]" />
           </div>
+
+          {lead && (
+            <div className="space-y-4 pt-4 border-t border-[#E4E6F0]">
+              <h3 className="font-title font-bold text-lg text-[#0E0E16]">Histórico de Estágios</h3>
+              <div className="space-y-3">
+                {(() => {
+                  const history = Array.isArray(lead.lead_stage_history) 
+                    ? [...lead.lead_stage_history].sort((a, b) => new Date(b.entered_at).getTime() - new Date(a.entered_at).getTime())
+                    : [];
+
+                  if (history.length === 0) {
+                    return <p className="text-sm text-[#8A8FA3] italic text-center py-4">Nenhum histórico registrado.</p>;
+                  }
+
+                  return (
+                    <div className="relative pl-6 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-[#E4E6F0]">
+                      {history.map((h: any, idx: number) => {
+                        const entered = new Date(h.entered_at);
+                        const exited = h.exited_at ? new Date(h.exited_at) : new Date();
+                        const diffMs = exited.getTime() - entered.getTime();
+                        
+                        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+                        let timeDisplay = "";
+                        if (days > 0) timeDisplay = `${days}d ${hours}h`;
+                        else if (hours > 0) timeDisplay = `${hours}h ${minutes}m`;
+                        else timeDisplay = `${minutes}m`;
+
+                        const stageLabel = STAGES.find(s => s.id === h.stage)?.label || h.stage;
+
+                        return (
+                          <div key={h.id || idx} className="relative">
+                            <div className={`absolute -left-[23px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${h.exited_at ? 'bg-[#8A8FA3]' : 'bg-[#3D4FE8]'}`} />
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div>
+                                <p className={`text-sm font-semibold ${h.exited_at ? 'text-[#8A8FA3]' : 'text-[#3D4FE8]'}`}>
+                                  {stageLabel}
+                                </p>
+                                <p className="text-xs text-[#8A8FA3]">
+                                  Entrou em {entered.toLocaleDateString('pt-BR')} às {entered.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${h.exited_at ? 'bg-slate-100 text-[#8A8FA3]' : 'bg-indigo-50 text-[#3D4FE8]'}`}>
+                                  {h.exited_at ? timeDisplay : 'Em andamento'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
