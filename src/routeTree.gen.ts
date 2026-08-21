@@ -23,6 +23,7 @@ import { Route as AuthenticatedClientsClientIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedClientsChurnRouteImport } from './routes/_authenticated.clients.churn'
 import { Route as AuthenticatedClientsContractsRouteImport } from './routes/_authenticated.clients.contracts'
 import { Route as AuthenticatedClientsManageRouteImport } from './routes/_authenticated.clients.manage'
+import { Route as AuthenticatedComercialCrmRouteImport } from './routes/_authenticated.comercial.crm'
 import { Route as AuthenticatedProjectsContentApprovalRouteImport } from './routes/_authenticated.projects.content-approval'
 import { Route as AuthenticatedProjectsDeliverablesRouteImport } from './routes/_authenticated.projects.deliverables'
 import { Route as AuthenticatedProjectsTasksRouteImport } from './routes/_authenticated.projects.tasks'
@@ -102,6 +103,12 @@ const AuthenticatedClientsManageRoute =
     path: '/clients/manage',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedComercialCrmRoute =
+  AuthenticatedComercialCrmRouteImport.update({
+    id: '/comercial/crm',
+    path: '/comercial/crm',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProjectsContentApprovalRoute =
   AuthenticatedProjectsContentApprovalRouteImport.update({
     id: '/content-approval',
@@ -139,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/clients/churn': typeof AuthenticatedClientsChurnRoute
   '/clients/contracts': typeof AuthenticatedClientsContractsRoute
   '/clients/manage': typeof AuthenticatedClientsManageRoute
+  '/comercial/crm': typeof AuthenticatedComercialCrmRoute
   '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
@@ -158,6 +166,7 @@ export interface FileRoutesByTo {
   '/clients/churn': typeof AuthenticatedClientsChurnRoute
   '/clients/contracts': typeof AuthenticatedClientsContractsRoute
   '/clients/manage': typeof AuthenticatedClientsManageRoute
+  '/comercial/crm': typeof AuthenticatedComercialCrmRoute
   '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
@@ -179,6 +188,7 @@ export interface FileRoutesById {
   '/_authenticated/clients/churn': typeof AuthenticatedClientsChurnRoute
   '/_authenticated/clients/contracts': typeof AuthenticatedClientsContractsRoute
   '/_authenticated/clients/manage': typeof AuthenticatedClientsManageRoute
+  '/_authenticated/comercial/crm': typeof AuthenticatedComercialCrmRoute
   '/_authenticated/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/_authenticated/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
   '/_authenticated/projects/tasks': typeof AuthenticatedProjectsTasksRoute
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/clients/churn'
     | '/clients/contracts'
     | '/clients/manage'
+    | '/comercial/crm'
     | '/projects/content-approval'
     | '/projects/deliverables'
     | '/projects/tasks'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/clients/churn'
     | '/clients/contracts'
     | '/clients/manage'
+    | '/comercial/crm'
     | '/projects/content-approval'
     | '/projects/deliverables'
     | '/projects/tasks'
@@ -239,6 +251,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clients/churn'
     | '/_authenticated/clients/contracts'
     | '/_authenticated/clients/manage'
+    | '/_authenticated/comercial/crm'
     | '/_authenticated/projects/content-approval'
     | '/_authenticated/projects/deliverables'
     | '/_authenticated/projects/tasks'
@@ -354,6 +367,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientsManageRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/comercial/crm': {
+      id: '/_authenticated/comercial/crm'
+      path: '/comercial/crm'
+      fullPath: '/comercial/crm'
+      preLoaderRoute: typeof AuthenticatedComercialCrmRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/projects/content-approval': {
       id: '/_authenticated/projects/content-approval'
       path: '/content-approval'
@@ -414,6 +434,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedClientsChurnRoute: typeof AuthenticatedClientsChurnRoute
   AuthenticatedClientsContractsRoute: typeof AuthenticatedClientsContractsRoute
   AuthenticatedClientsManageRoute: typeof AuthenticatedClientsManageRoute
+  AuthenticatedComercialCrmRoute: typeof AuthenticatedComercialCrmRoute
   AuthenticatedClientsIndexRoute: typeof AuthenticatedClientsIndexRoute
 }
 
@@ -427,6 +448,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedClientsChurnRoute: AuthenticatedClientsChurnRoute,
   AuthenticatedClientsContractsRoute: AuthenticatedClientsContractsRoute,
   AuthenticatedClientsManageRoute: AuthenticatedClientsManageRoute,
+  AuthenticatedComercialCrmRoute: AuthenticatedComercialCrmRoute,
   AuthenticatedClientsIndexRoute: AuthenticatedClientsIndexRoute,
 }
 

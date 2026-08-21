@@ -1,0 +1,235 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  LayoutGrid, 
+  List as ListIcon,
+  TrendingUp,
+  DollarSign,
+  Briefcase,
+  AlertCircle,
+  MoreVertical,
+  Calendar,
+  MessageSquare,
+  User,
+  Loader2,
+  ArrowRightLeft,
+  ChevronRight
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { 
+  DragDropContext, 
+  Droppable, 
+  Draggable,
+  DropResult
+} from "@hello-pangea/dnd";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { getLeads, getLeadStats, updateLeadPosition, STAGES } from "@/lib/leads.functions";
+import { LeadFormModal } from "@/components/LeadFormModal";
+import { LeadConversionModal } from "@/components/LeadConversionModal";
+
+export const Route = createFileRoute("/_authenticated/comercial/crm")({
+  component: CRMPage,
+});
+
+function CRMPage() {
+  const queryClient = useQueryClient();
+  const fetchLeads = useServerFn(getLeads);
+  const fetchStats = useServerFn(getLeadStats);
+  const updatePosition = useServerFn(updateLeadPosition);
+
+  const { data: leads = [], isLoading } = useQuery({
+    queryKey: ["leads"],
+    queryFn: () => fetchLeads(),
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ["lead-stats"],
+    queryFn: () => fetchStats(),
+  });
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [leadToConvert, setLeadToConvert] = useState<any>(null);
+
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    try {
+      await updatePosition({
+        data: {
+          id: draggableId,
+          funnel_stage: destination.droppableId,
+          position: destination.index
+        }
+      });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["lead-stats"] });
+    } catch (error) {
+      toast.error("Erro ao atualizar posição do lead");
+    }
+  };
+
+  const kpiItems = [
+    { label: "Total de leads", value: stats?.total || 0, icon: User, color: "text-[#3D4FE8]" },
+    { label: "Propostas enviadas", value: stats?.proposals || 0, icon: Briefcase, color: "text-[#F5A524]" },
+    { 
+      label: "Pipeline", 
+      value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats?.pipeline || 0), 
+      icon: TrendingUp, 
+      color: "text-[#22C55E]" 
+    },
+    { label: "Vendas feitas", value: stats?.sales || 0, icon: DollarSign, color: "text-[#22C55E]" },
+    { label: "Vendas perdidas", value: stats?.lost || 0, icon: AlertCircle, color: "text-[#EF4444]" },
+  ];
+
+  return (
+    <div className="p-8 space-y-8 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-title font-bold text-[#0E0E16]">CRM</h1>
+          <p className="text-sm text-[#8A8FA3]">Gestão do funil de vendas e novos negócios</p>
+        </div>
+        <Button 
+          className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 gap-2 font-bold"
+          onClick={() => setIsCreateModalOpen(true)}
+        >
+          <Plus className="h-4 w-4" /> Novo Lead
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {kpiItems.map((kpi) => (
+          <Card key={kpi.label} className="border-[#E4E6F0] shadow-sm">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className={cn("h-10 w-10 bg-white border border-[#E4E6F0] rounded-2xl flex items-center justify-center shadow-sm", kpi.color)}>
+                <kpi.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-[#8A8FA3] tracking-widest">{kpi.label}</p>
+                <h3 className="text-lg font-bold text-[#0E0E16] font-jakarta">{kpi.value}</h3>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 text-[#3D4FE8] animate-spin" />
+        </div>
+      ) : (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="flex gap-6 overflow-x-auto pb-6 custom-scrollbar min-h-[600px]">
+            {STAGES.map((stage) => (
+              <div key={stage.id} className="flex-1 min-w-[300px]">
+                <div className="flex items-center justify-between mb-4 px-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-title font-bold text-[#0E0E16] text-sm whitespace-nowrap">{stage.label}</h3>
+                    <span className="text-xs font-bold text-[#8A8FA3] bg-[#F7F8FC] px-2 py-0.5 rounded-full border border-[#E4E6F0]">
+                      {leads.filter((l: any) => l.funnel_stage === stage.id).length}
+                    </span>
+                  </div>
+                </div>
+
+                <Droppable droppableId={stage.id}>
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="space-y-4 min-h-[500px] bg-[#F7F8FC]/50 p-2 rounded-xl border border-dashed border-[#E4E6F0]"
+                    >
+                      {leads
+                        .filter((l: any) => l.funnel_stage === stage.id)
+                        .sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
+                        .map((lead: any, index: number) => (
+                          <Draggable key={lead.id} draggableId={lead.id} index={index}>
+                            {(provided) => (
+                              <Card
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className="border-[#E4E6F0] shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group bg-white"
+                                onClick={() => setSelectedLead(lead)}
+                              >
+                                <CardContent className="p-4 space-y-3">
+                                  <div className="flex justify-between items-start">
+                                    <h4 className="text-sm font-bold text-[#0E0E16] leading-tight">{lead.name}</h4>
+                                    <Badge className="bg-[#F7F8FC] text-[#3D4FE8] text-[8px] uppercase font-bold border-none rounded-full px-2 py-0">
+                                      {lead.origin || 'Direto'}
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="space-y-1">
+                                    <p className="text-[10px] text-[#8A8FA3] flex items-center gap-1 font-medium">
+                                      <Briefcase className="h-3 w-3" /> {lead.company || 'Empresa não informada'}
+                                    </p>
+                                    <p className="text-[11px] font-bold text-[#3D4FE8]">
+                                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.recurring_revenue || 0)}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center justify-between pt-3 border-t border-[#F7F8FC]">
+                                    <div className="flex items-center gap-1.5">
+                                      <div className="h-5 w-5 rounded-full bg-[#3D4FE8] flex items-center justify-center text-[8px] text-white font-bold">
+                                        {lead.responsible?.full_name?.charAt(0) || '?'}
+                                      </div>
+                                      <span className="text-[10px] text-[#8A8FA3]">{lead.responsible?.full_name?.split(' ')[0] || 'Sem resp.'}</span>
+                                    </div>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      className="h-7 px-2 text-[10px] font-bold text-[#3D4FE8] hover:bg-[#3D4FE8]/10 rounded-full gap-1"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setLeadToConvert(lead);
+                                      }}
+                                    >
+                                      <ArrowRightLeft className="h-3 w-3" /> Converter
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )}
+                          </Draggable>
+                        ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+            ))}
+          </div>
+        </DragDropContext>
+      )}
+
+      <LeadFormModal 
+        isOpen={isCreateModalOpen || !!selectedLead} 
+        onOpenChange={(open: boolean) => {
+          if (!open) {
+            setIsCreateModalOpen(false);
+            setSelectedLead(null);
+          }
+        }}
+        lead={selectedLead}
+      />
+
+      <LeadConversionModal 
+        lead={leadToConvert}
+        isOpen={!!leadToConvert}
+        onOpenChange={(open: boolean) => !open && setLeadToConvert(null)}
+      />
+    </div>
+  );
+}

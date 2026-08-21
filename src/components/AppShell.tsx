@@ -186,8 +186,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarItem
               icon={Target}
               label="Comercial"
-              href="/em-breve"
+              href="/comercial"
               collapsed={sidebarCollapsed}
+              active={location.pathname.startsWith("/comercial")}
+              children={[
+                { label: "CRM", href: "/comercial/crm" },
+              ]}
             />
             <SidebarItem
               icon={DollarSign}

@@ -193,6 +193,7 @@ export type Database = {
           extra_comments: string | null
           health_score: number | null
           id: string
+          lead_id: string | null
           name: string
           niche_id: string | null
           risk_level: Database["public"]["Enums"]["risk_level"] | null
@@ -218,6 +219,7 @@ export type Database = {
           extra_comments?: string | null
           health_score?: number | null
           id?: string
+          lead_id?: string | null
           name: string
           niche_id?: string | null
           risk_level?: Database["public"]["Enums"]["risk_level"] | null
@@ -243,6 +245,7 @@ export type Database = {
           extra_comments?: string | null
           health_score?: number | null
           id?: string
+          lead_id?: string | null
           name?: string
           niche_id?: string | null
           risk_level?: Database["public"]["Enums"]["risk_level"] | null
@@ -256,6 +259,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "clients_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clients_niche_id_fkey"
             columns: ["niche_id"]
@@ -476,6 +486,78 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      leads: {
+        Row: {
+          company: string | null
+          created_at: string | null
+          email: string | null
+          expected_close_date: string | null
+          funnel_stage: string | null
+          id: string
+          monthly_revenue_range: string | null
+          name: string
+          niche_id: string | null
+          notes: string | null
+          one_time_revenue: number | null
+          origin: string | null
+          phone: string | null
+          position: number | null
+          recurring_revenue: number | null
+          responsible_id: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          expected_close_date?: string | null
+          funnel_stage?: string | null
+          id?: string
+          monthly_revenue_range?: string | null
+          name: string
+          niche_id?: string | null
+          notes?: string | null
+          one_time_revenue?: number | null
+          origin?: string | null
+          phone?: string | null
+          position?: number | null
+          recurring_revenue?: number | null
+          responsible_id?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          expected_close_date?: string | null
+          funnel_stage?: string | null
+          id?: string
+          monthly_revenue_range?: string | null
+          name?: string
+          niche_id?: string | null
+          notes?: string | null
+          one_time_revenue?: number | null
+          origin?: string | null
+          phone?: string | null
+          position?: number | null
+          recurring_revenue?: number | null
+          responsible_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_niche_id_fkey"
+            columns: ["niche_id"]
+            isOneToOne: false
+            referencedRelation: "niches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       niches: {
         Row: {
