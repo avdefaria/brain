@@ -22,7 +22,10 @@ export const getLeads = createServerFn({ method: "GET" })
       .select(`
         *,
         responsible:profiles!leads_responsible_id_fkey(id, full_name),
-        niche:niches(id, name)
+        niche:niches(id, name),
+        lead_sales_channels(
+          sales_channels:sales_channel_id(id, name)
+        )
       `)
       .order('position', { ascending: true });
 
@@ -57,13 +60,31 @@ export const createLead = createServerFn({ method: "POST" })
   .validator((data: any) => data)
   .handler(async ({ context, data }) => {
     const supabase = context.supabase;
+    const { sales_channels, ...updates } = data;
+    
     const { data: lead, error } = await supabase
       .from('leads')
-      .insert([data])
+      .insert([updates])
       .select()
       .single();
 
     if (error) throw error;
+
+    // Handle sales channels N:N
+    if (sales_channels && sales_channels.length > 0) {
+      const { data: channels } = await supabase
+        .from('sales_channels')
+        .select('id')
+        .in('name', sales_channels);
+
+      if (channels) {
+        const junctionData = channels.map(c => ({
+          lead_id: lead.id,
+          sales_channel_id: c.id
+        }));
+        await supabase.from('lead_sales_channels' as any).insert(junctionData as any);
+      }
+    }
     return lead;
   });
 
@@ -72,7 +93,8 @@ export const updateLead = createServerFn({ method: "POST" })
   .validator((data: { id: string } & any) => data)
   .handler(async ({ context, data }) => {
     const supabase = context.supabase;
-    const { id, ...updates } = data;
+    const { id, sales_channels, ...updates } = data;
+    
     const { data: lead, error } = await supabase
       .from('leads')
       .update(updates)
@@ -81,7 +103,44 @@ export const updateLead = createServerFn({ method: "POST" })
       .single();
 
     if (error) throw error;
+
+    // Update sales channels N:N
+    if (sales_channels !== undefined) {
+      // Remove old
+      await supabase.from('lead_sales_channels' as any).delete().eq('lead_id', id);
+
+      // Insert new
+      if (sales_channels.length > 0) {
+        const { data: channels } = await supabase
+          .from('sales_channels')
+          .select('id')
+          .in('name', sales_channels);
+
+        if (channels) {
+          const junctionData = channels.map(c => ({
+            lead_id: id,
+            sales_channel_id: c.id
+          }));
+          await supabase.from('lead_sales_channels' as any).insert(junctionData as any);
+        }
+      }
+    }
+
     return lead;
+  });
+
+export const deleteLead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((id: string) => z.string().parse(id))
+  .handler(async ({ context, data: id }) => {
+    const supabase = context.supabase;
+    const { error } = await supabase
+      .from('leads')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
   });
 
 export const updateLeadPosition = createServerFn({ method: "POST" })

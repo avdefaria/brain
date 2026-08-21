@@ -27,12 +27,15 @@ import {
   Phone, 
   TrendingUp, 
   DollarSign, 
-  Calendar
+  Calendar,
+  Trash2
 } from "lucide-react";
 import { toast } from "sonner";
-import { createLead, updateLead, STAGES } from "@/lib/leads.functions";
+import { createLead, updateLead, deleteLead, STAGES } from "@/lib/leads.functions";
 import { getNiches } from "@/lib/niches.functions";
 import { getCollaborators } from "@/lib/squads.functions";
+import { getSalesChannels, addSalesChannel } from "@/lib/sales-channels.functions";
+import { MultiSelectSalesChannels } from "./MultiSelectSalesChannels";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -50,6 +53,7 @@ const leadSchema = z.object({
   origin: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   funnel_stage: z.string(),
+  sales_channels: z.array(z.string()),
 });
 
 type LeadFormValues = z.infer<typeof leadSchema>;
@@ -64,22 +68,54 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
   const queryClient = useQueryClient();
   const createLeadFn = useServerFn(createLead);
   const updateLeadFn = useServerFn(updateLead);
+  const deleteLeadFn = useServerFn(deleteLead);
   
   const [niches, setNiches] = useState<any[]>([]);
   const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [salesChannelOptions, setSalesChannelOptions] = useState<any[]>([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const fetchNiches = useServerFn(getNiches);
   const fetchCollaborators = useServerFn(getCollaborators);
+  const fetchSalesChannels = useServerFn(getSalesChannels);
+  const addSalesChannelFn = useServerFn(addSalesChannel);
 
   useEffect(() => {
     if (isOpen) {
       fetchNiches().then(setNiches);
       fetchCollaborators().then(setCollaborators);
+      fetchSalesChannels().then(setSalesChannelOptions);
     }
   }, [isOpen]);
 
+  const handleDelete = async () => {
+    if (!lead?.id) return;
+    try {
+      await deleteLeadFn({ data: lead.id });
+      toast.success("Lead excluído com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["lead-stats"] });
+      setIsDeleteDialogOpen(false);
+      onOpenChange(false);
+    } catch (error) {
+      toast.error("Erro ao excluir lead");
+    }
+  };
+
+  const handleAddSalesChannel = async (name: string) => {
+    try {
+      const newChannel = await addSalesChannelFn({ data: name });
+      setSalesChannelOptions(prev => [...prev, newChannel]);
+      const current = form.getValues("sales_channels");
+      form.setValue("sales_channels", [...current, newChannel.name]);
+      toast.success("Canal adicionado!");
+    } catch (error) {
+      toast.error("Erro ao adicionar canal");
+    }
+  };
+
   const form = useForm<LeadFormValues>({
-    resolver: zodResolver(leadSchema),
+    resolver: zodResolver(leadSchema as any),
     defaultValues: {
       name: "",
       company: null,
@@ -99,6 +135,8 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
 
   useEffect(() => {
     if (lead && isOpen) {
+      const channels = lead.lead_sales_channels?.map((lsc: any) => lsc.sales_channels?.name).filter(Boolean) || [];
+      
       form.reset({
         name: lead.name || "",
         company: lead.company || null,
@@ -113,6 +151,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         origin: lead.origin || null,
         notes: lead.notes || null,
         funnel_stage: lead.funnel_stage || "novos_leads",
+        sales_channels: channels,
       });
     } else if (!lead && isOpen) {
       form.reset({
@@ -129,6 +168,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         origin: null,
         notes: null,
         funnel_stage: "novos_leads",
+        sales_channels: [],
       });
     }
   }, [lead, isOpen, form]);
@@ -151,11 +191,23 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-title font-bold">
-            {lead ? "Editar Lead" : "Novo Lead"}
+          <DialogTitle className="text-xl font-title font-bold flex items-center justify-between">
+            <span>{lead ? "Editar Lead" : "Novo Lead"}</span>
+            {lead && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-[#8A8FA3] hover:text-red-500 mr-8"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -263,6 +315,16 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="space-y-2 col-span-2">
+              <Label>Canais de Vendas</Label>
+              <MultiSelectSalesChannels
+                selected={form.watch("sales_channels") || []}
+                options={salesChannelOptions}
+                onChange={(selected) => form.setValue("sales_channels", selected)}
+                onAddChannel={handleAddSalesChannel}
+              />
+            </div>
 
             <div className="space-y-2">
               <Label>Origem</Label>
@@ -303,5 +365,27 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         </form>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <DialogContent className="sm:max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-bold">Confirmar exclusão</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <p className="text-sm text-[#8A8FA3]">
+            Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita.
+          </p>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="ghost" onClick={() => setIsDeleteDialogOpen(false)} className="rounded-full">
+            Cancelar
+          </Button>
+          <Button onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white rounded-full">
+            Excluir
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

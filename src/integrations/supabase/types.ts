@@ -487,6 +487,36 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_sales_channels: {
+        Row: {
+          lead_id: string
+          sales_channel_id: string
+        }
+        Insert: {
+          lead_id: string
+          sales_channel_id: string
+        }
+        Update: {
+          lead_id?: string
+          sales_channel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_sales_channels_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_sales_channels_sales_channel_id_fkey"
+            columns: ["sales_channel_id"]
+            isOneToOne: false
+            referencedRelation: "sales_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           company: string | null
