@@ -27,40 +27,29 @@ function IndexComponent() {
       </div>
       <div className="max-w-md text-sm text-gray-500 whitespace-pre-wrap font-mono p-4 bg-white rounded-lg shadow-sm border border-gray-100">
         {`REGRAS OBRIGATÓRIAS:
-- Altere APENAS a lógica de submit do ClientRegistrationModal.tsx, 
-  especificamente a decisão entre criar (INSERT) e atualizar (UPDATE) 
-  cliente. Não altere os campos do formulário nem o payload em si, que 
-  já está correto.
-- Pode remover o console.log de debug temporário depois de confirmar a 
-  correção.
-
-DIAGNÓSTICO CONFIRMADO:
-A requisição está sendo enviada como PATCH para 
-\`/clients?id=eq.undefined\` — ou seja, o código está chamando a função de 
-ATUALIZAR um cliente existente, mas o ID do cliente está undefined 
-porque esse cliente ainda não foi criado. Isso acontece ao converter um 
-lead em cliente NOVO — deveria ser um INSERT (criar), não um UPDATE 
-(atualizar).
+- Altere APENAS a lógica que preenche os campos do ClientRegistrationModal 
+  ao ABRIR o modal (não a lógica de submit/salvar, que já foi corrigida e 
+  está funcionando). Não reintroduza o bug de UUID.
+- Confirme antes: a correção anterior (INSERT vs UPDATE) removeu ou 
+  quebrou o useEffect/estado inicial que populava os campos a partir do 
+  lead? Me diga sim ou não.
 
 O QUE FAZER:
 
-1. Encontre no ClientRegistrationModal.tsx (ou na função de submit que 
-   ele chama) a lógica que decide entre criar e atualizar cliente. 
-   Corrija para que, no fluxo de CONVERSÃO DE LEAD, sempre seja feito um 
-   INSERT (criação de cliente novo), nunca um UPDATE — a menos que o 
-   modal também seja reaproveitado para editar cliente já existente, 
-   caso em que a lógica precisa checar corretamente se já existe um 
-   \`client.id\` válido antes de decidir qual operação fazer.
+1. Ao abrir o modal de conversão a partir de um lead, pré-preencher:
+   - Squads vinculados: os mesmos squads já vinculados ao lead, se 
+     houver esse dado no lead (se não houver campo de squad no lead, 
+     apenas ignore este item e me avise).
+   - Canais de Vendas: os mesmos já marcados no lead.
+   - Tipo de Contrato: "Recorrente" se o lead tiver MRR preenchido, 
+     "Projeto Avulso" se tiver apenas Receita Única.
+   - Valor Mensal (MRR): valor do MRR do lead.
 
-2. Depois do INSERT bem-sucedido, usar o ID retornado pelo Supabase para 
-   qualquer operação seguinte (ex: criar o registro em \`contracts\` com o 
-   monthly_value).
+2. Todos os campos continuam editáveis — é só preenchimento inicial.
 
-3. Remover o console.log de debug do payload (já cumpriu seu papel).
-
-Depois de aplicar, teste convertendo o mesmo lead de novo e confirme que 
-o cliente é criado sem erro de UUID. Me devolva a lista de arquivos 
-alterados.`}
+Depois de aplicar, teste convertendo um lead com squad, canais e MRR 
+preenchidos, confirme que tudo aparece pré-preenchido no popup, e me 
+devolva a lista de arquivos alterados.`}
       </div>
     </div>
   );
