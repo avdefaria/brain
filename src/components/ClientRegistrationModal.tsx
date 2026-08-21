@@ -493,7 +493,6 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
           }
         }
       }
-      }
 
       toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
       onOpenChange(false);
