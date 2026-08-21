@@ -142,7 +142,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
   const handleCreateFunnelType = async (name: string) => {
     if (!name.trim()) return;
     try {
-      const newFunnel = await addFunnelTypeFn({ data: name.trim() });
+      const newFunnel = await addFunnelTypeFn({ data: name.trim() }) as any;
       setFunnelTypes(prev => [...prev, newFunnel].sort((a, b) => a.name.localeCompare(b.name)));
       form.setValue("funnel_type_id", newFunnel.id);
       setIsFunnelPopoverOpen(false);
