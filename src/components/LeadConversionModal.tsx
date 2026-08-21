@@ -40,7 +40,11 @@ export function LeadConversionModal({ lead, isOpen, onOpenChange }: LeadConversi
   const oneTime = Number(lead.one_time_revenue) || 0;
   const mrrMonths = Number(lead.mrr_months) || 1;
   const channels = lead.lead_sales_channels?.map((lsc: any) => lsc.sales_channels?.name).filter(Boolean) || [];
-
+  
+  // Note: There is no lead_squads table, so we check if the lead has a responsible_id or similar 
+  // that could be mapped to a squad, but for now we follow the instruction: 
+  // "if there is no squad field in the lead, just ignore this item and let me know".
+  
   const initialClientData = {
     name: lead.company || lead.name,
     corporate_email: lead.email || "",
@@ -51,9 +55,10 @@ export function LeadConversionModal({ lead, isOpen, onOpenChange }: LeadConversi
     extra_comments: lead.notes || "",
     sales_channels: channels,
     contract_type: recurring > 0 ? "recurring" : (oneTime > 0 ? "one-off" : "recurring"),
-    scope_details: "", // Limpo conforme solicitado
+    scope_details: "",
     monthly_value: recurring > 0 ? recurring : (oneTime > 0 ? oneTime : 0),
     _warning_both_revenues: (recurring > 0 && oneTime > 0) ? oneTime : null,
+    // squad_ids: [] // As per schema analysis, there is no squad link in lead yet
   };
 
   return (

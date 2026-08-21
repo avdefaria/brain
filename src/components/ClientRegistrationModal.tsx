@@ -152,7 +152,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         corporate_email: initialData.corporate_email || "",
         contact_email: initialData.contact_email || "",
         contact_whatsapp: initialData.contact_whatsapp || "",
-        squad_ids: initialData.account_squads?.map((as: any) => as.squad_id) || [],
+        squad_ids: initialData.squad_ids || initialData.account_squads?.map((as: any) => as.squad_id) || [],
         niche_id: initialData.niche_id || "",
         contract_type: (initialData.contract_type as any) || "recurring",
         start_date: initialData.start_date || new Date().toISOString().split('T')[0] || "",
