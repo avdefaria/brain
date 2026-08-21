@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { 
@@ -27,12 +27,8 @@ import {
   Phone, 
   TrendingUp, 
   DollarSign, 
-  Calendar, 
-  Target, 
-  FileText,
-  MapPin
+  Calendar
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { createLead, updateLead, STAGES } from "@/lib/leads.functions";
 import { getNiches } from "@/lib/niches.functions";
@@ -42,17 +38,17 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const leadSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
-  company: z.string().optional(),
-  email: z.string().email("E-mail inválido").or(z.literal("")).optional(),
-  phone: z.string().optional(),
-  recurring_revenue: z.coerce.number().default(0),
-  one_time_revenue: z.coerce.number().default(0),
-  expected_close_date: z.string().optional(),
-  responsible_id: z.string().optional(),
-  monthly_revenue_range: z.string().optional(),
-  niche_id: z.string().optional(),
-  origin: z.string().optional(),
-  notes: z.string().optional(),
+  company: z.string().nullable().optional(),
+  email: z.string().email("E-mail inválido").or(z.literal("")).nullable().optional(),
+  phone: z.string().nullable().optional(),
+  recurring_revenue: z.number().default(0),
+  one_time_revenue: z.number().default(0),
+  expected_close_date: z.string().nullable().optional(),
+  responsible_id: z.string().nullable().optional(),
+  monthly_revenue_range: z.string().nullable().optional(),
+  niche_id: z.string().nullable().optional(),
+  origin: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
   funnel_stage: z.string().default('novos_leads'),
 });
 
@@ -86,17 +82,17 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
     resolver: zodResolver(leadSchema),
     defaultValues: {
       name: "",
-      company: "",
-      email: "",
-      phone: "",
+      company: null,
+      email: null,
+      phone: null,
       recurring_revenue: 0,
       one_time_revenue: 0,
-      expected_close_date: "",
-      responsible_id: "",
-      monthly_revenue_range: "",
-      niche_id: "",
-      origin: "",
-      notes: "",
+      expected_close_date: null,
+      responsible_id: null,
+      monthly_revenue_range: null,
+      niche_id: null,
+      origin: null,
+      notes: null,
       funnel_stage: "novos_leads",
     }
   });
@@ -105,37 +101,37 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
     if (lead && isOpen) {
       form.reset({
         name: lead.name || "",
-        company: lead.company || "",
-        email: lead.email || "",
-        phone: lead.phone || "",
-        recurring_revenue: lead.recurring_revenue || 0,
-        one_time_revenue: lead.one_time_revenue || 0,
-        expected_close_date: lead.expected_close_date || "",
-        responsible_id: lead.responsible_id || "",
-        monthly_revenue_range: lead.monthly_revenue_range || "",
-        niche_id: lead.niche_id || "",
-        origin: lead.origin || "",
-        notes: lead.notes || "",
+        company: lead.company || null,
+        email: lead.email || null,
+        phone: lead.phone || null,
+        recurring_revenue: Number(lead.recurring_revenue) || 0,
+        one_time_revenue: Number(lead.one_time_revenue) || 0,
+        expected_close_date: lead.expected_close_date || null,
+        responsible_id: lead.responsible_id || null,
+        monthly_revenue_range: lead.monthly_revenue_range || null,
+        niche_id: lead.niche_id || null,
+        origin: lead.origin || null,
+        notes: lead.notes || null,
         funnel_stage: lead.funnel_stage || "novos_leads",
       });
     } else if (!lead && isOpen) {
       form.reset({
         name: "",
-        company: "",
-        email: "",
-        phone: "",
+        company: null,
+        email: null,
+        phone: null,
         recurring_revenue: 0,
         one_time_revenue: 0,
-        expected_close_date: "",
-        responsible_id: "",
-        monthly_revenue_range: "",
-        niche_id: "",
-        origin: "",
-        notes: "",
+        expected_close_date: null,
+        responsible_id: null,
+        monthly_revenue_range: null,
+        niche_id: null,
+        origin: null,
+        notes: null,
         funnel_stage: "novos_leads",
       });
     }
-  }, [lead, isOpen]);
+  }, [lead, isOpen, form]);
 
   const onSubmit = async (data: LeadFormValues) => {
     try {
@@ -202,7 +198,13 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
               <Label>Receita Recorrente (MRR)</Label>
               <div className="relative">
                 <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
-                <Input type="number" step="0.01" {...form.register("recurring_revenue")} className="pl-10" placeholder="0,00" />
+                <Input 
+                  type="number" 
+                  step="0.01" 
+                  {...form.register("recurring_revenue", { valueAsNumber: true })} 
+                  className="pl-10" 
+                  placeholder="0,00" 
+                />
               </div>
             </div>
 
@@ -210,7 +212,13 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
               <Label>Receita Única</Label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
-                <Input type="number" step="0.01" {...form.register("one_time_revenue")} className="pl-10" placeholder="0,00" />
+                <Input 
+                  type="number" 
+                  step="0.01" 
+                  {...form.register("one_time_revenue", { valueAsNumber: true })} 
+                  className="pl-10" 
+                  placeholder="0,00" 
+                />
               </div>
             </div>
 
@@ -224,7 +232,10 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
 
             <div className="space-y-2">
               <Label>Responsável</Label>
-              <Select onValueChange={(v) => form.setValue("responsible_id", v)} value={form.watch("responsible_id")}>
+              <Select 
+                onValueChange={(v) => form.setValue("responsible_id", v)} 
+                value={form.watch("responsible_id") || undefined}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um responsável" />
                 </SelectTrigger>
@@ -238,7 +249,10 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
 
             <div className="space-y-2">
               <Label>Nicho</Label>
-              <Select onValueChange={(v) => form.setValue("niche_id", v)} value={form.watch("niche_id")}>
+              <Select 
+                onValueChange={(v) => form.setValue("niche_id", v)} 
+                value={form.watch("niche_id") || undefined}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um nicho" />
                 </SelectTrigger>
@@ -257,7 +271,10 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
 
             <div className="space-y-2">
               <Label>Etapa do Funil</Label>
-              <Select onValueChange={(v) => form.setValue("funnel_stage", v)} value={form.watch("funnel_stage")}>
+              <Select 
+                onValueChange={(v) => form.setValue("funnel_stage", v)} 
+                value={form.watch("funnel_stage")}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a etapa" />
                 </SelectTrigger>
