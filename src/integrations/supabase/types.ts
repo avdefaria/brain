@@ -437,6 +437,7 @@ export type Database = {
           created_at: string
           id: string
           monthly_value: number | null
+          mrr_months: number | null
           payment_day: number | null
           payment_method: string | null
           renewal_date: string | null
@@ -454,6 +455,7 @@ export type Database = {
           created_at?: string
           id?: string
           monthly_value?: number | null
+          mrr_months?: number | null
           payment_day?: number | null
           payment_method?: string | null
           renewal_date?: string | null
@@ -471,6 +473,7 @@ export type Database = {
           created_at?: string
           id?: string
           monthly_value?: number | null
+          mrr_months?: number | null
           payment_day?: number | null
           payment_method?: string | null
           renewal_date?: string | null
