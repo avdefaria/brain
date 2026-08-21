@@ -54,6 +54,18 @@ import { getLeads, getLeadStats, updateLeadPosition, getFunnelTypes, STAGES } fr
 import { getCollaborators } from "@/lib/squads.functions";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { LeadConversionModal } from "@/components/LeadConversionModal";
+import { CRMFunnelChart } from "@/components/CRMFunnelChart";
+import { CRMLeadsTable } from "@/components/CRMLeadsTable";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/comercial/crm")({
   component: CRMPage,
