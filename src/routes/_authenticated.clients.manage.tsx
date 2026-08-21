@@ -51,7 +51,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
-import { getClientsWithChannels } from "@/lib/sales-channels.functions";
+import { getClientsWithChannels, updateClientStatus } from "@/lib/clients.functions";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/clients/manage")({
   component: ClientsManagePage,
@@ -62,8 +64,10 @@ function ClientsManagePage() {
   const [riskFilter, setRiskFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   const fetchClients = useServerFn(getClientsWithChannels);
+  const updateStatusFn = useServerFn(updateClientStatus);
 
   const { data: clients, isLoading, refetch } = useQuery({
     queryKey: ['clients-list'],
@@ -98,6 +102,21 @@ function ClientsManagePage() {
       </div>
     );
   }
+
+  const handleToggleStatus = async (clientId: string, currentStatus: string) => {
+    try {
+      setIsUpdating(clientId);
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      await updateStatusFn({ data: { id: clientId, status: newStatus as any } });
+      toast.success(`Status atualizado para ${newStatus === 'active' ? 'Ativo' : 'Inativo'}`);
+      refetch();
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+      toast.error("Erro ao atualizar status do cliente");
+    } finally {
+      setIsUpdating(null);
+    }
+  };
 
   const handleEditClient = (client: any) => {
     // Flatten account_squads from all accounts for the modal
@@ -222,14 +241,19 @@ function ClientsManagePage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <div className={cn(
-                          "w-4 h-2 rounded-full flex items-center justify-center relative",
-                          client.status === 'active' ? "bg-[#22C55E]" : "bg-[#8A8FA3]"
-                        )}>
-                          <div className="w-1 h-1 bg-white rounded-full"></div>
-                        </div>
-                        <span className="text-xs text-[#8A8FA3]">{client.status === 'active' ? 'Ativo' : 'Inativo'}</span>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={client.status === 'active'}
+                          onCheckedChange={() => handleToggleStatus(client.id, client.status)}
+                          disabled={isUpdating === client.id}
+                          className={cn(
+                            "data-[state=checked]:bg-[#22C55E] data-[state=unchecked]:bg-[#EF4444]",
+                            isUpdating === client.id && "opacity-50 cursor-not-allowed"
+                          )}
+                        />
+                        <span className="text-xs text-[#8A8FA3] min-w-[45px]">
+                          {client.status === 'active' ? 'Ativo' : 'Inativo'}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
