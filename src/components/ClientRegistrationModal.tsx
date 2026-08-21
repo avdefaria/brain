@@ -408,7 +408,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
           const { data: accounts } = await supabase.from('accounts').select('id').eq('client_id', clientId).limit(1);
           
           if (accounts && accounts.length > 0) {
-            accountId = accounts[0].id;
+            accountId = (accounts[0] as any).id;
           } else {
             const { data: newAccount } = await supabase.from('accounts').insert({ client_id: clientId, name: data.name } as any).select('id').single();
             accountId = newAccount?.id;
