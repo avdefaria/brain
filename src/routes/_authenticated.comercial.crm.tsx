@@ -356,12 +356,36 @@ function CRMPage() {
                                       .filter((h: any) => h.stage === lead.funnel_stage && !h.exited_at)
                                       .sort((a: any, b: any) => new Date(b.entered_at).getTime() - new Date(a.entered_at).getTime())[0];
                                     
-                                    const enteredAt = currentStageEntry?.entered_at ? new Date(currentStageEntry.entered_at) : new Date();
-                                    const daysInStage = Math.floor((new Date().getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24));
+                                    // Helper function to calculate calendar days difference in America/Sao_Paulo
+                                    const getDaysDiff = (dateStr: string) => {
+                                      const date = new Date(dateStr);
+                                      const now = new Date();
+                                      
+                                      // Get local dates in Brazil
+                                      const getBrazilDate = (d: Date) => {
+                                        const formatter = new Intl.DateTimeFormat('en-US', {
+                                          timeZone: 'America/Sao_Paulo',
+                                          year: 'numeric',
+                                          month: 'numeric',
+                                          day: 'numeric'
+                                        });
+                                        const parts = formatter.formatToParts(d);
+                                        const dateParts: any = {};
+                                        parts.forEach(p => dateParts[p.type] = p.value);
+                                        return new Date(dateParts.year, dateParts.month - 1, dateParts.day);
+                                      };
+
+                                      const brStart = getBrazilDate(date);
+                                      const brEnd = getBrazilDate(now);
+                                      
+                                      const diffTime = brEnd.getTime() - brStart.getTime();
+                                      return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                    };
+
+                                    const daysInStage = currentStageEntry?.entered_at ? getDaysDiff(currentStageEntry.entered_at) : 0;
                                     const isAlert = daysInStage > 5;
 
-                                    const lastContact = lead.last_contact_at ? new Date(lead.last_contact_at) : null;
-                                    const daysSinceContact = lastContact ? Math.floor((new Date().getTime() - lastContact.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                                    const daysSinceContact = lead.last_contact_at ? getDaysDiff(lead.last_contact_at) : null;
 
                                     return (
                                       <div className="flex flex-wrap gap-2 pt-1">
