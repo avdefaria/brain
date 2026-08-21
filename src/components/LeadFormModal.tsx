@@ -50,6 +50,7 @@ const leadSchema = z.object({
   responsible_id: z.string().nullable().optional(),
   monthly_revenue_range: z.string().nullable().optional(),
   niche_id: z.string().nullable().optional(),
+  mrr_months: z.number().int().min(1, "Mínimo 1 mês").default(1),
   origin: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   funnel_stage: z.string(),
@@ -122,6 +123,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
       email: null,
       phone: null,
       recurring_revenue: 0,
+      mrr_months: 1,
       one_time_revenue: 0,
       expected_close_date: null,
       responsible_id: null,
@@ -130,6 +132,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
       origin: null,
       notes: null,
       funnel_stage: "novos_leads",
+      sales_channels: [],
     }
   });
 
@@ -143,6 +146,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         email: lead.email || null,
         phone: lead.phone || null,
         recurring_revenue: Number(lead.recurring_revenue) || 0,
+        mrr_months: Number(lead.mrr_months) || 1,
         one_time_revenue: Number(lead.one_time_revenue) || 0,
         expected_close_date: lead.expected_close_date || null,
         responsible_id: lead.responsible_id || null,
@@ -160,6 +164,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         email: null,
         phone: null,
         recurring_revenue: 0,
+        mrr_months: 1,
         one_time_revenue: 0,
         expected_close_date: null,
         responsible_id: null,
@@ -248,14 +253,37 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
 
             <div className="space-y-2">
               <Label>Receita Recorrente (MRR)</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2 relative">
+                  <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    {...form.register("recurring_revenue", { valueAsNumber: true })} 
+                    className="pl-10" 
+                    placeholder="0,00" 
+                  />
+                </div>
+                <div className="relative">
+                  <Input 
+                    type="number"
+                    {...form.register("mrr_months", { valueAsNumber: true })}
+                    placeholder="Meses"
+                    title="Qtd. de Meses"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Receita Total Recorrente (Estimada)</Label>
               <div className="relative">
-                <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
                 <Input 
-                  type="number" 
-                  step="0.01" 
-                  {...form.register("recurring_revenue", { valueAsNumber: true })} 
-                  className="pl-10" 
-                  placeholder="0,00" 
+                  readOnly
+                  disabled
+                  value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((form.watch("recurring_revenue") || 0) * (form.watch("mrr_months") || 0))}
+                  className="pl-10 bg-slate-50 border-slate-200"
                 />
               </div>
             </div>
