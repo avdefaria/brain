@@ -46,22 +46,24 @@ import { NicheSelector } from "./NicheSelector";
 
 const clientSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
-  cnpj_cpf: z.string().min(11, "CNPJ/CPF inválido"),
-  address: z.string().min(5, "Endereço é obrigatório"),
-  country: z.string(),
-  state: z.string().min(2, "Estado é obrigatório"),
-  city: z.string().min(2, "Cidade é obrigatória"),
+  cnpj_cpf: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  country: z.string().optional().nullable(),
+  state: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
   corporate_email: z.string().email("E-mail corporativo inválido"),
   contact_email: z.string().email("E-mail do responsável inválido").optional().nullable(),
-  contact_whatsapp: z.string().min(10, "WhatsApp inválido"),
+  contact_whatsapp: z.string().min(10, "WhatsApp inválido").optional().nullable(),
   squad_ids: z.array(z.string()).optional(),
   niche_id: z.string().min(1, "Nicho é obrigatório"),
-  contract_type: z.enum(["recurring", "one-off"]),
+  contract_type: z.enum(["recurring", "one-off"]).optional().default("recurring"),
   sales_channels: z.array(z.string()).optional(),
-  start_date: z.string(),
-  end_date_expected: z.string().min(1, "Data de encerramento é obrigatória"),
+  start_date: z.string().optional().nullable(),
+  end_date_expected: z.string().optional().nullable(),
   scope_details: z.string().nullable().optional(),
   extra_comments: z.string().nullable().optional(),
+  health_score: z.number().min(0).max(100).optional(),
+  lead_id: z.string().uuid().optional().nullable(),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
