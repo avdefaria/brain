@@ -159,6 +159,105 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
     };
   });
 
+export const getChurnAnalysisData = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
+
+    // Fetch all clients with their contracts and churn reasons
+    const { data: clients, error } = await supabase
+      .from("clients")
+      .select(`
+        *,
+        churn_reasons (name),
+        contracts (*)
+      `);
+
+    if (error) throw error;
+
+    const allClients = clients || [];
+    const churnedClients = allClients.filter(c => c.status === 'churn' || c.status === 'inactive');
+    const activeClients = allClients.filter(c => c.status === 'active');
+
+    // KPIs
+    const totalChurn = churnedClients.length;
+    const churnRate = allClients.length > 0 ? (totalChurn / allClients.length) * 100 : 0;
+    
+    // Revenue lost (MRR from contracts of churned clients)
+    const revenueLost = churnedClients.reduce((acc, c) => {
+      const monthlyValue = c.contracts?.find((con: any) => con.status === 'active' || con.status === 'ended')?.monthly_value || 0;
+      return acc + monthlyValue;
+    }, 0);
+
+    // Average time to churn (in months)
+    const timesToChurn = churnedClients
+      .filter(c => c.start_date && c.cancelled_at)
+      .map(c => {
+        const start = new Date(c.start_date);
+        const end = new Date(c.cancelled_at);
+        return (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30);
+      });
+    const avgTimeToChurn = timesToChurn.length > 0 
+      ? Math.round(timesToChurn.reduce((a, b) => a + b, 0) / timesToChurn.length)
+      : 0;
+
+    // Churn by Reason
+    const reasonCounts = churnedClients.reduce((acc: Record<string, number>, c) => {
+      const reason = c.churn_reasons?.name || 'Outros';
+      acc[reason] = (acc[reason] || 0) + 1;
+      return acc;
+    }, {});
+    const churnByReason = Object.entries(reasonCounts).map(([name, value]) => ({ name, value }));
+
+    // Churn by Month (Last 6 months)
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date();
+      d.setMonth(d.getMonth() - (5 - i));
+      return d.toLocaleString('pt-BR', { month: 'short' });
+    });
+
+    const churnMonthly = months.map((m, i) => {
+      const monthIndex = new Date();
+      monthIndex.setMonth(monthIndex.getMonth() - (5 - i));
+      const count = churnedClients.filter(c => {
+        if (!c.cancelled_at) return false;
+        const cancelDate = new Date(c.cancelled_at);
+        return cancelDate.getMonth() === monthIndex.getMonth() && 
+               cancelDate.getFullYear() === monthIndex.getFullYear();
+      }).length;
+      return { name: m, value: count };
+    });
+
+    // Recent Churn Table
+    const recentChurn = churnedClients
+      .sort((a, b) => new Date(b.cancelled_at || 0).getTime() - new Date(a.cancelled_at || 0).getTime())
+      .slice(0, 5)
+      .map(c => ({
+        name: c.name,
+        date: c.cancelled_at ? new Date(c.cancelled_at).toLocaleDateString('pt-BR') : '--',
+        type: c.contracts?.[0]?.type === 'recurring' ? 'Recorrente' : 'Avulso',
+        value: c.contracts?.[0]?.monthly_value || 0,
+        reason: c.churn_reasons?.name || 'Outros'
+      }));
+
+    return {
+      kpis: [
+        { label: "Taxa de Churn", value: `${churnRate.toFixed(1)}%`, change: "Real", trending: churnRate > 5 ? "up" : "down" },
+        { label: "Total de Churn", value: totalChurn.toString(), change: "Histórico", trending: "down" },
+        { label: "Tempo Médio até Churn", value: `${avgTimeToChurn} meses`, change: "Real", trending: "up" },
+        { label: "Receita Perdida", value: `R$ ${revenueLost.toLocaleString('pt-BR')}`, change: "MRR", trending: "down" },
+      ],
+      charts: {
+        churnMonthly,
+        churnByReason
+      },
+      recentChurn,
+      // Cohort data is complex for a single query without full history, 
+      // providing empty state as requested if no clear history
+      cohortData: [] 
+    };
+  });
+
 export const getChurnReasons = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
