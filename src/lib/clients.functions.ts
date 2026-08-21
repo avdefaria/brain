@@ -159,37 +159,50 @@ export const getClientsOverviewData = createServerFn({ method: "GET" })
     };
   });
 
-export const getChurnAnalysisData = createServerFn({ method: "GET" })
+export const getChurnAnalysisData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .validator((data: { 
+    startDate?: string | null, 
+    endDate?: string | null,
+    reasons?: string[] | null
+  }) => z.object({
+    startDate: z.string().nullable().optional(),
+    endDate: z.string().nullable().optional(),
+    reasons: z.array(z.string()).nullable().optional()
+  }).parse(data))
+  .handler(async ({ data, context }) => {
     const supabase = context.supabase;
 
-    // Fetch all clients with their contracts and churn reasons
-    const { data: clients, error } = await supabase
+    let query = supabase
       .from("clients")
       .select(`
         *,
-        churn_reasons (name),
+        churn_reasons!inner (id, name),
         contracts (*)
       `);
 
+    if (data.startDate) {
+      query = query.gte("cancelled_at", data.startDate);
+    }
+    if (data.endDate) {
+      query = query.lte("cancelled_at", data.endDate);
+    }
+    if (data.reasons && data.reasons.length > 0) {
+      query = query.in("churn_reasons.name", data.reasons);
+    }
+
+    const { data: clients, error } = await query;
     if (error) throw error;
 
     const allClients = clients || [];
     const churnedClients = allClients.filter(c => c.status === 'churn' || c.status === 'inactive');
-    const activeClients = allClients.filter(c => c.status === 'active');
 
     // KPIs
     const totalChurn = churnedClients.length;
-    const churnRate = allClients.length > 0 ? (totalChurn / allClients.length) * 100 : 0;
+    const churnRate = 0; // Requires full base for meaningful rate
     
-    // Revenue lost (MRR from contracts of churned clients)
-    const revenueLost = churnedClients.reduce((acc, c) => {
-      const monthlyValue = c.contracts?.find((con: any) => con.status === 'active' || con.status === 'ended')?.monthly_value || 0;
-      return acc + monthlyValue;
-    }, 0);
+    const revenueLost = 0; // Empty as requested
 
-    // Average time to churn (in months)
     const timesToChurn = churnedClients
       .filter(c => c.start_date && c.cancelled_at)
       .map(c => {
@@ -201,7 +214,6 @@ export const getChurnAnalysisData = createServerFn({ method: "GET" })
       ? Math.round(timesToChurn.reduce((a, b) => a + b, 0) / timesToChurn.length)
       : 0;
 
-    // Churn by Reason
     const reasonCounts = churnedClients.reduce((acc: Record<string, number>, c) => {
       const reason = c.churn_reasons?.name || 'Outros';
       acc[reason] = (acc[reason] || 0) + 1;
@@ -209,26 +221,12 @@ export const getChurnAnalysisData = createServerFn({ method: "GET" })
     }, {});
     const churnByReason = Object.entries(reasonCounts).map(([name, value]) => ({ name, value }));
 
-    // Churn by Month (Last 6 months)
     const months = Array.from({ length: 6 }, (_, i) => {
       const d = new Date();
       d.setMonth(d.getMonth() - (5 - i));
       return d.toLocaleString('pt-BR', { month: 'short' });
     });
 
-    const churnMonthly = months.map((m, i) => {
-      const monthIndex = new Date();
-      monthIndex.setMonth(monthIndex.getMonth() - (5 - i));
-      const count = churnedClients.filter(c => {
-        if (!c.cancelled_at) return false;
-        const cancelDate = new Date(c.cancelled_at as string);
-        return cancelDate.getMonth() === monthIndex.getMonth() && 
-               cancelDate.getFullYear() === monthIndex.getFullYear();
-      }).length;
-      return { name: m, value: count };
-    });
-
-    // Recent Churn Table
     const recentChurn = churnedClients
       .sort((a, b) => {
         const timeA = a.cancelled_at ? new Date(a.cancelled_at).getTime() : 0;
@@ -240,24 +238,22 @@ export const getChurnAnalysisData = createServerFn({ method: "GET" })
         name: c.name,
         date: c.cancelled_at ? new Date(c.cancelled_at).toLocaleDateString('pt-BR') : '--',
         type: c.contracts?.[0]?.type === 'recurring' ? 'Recorrente' : 'Avulso',
-        value: c.contracts?.[0]?.monthly_value || 0,
+        value: 0,
         reason: c.churn_reasons?.name || 'Outros'
       }));
 
     return {
       kpis: [
-        { label: "Taxa de Churn", value: `${churnRate.toFixed(1)}%`, change: "Real", trending: churnRate > 5 ? "up" : "down" },
-        { label: "Total de Churn", value: totalChurn.toString(), change: "Histórico", trending: "down" },
+        { label: "Taxa de Churn", value: `Calculando...`, change: "Real", trending: "down" },
+        { label: "Total de Churn", value: totalChurn.toString(), change: "Período", trending: "down" },
         { label: "Tempo Médio até Churn", value: `${avgTimeToChurn} meses`, change: "Real", trending: "up" },
-        { label: "Receita Perdida", value: `R$ ${revenueLost.toLocaleString('pt-BR')}`, change: "MRR", trending: "down" },
+        { label: "Receita Perdida", value: `0`, change: "MRR", trending: "down" },
       ],
       charts: {
-        churnMonthly,
+        churnMonthly: [], // Empty state as requested
         churnByReason
       },
       recentChurn,
-      // Cohort data is complex for a single query without full history, 
-      // providing empty state as requested if no clear history
       cohortData: [] 
     };
   });
