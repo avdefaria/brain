@@ -233,13 +233,6 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
 
   const onSubmit = async (data: any) => {
     try {
-      console.log("DEBUG: Full Payload stringified (including undefined):", 
-        JSON.stringify(data, (key, value) => value === undefined ? "UNDEFINED_AQUI" : value, 2)
-      );
-      
-      console.log("Submitting Client Registration Payload:", data);
-
-      // Crucial fix: ensure UUID fields are null, not "undefined" string
       const cleanUuid = (val: any) => {
         if (!val || val === "undefined" || val === "") return null;
         return val;
@@ -259,23 +252,23 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         end_date_expected: data.end_date_expected,
         scope_details: data.scope_details,
         extra_comments: data.extra_comments,
-        status: initialData ? initialData.status : 'active',
-        risk_level: initialData ? initialData.risk_level : 'low',
-        health_score: initialData ? initialData.health_score : 100,
+        status: initialData?.id ? initialData.status : 'active',
+        risk_level: initialData?.id ? initialData.risk_level : 'low',
+        health_score: initialData?.id ? initialData.health_score : 100,
         lead_id: cleanUuid(data.lead_id || initialData?.lead_id)
       };
 
       let clientId = initialData?.id;
 
-      if (initialData) {
-        // Update client
+      // Se temos initialData.id, é uma edição de cliente existente.
+      // Se não temos id (mesmo que venha de lead_id), é uma criação.
+      if (initialData?.id) {
         const { error } = await supabase.from('clients').update(payload).eq('id', clientId);
         if (error) {
           console.error("Error updating client:", error);
           throw new Error(`Erro ao atualizar dados básicos do cliente: ${error.message}`);
         }
       } else {
-        // Insert new client
         const { data: newClient, error } = await supabase.from('clients').insert([payload]).select('id').single();
         if (error) {
           console.error("Error inserting client:", error);
