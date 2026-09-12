@@ -60,11 +60,14 @@ export const getClientsWithChannels = createServerFn({ method: "GET" })
         *,
         niches:niche_id(id, name),
         squads(name),
+        contracts(id, type, monthly_value, start_date, status, created_at),
+        receivables(id, amount, status),
         accounts(
           id,
           account_squads(
             squad_id
-          )
+          ),
+          tasks(id, stage)
         ),
         client_sales_channels(
           sales_channels:sales_channel_id(id, name)

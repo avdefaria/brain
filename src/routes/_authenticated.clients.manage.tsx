@@ -17,7 +17,8 @@ import {
   Trash2,
   ExternalLink,
   Smartphone,
-  Briefcase
+  Briefcase,
+  ArrowUpDown
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -69,6 +70,7 @@ function ClientsManagePage() {
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [churnModalOpen, setChurnModalOpen] = useState(false);
   const [pendingChurnClient, setPendingChurnClient] = useState<any>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: "revenue" | "ltDays" | "ltv" | "openTasks"; direction: "asc" | "desc" } | null>(null);
 
   const fetchClients = useServerFn(getClientsWithChannels);
   const updateStatusFn = useServerFn(updateClientStatus);
@@ -82,6 +84,43 @@ function ClientsManagePage() {
   });
 
 
+  const getActiveRecurringContract = (client: any) => {
+    const contracts = Array.isArray(client.contracts) ? client.contracts : [];
+    return contracts
+      .filter((contract: any) => contract.type === "recurring" && contract.status === "active")
+      .sort((a: any, b: any) => new Date(b.start_date || b.created_at || 0).getTime() - new Date(a.start_date || a.created_at || 0).getTime())[0];
+  };
+
+  const getClientMetrics = (client: any) => {
+    const activeRecurringContract = getActiveRecurringContract(client);
+    const revenue = activeRecurringContract?.monthly_value != null ? Number(activeRecurringContract.monthly_value) : null;
+    const todayInSaoPauloParts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+    const todayInSaoPauloValues = Object.fromEntries(todayInSaoPauloParts.map((part) => [part.type, part.value]));
+    const todayInSaoPaulo = new Date(`${todayInSaoPauloValues.year}-${todayInSaoPauloValues.month}-${todayInSaoPauloValues.day}T00:00:00`);
+    const ltDays = activeRecurringContract?.start_date
+      ? Math.max(0, Math.floor((todayInSaoPaulo.getTime() - new Date(`${activeRecurringContract.start_date}T00:00:00`).getTime()) / 86400000))
+      : null;
+    const ltv = (Array.isArray(client.receivables) ? client.receivables : [])
+      .filter((receivable: any) => receivable.status === "pago")
+      .reduce((sum: number, receivable: any) => sum + Number(receivable.amount || 0), 0);
+    const openTasks = (Array.isArray(client.accounts) ? client.accounts : []).reduce((sum: number, account: any) => {
+      const tasks = Array.isArray(account.tasks) ? account.tasks : [];
+      return sum + tasks.filter((task: any) => task.stage !== "done").length;
+    }, 0);
+
+    return { revenue, ltDays, ltv, openTasks };
+  };
+
+  const formatCurrency = (value: number | null) => value == null
+    ? "—"
+    : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+
+  const handleSort = (key: "revenue" | "ltDays" | "ltv" | "openTasks") => {
+    setSortConfig((current) => current?.key === key
+      ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
+      : { key, direction: "asc" });
+  };
+
   const filteredClients = (clients as any[])?.filter((client: any) => {
     const matchesSearch = (client.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (client.corporate_email?.toLowerCase() || "").includes(searchTerm.toLowerCase());
@@ -89,23 +128,14 @@ function ClientsManagePage() {
     return matchesSearch && matchesRisk;
   });
 
-  if (isLoading) {
-    return (
-      <div className="p-8 space-y-8 animate-in fade-in duration-500">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-title font-bold text-[#0E0E16]">Gestão de Clientes</h1>
-            <p className="text-sm text-[#8A8FA3]">Administre sua base de clientes ativos</p>
-          </div>
-        </div>
-        <Card className="border-[#E4E6F0] shadow-sm">
-          <CardContent className="p-12 text-center text-[#8A8FA3]">
-            Carregando clientes...
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const sortedClients = [...(filteredClients || [])].sort((a: any, b: any) => {
+    if (!sortConfig) return 0;
+    const aValue = getClientMetrics(a)[sortConfig.key];
+    const bValue = getClientMetrics(b)[sortConfig.key];
+    const normalizedA = aValue == null ? Number.NEGATIVE_INFINITY : aValue;
+    const normalizedB = bValue == null ? Number.NEGATIVE_INFINITY : bValue;
+    return sortConfig.direction === "asc" ? normalizedA - normalizedB : normalizedB - normalizedA;
+  });
 
   const handleToggleStatus = async (clientId: string, currentStatus: string) => {
     if (currentStatus === 'active') {
@@ -164,6 +194,15 @@ function ClientsManagePage() {
     setIsModalOpen(true);
   };
 
+  const renderSortableMetricHead = (label: string, sortKey: "revenue" | "ltDays" | "ltv" | "openTasks") => (
+    <TableHead className="font-bold text-[#0E0E16]">
+      <Button variant="ghost" className="h-auto p-0 font-bold text-[#0E0E16] hover:bg-transparent" onClick={() => handleSort(sortKey)}>
+        {label}
+        <ArrowUpDown className={cn("ml-1 h-3 w-3", sortConfig?.key === sortKey ? "opacity-100" : "opacity-40")} />
+      </Button>
+    </TableHead>
+  );
+
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
@@ -213,11 +252,17 @@ function ClientsManagePage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {filteredClients && filteredClients.length > 0 ? (
+          {isLoading ? (
+            <div className="p-12 text-center text-[#8A8FA3]">Carregando clientes...</div>
+          ) : sortedClients.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-[#E4E6F0]">
                   <TableHead className="font-bold text-[#0E0E16]">Cliente</TableHead>
+                  {renderSortableMetricHead("Receita", "revenue")}
+                  {renderSortableMetricHead("LT (dias)", "ltDays")}
+                  {renderSortableMetricHead("LTV", "ltv")}
+                  {renderSortableMetricHead("Tarefas", "openTasks")}
                   <TableHead className="font-bold text-[#0E0E16]">Nicho</TableHead>
                   <TableHead className="font-bold text-[#0E0E16]">Canais</TableHead>
                   <TableHead className="font-bold text-[#0E0E16]">Health Score</TableHead>
@@ -227,7 +272,10 @@ function ClientsManagePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredClients.map((client: any) => (
+                {sortedClients.map((client: any) => {
+                  const metrics = getClientMetrics(client);
+
+                  return (
                   <TableRow key={client.id} className="border-[#E4E6F0] hover:bg-[#F7F8FC]/50">
                     <TableCell className="font-medium text-[#0E0E16]">
                       <Link 
@@ -238,6 +286,10 @@ function ClientsManagePage() {
                         {client.name}
                       </Link>
                     </TableCell>
+                    <TableCell className="text-[#0E0E16] font-medium">{formatCurrency(metrics.revenue)}</TableCell>
+                    <TableCell className="text-[#8A8FA3]">{metrics.ltDays ?? "—"}</TableCell>
+                    <TableCell className="text-[#0E0E16] font-medium">{formatCurrency(metrics.ltv)}</TableCell>
+                    <TableCell className="text-[#8A8FA3]">{metrics.openTasks}</TableCell>
                     <TableCell className="text-[#8A8FA3]">{(client as any).niches?.name || (client as any).niche_name || "--"}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
@@ -327,7 +379,8 @@ function ClientsManagePage() {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           ) : (
