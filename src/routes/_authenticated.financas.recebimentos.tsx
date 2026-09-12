@@ -14,7 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -36,6 +39,14 @@ function RecebimentosPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [recurringSearch, setRecurringSearch] = useState("");
   const [recurringPaymentFilter, setRecurringPaymentFilter] = useState("all");
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustContractId, setAdjustContractId] = useState("");
+  const [adjustContracts, setAdjustContracts] = useState<any[]>([]);
+  const [loadingAdjustContracts, setLoadingAdjustContracts] = useState(false);
+  const [newMonthlyValue, setNewMonthlyValue] = useState("");
+  const [effectiveDate, setEffectiveDate] = useState(() => new Date().toISOString().split("T")[0] as string);
+  const [adjustNotes, setAdjustNotes] = useState("");
+  const [savingAdjust, setSavingAdjust] = useState(false);
 
   const fetchSummary = useServerFn(getFinanceSummary);
   const fetchReceivables = useServerFn(getReceivables);
@@ -154,6 +165,101 @@ function RecebimentosPage() {
     }
   };
 
+  const selectedAdjustContract = (adjustContracts as any[]).find((c: any) => c.id === adjustContractId) || null;
+
+  const openAdjustModal = () => {
+    setAdjustContractId("");
+    setNewMonthlyValue("");
+    setAdjustNotes("");
+    setEffectiveDate(new Date().toISOString().split("T")[0] as string);
+    setAdjustOpen(true);
+    setLoadingAdjustContracts(true);
+    supabase
+      .from('contracts')
+      .select('id, client_id, monthly_value, type, status, client:client_id(id, name)')
+      .eq('type', 'recurring')
+      .eq('status', 'active')
+      .then(({ data, error }: any) => {
+        if (error) {
+          toast.error("Erro ao carregar clientes recorrentes");
+        } else {
+          setAdjustContracts((data as any[]) || []);
+        }
+        setLoadingAdjustContracts(false);
+      })
+      .catch(() => {
+        toast.error("Erro ao carregar clientes recorrentes");
+        setLoadingAdjustContracts(false);
+      });
+  };
+
+  const handleSaveAdjust = async () => {
+    const parsed = Number(String(newMonthlyValue).replace(",", "."));
+    const selected = (adjustContracts as any[]).find((c: any) => c.id === adjustContractId) || null;
+    if (!adjustContractId || !selected || !newMonthlyValue || Number.isNaN(parsed) || parsed <= 0 || !effectiveDate) {
+      toast.error("Preencha cliente, novo valor e data efetiva");
+    } else {
+      setSavingAdjust(true);
+      try {
+        const oldValue = Number(selected.monthly_value) || 0;
+        const { error: contractErr } = await supabase
+          .from('contracts')
+          .update({ monthly_value: parsed } as any)
+          .eq('id', selected.id);
+        if (contractErr) {
+          throw contractErr;
+        } else {
+          const { data: pendingRecs, error: fetchErr } = await supabase
+            .from('receivables')
+            .select('id, amount, notes')
+            .eq('contract_id', selected.id)
+            .eq('status', 'pendente')
+            .gte('due_date', effectiveDate);
+          if (fetchErr) {
+            throw fetchErr;
+          } else {
+            const list = ((pendingRecs as any[]) || []);
+            const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+            const todayStr = format(new Date(), 'dd/MM/yyyy', { locale: ptBR });
+            const baseNote = `Valor ajustado de ${fmt(oldValue)} para ${fmt(parsed)} em ${todayStr}` + (adjustNotes.trim() ? `, motivo: ${adjustNotes.trim()}` : "");
+            let updateError: any = null;
+            for (const r of list) {
+              const prevNotes = (r as any).notes ? String((r as any).notes) + "\n" : "";
+              const { error: updErr } = await supabase
+                .from('receivables')
+                .update({ amount: parsed, notes: prevNotes + baseNote } as any)
+                .eq('id', (r as any).id);
+              if (updErr) {
+                updateError = updErr;
+                break;
+              }
+            }
+            if (updateError) {
+              throw updateError;
+            } else {
+              if (list.length > 0) {
+                toast.success(`${list.length} parcela(s) futura(s) atualizada(s)!`);
+              } else {
+                toast.success("Contrato atualizado! Nenhuma parcela pendente futura encontrada.");
+              }
+              setAdjustOpen(false);
+              setAdjustContractId("");
+              setNewMonthlyValue("");
+              setAdjustNotes("");
+              refetchReceivables();
+              refetchSummary();
+              refetchRecurring();
+            }
+          }
+        }
+      } catch (error) {
+        toast.error("Erro ao ajustar valor recorrente");
+      } finally {
+        setSavingAdjust(false);
+      }
+    }
+  };
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
@@ -177,6 +283,9 @@ function RecebimentosPage() {
           <p className="text-sm text-[#8A8FA3]">Controle de recebíveis e fluxo de caixa</p>
         </div>
         <div className="flex gap-3">
+          <Button onClick={openAdjustModal} className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90">
+            Ajustar valor recorrente
+          </Button>
           <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]">
             <Download className="h-4 w-4 mr-2" />
             Exportar
@@ -480,6 +589,67 @@ function RecebimentosPage() {
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]" onClick={() => setEditingAmount(null)} disabled={savingEdit}>Cancelar</Button>
             <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90" onClick={handleSaveAmount} disabled={savingEdit}>{savingEdit ? "Salvando..." : "Salvar"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={adjustOpen} onOpenChange={(open) => { if (!open) setAdjustOpen(false); }}>
+        <DialogContent className="sm:max-w-md rounded-2xl border-[#E4E6F0]">
+          <DialogHeader>
+            <DialogTitle className="font-title font-bold text-[#0E0E16]">Ajustar valor recorrente</DialogTitle>
+            <DialogDescription className="text-xs text-[#8A8FA3]">
+              As alterações afetarão apenas recebimentos pendentes a partir da data efetiva
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Cliente Recorrente</Label>
+              <Select value={adjustContractId} onValueChange={(v) => setAdjustContractId(v)}>
+                <SelectTrigger className="border-[#E4E6F0] rounded-full">
+                  <SelectValue placeholder={loadingAdjustContracts ? "Carregando..." : "Selecione o cliente"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {((adjustContracts as any[]) || []).map((c: any) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {(c.client as any)?.name || c.client_id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedAdjustContract ? (
+              <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#F7F8FC] border border-[#E4E6F0] p-3">
+                <div>
+                  <p className="text-[10px] font-bold text-[#8A8FA3] uppercase">Valor Atual</p>
+                  <p className="text-sm font-bold text-[#0E0E16]">
+                    {selectedAdjustContract.monthly_value != null ? formatCurrency(Number(selectedAdjustContract.monthly_value)) : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[#8A8FA3] uppercase">Tipo de Contrato</p>
+                  <p className="text-sm font-bold text-[#0E0E16]">
+                    {selectedAdjustContract.type === "recurring" ? "Recorrente" : String(selectedAdjustContract.type || "—")}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-[#8A8FA3]">Selecione um cliente para ver o valor atual e o tipo de contrato.</p>
+            )}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Novo valor mensal</Label>
+              <Input type="number" min="0.01" step="0.01" value={newMonthlyValue} onChange={(e) => setNewMonthlyValue(e.target.value)} className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Data Efetiva</Label>
+              <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Observações</Label>
+              <Textarea value={adjustNotes} onChange={(e) => setAdjustNotes(e.target.value)} placeholder="Motivo do ajuste (opcional)" className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-xl min-h-[80px]" />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]" onClick={() => setAdjustOpen(false)} disabled={savingAdjust}>Cancelar</Button>
+            <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90" onClick={handleSaveAdjust} disabled={savingAdjust}>{savingAdjust ? "Salvando..." : "Salvar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
