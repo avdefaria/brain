@@ -370,7 +370,7 @@ function FinancesPage() {
                       {getStatusBadge(r.status, r.due_date)}
                     </TableCell>
                     <TableCell className="text-right pr-6">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-2">
                         {r.status === 'pendente' && (
                           <Button 
                             size="sm" 
