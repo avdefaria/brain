@@ -125,15 +125,16 @@ export const upsertPayable = createServerFn({ method: "POST" })
 
 export const updatePayableStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { id: string; status: "pendente" | "pago" | "atrasado"; payment_method?: string | null }) => z.object({
+  .validator((data: { id: string; status: "pendente" | "pago" | "atrasado"; payment_method?: string | null; paid_at?: string | null }) => z.object({
     id: z.string(),
     status: z.enum(["pendente", "pago", "atrasado"]),
     payment_method: z.string().nullable().optional(),
+    paid_at: z.string().nullable().optional(),
   }).parse(data))
   .handler(async ({ data, context }) => {
     const updateData: any = {
       status: data.status,
-      paid_at: data.status === "pago" ? new Date().toISOString() : null,
+      paid_at: data.status === "pago" ? (data.paid_at || new Date().toISOString()) : null,
       updated_at: new Date().toISOString(),
     };
     if (data.payment_method) updateData.payment_method = data.payment_method;

@@ -38,6 +38,9 @@ function RecebimentosPage() {
   const [editingAmount, setEditingAmount] = useState<any | null>(null);
   const [newAmount, setNewAmount] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [liquidatingReceivable, setLiquidatingReceivable] = useState<any | null>(null);
+  const [liquidateDate, setLiquidateDate] = useState("");
+  const [savingLiquidate, setSavingLiquidate] = useState(false);
   const [recurringSearch, setRecurringSearch] = useState("");
   const [recurringPaymentFilter, setRecurringPaymentFilter] = useState("all");
   const [adjustOpen, setAdjustOpen] = useState(false);
@@ -122,15 +125,28 @@ function RecebimentosPage() {
     (recurringPaymentFilter === "all" || c.payment_status === recurringPaymentFilter)
   );
 
-  const handleMarkAsPaid = async (id: string) => {
+  const openLiquidateModal = (r: any) => {
+    setLiquidatingReceivable(r);
+    setLiquidateDate(new Date().toISOString().split("T")[0] as string);
+  };
+
+  const handleConfirmLiquidate = async () => {
+    setSavingLiquidate(true);
     try {
-      await updateStatusFn({ data: { id, status: 'pago' } });
-      toast.success("Pagamento baixado com sucesso!");
-      refetchReceivables();
-      refetchSummary();
-      refetchRecurring();
+      if (liquidatingReceivable && liquidateDate) {
+        await updateStatusFn({ data: { id: liquidatingReceivable.id, status: 'pago', paid_at: new Date(liquidateDate + "T12:00:00").toISOString() } });
+        toast.success("Pagamento baixado com sucesso!");
+        refetchReceivables();
+        refetchSummary();
+        refetchRecurring();
+        setLiquidatingReceivable(null);
+      } else {
+        toast.error("Selecione a data de pagamento");
+      }
     } catch (error) {
       toast.error("Erro ao baixar pagamento");
+    } finally {
+      setSavingLiquidate(false);
     }
   };
 
@@ -570,7 +586,7 @@ function RecebimentosPage() {
                     <TableCell className="text-right pr-6">
                       <div className="flex items-center justify-end gap-2">
                         {r.status === 'pendente' && (
-                          <Button size="sm" className="h-8 bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full px-4 text-[10px] font-bold" onClick={() => handleMarkAsPaid(r.id)}>
+                          <Button size="sm" className="h-8 bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full px-4 text-[10px] font-bold" onClick={() => openLiquidateModal(r)}>
                             Liquidar
                           </Button>
                         )}
@@ -893,6 +909,24 @@ function RecebimentosPage() {
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]" onClick={() => setOneOffOpen(false)} disabled={savingOneOff}>Cancelar</Button>
             <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90" onClick={handleSaveOneOff} disabled={savingOneOff}>{savingOneOff ? "Salvando..." : "Criar recebimento"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!liquidatingReceivable} onOpenChange={(open) => { if (!open) setLiquidatingReceivable(null); }}>
+        <DialogContent className="sm:max-w-md rounded-2xl border-[#E4E6F0]">
+          <DialogHeader>
+            <DialogTitle className="font-title font-bold text-[#0E0E16]">Liquidar recebimento</DialogTitle>
+            <DialogDescription className="text-xs text-[#8A8FA3]">
+              Escolha a data de pagamento
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Data de pagamento</Label>
+            <Input type="date" value={liquidateDate} onChange={(e) => setLiquidateDate(e.target.value)} className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]" onClick={() => setLiquidatingReceivable(null)} disabled={savingLiquidate}>Cancelar</Button>
+            <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90" onClick={handleConfirmLiquidate} disabled={savingLiquidate}>{savingLiquidate ? "Salvando..." : "Confirmar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
