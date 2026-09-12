@@ -202,6 +202,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               children={[
                 { label: "Recebimentos", href: "/financas" },
                 { label: "Contas a pagar", href: "/financas/contas-a-pagar" },
+                { label: "Inadimplência", href: "/financas/inadimplencia" },
               ]}
             />
             <SidebarItem
