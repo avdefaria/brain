@@ -8,13 +8,44 @@ import {
   Download,
   Wallet,
   Building2,
-  Search
+  Search,
+  Check,
+  ChevronsUpDown,
+  MoreVertical,
+  Trash2,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getFinanceDashboard } from "@/lib/finances.functions";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  getFinanceDashboard,
+  getReceivables,
+  getRecurringClients,
+  updateReceivableStatus,
+  updateReceivableDueDate,
+  updateReceivableAmount,
+  deleteReceivable,
+} from "@/lib/finances.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area
@@ -23,18 +54,163 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/financas/")({
   component: FinancesPage,
+  head: () => ({
+    meta: [
+      { title: "Finanças | Ongo" },
+      { name: "description", content: "Controle de recebíveis, MRR e fluxo de caixa dos clientes." },
+      { property: "og:title", content: "Finanças | Ongo" },
+      { property: "og:description", content: "Controle de recebíveis, MRR e fluxo de caixa dos clientes." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 function FinancesPage() {
   const fetchDashboard = useServerFn(getFinanceDashboard);
+  const fetchReceivables = useServerFn(getReceivables);
+  const fetchRecurring = useServerFn(getRecurringClients);
+  const markPaid = useServerFn(updateReceivableStatus);
+  const saveDueDate = useServerFn(updateReceivableDueDate);
+  const saveAmount = useServerFn(updateReceivableAmount);
+  const removeReceivable = useServerFn(deleteReceivable);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [clientFilter, setClientFilter] = useState("all");
+  const [openClientCombo, setOpenClientCombo] = useState(false);
+  const [recurringSearch, setRecurringSearch] = useState("");
+  const [recurringPaymentFilter, setRecurringPaymentFilter] = useState("all");
+  const [editingDueDate, setEditingDueDate] = useState<any>(null);
+  const [newDueDate, setNewDueDate] = useState("");
+  const [editingAmount, setEditingAmount] = useState<any>(null);
+  const [newAmount, setNewAmount] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const { data: dashboard, isLoading: loadingDashboard } = useQuery({
     queryKey: ['finance-dashboard'],
     queryFn: () => fetchDashboard()
   });
 
+  const { data: receivables, isLoading: loadingReceivables, refetch: refetchReceivables } = useQuery({
+    queryKey: ['receivables', statusFilter, clientFilter],
+    queryFn: () => fetchReceivables({
+      data: {
+        status: statusFilter === "all" ? null : [statusFilter],
+        clientId: clientFilter === "all" ? null : clientFilter,
+      },
+    }),
+  });
+
+  const { data: recurringClients, isLoading: loadingRecurring } = useQuery({
+    queryKey: ['recurring-clients'],
+    queryFn: () => fetchRecurring(),
+  });
+
+  const clients = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    for (const r of (receivables as any[]) || []) {
+      if (r.client?.id) map.set(r.client.id, { id: r.client.id, name: r.client.name });
+    }
+    return Array.from(map.values());
+  }, [receivables]);
+
+  const filteredReceivables = ((receivables as any[]) || []).filter((r) =>
+    (r.client?.name || "").toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const filteredRecurringClients = ((recurringClients as any[]) || []).filter((c) => {
+    const matchesSearch = (c.client_name || "").toLowerCase().includes(recurringSearch.toLowerCase());
+    const matchesStatus = recurringPaymentFilter === "all" || c.payment_status === recurringPaymentFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+  };
+
+  const getStatusBadge = (status: string, dueDate: string | null) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const effective = status !== "pago" && dueDate && dueDate < today ? "atrasado" : status;
+    return (
+      <Badge
+        className={cn(
+          "rounded-full border-0 px-3 py-1 text-xs font-semibold capitalize",
+          effective === "pago"
+            ? "bg-[#22C55E]/10 text-[#22C55E]"
+            : effective === "atrasado"
+              ? "bg-[#EF4444]/10 text-[#EF4444]"
+              : "bg-[#F5A524]/10 text-[#F5A524]",
+        )}
+      >
+        {effective}
+      </Badge>
+    );
+  };
+
+  const handleMarkAsPaid = async (id: string) => {
+    try {
+      await markPaid({ data: { id, status: "pago", paid_at: new Date().toISOString() } });
+      toast.success("Recebível liquidado");
+      refetchReceivables();
+    } catch {
+      toast.error("Erro ao liquidar recebível");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await removeReceivable({ data: id });
+      toast.success("Recebível excluído");
+      refetchReceivables();
+    } catch {
+      toast.error("Erro ao excluir recebível");
+    }
+  };
+
+  const openDueDateModal = (r: any) => {
+    setEditingDueDate(r);
+    setNewDueDate(r.due_date || "");
+  };
+
+  const openAmountModal = (r: any) => {
+    setEditingAmount(r);
+    setNewAmount(r.amount != null ? String(r.amount) : "");
+  };
+
+  const handleSaveDueDate = async () => {
+    if (!editingDueDate) return;
+    setSavingEdit(true);
+    try {
+      await saveDueDate({ data: { id: editingDueDate.id, due_date: newDueDate } });
+      toast.success("Vencimento atualizado");
+      setEditingDueDate(null);
+      refetchReceivables();
+    } catch {
+      toast.error("Erro ao atualizar vencimento");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleSaveAmount = async () => {
+    if (!editingAmount) return;
+    const parsed = Number(newAmount);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      toast.error("Informe um valor maior que zero");
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      await saveAmount({ data: { id: editingAmount.id, amount: parsed } });
+      toast.success("Valor atualizado");
+      setEditingAmount(null);
+      refetchReceivables();
+    } catch {
+      toast.error("Erro ao atualizar valor");
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   return (
