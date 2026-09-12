@@ -151,7 +151,7 @@ export const getRecurringClients = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const supabase = context.supabase;
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0] as string;
 
     const { data: contracts, error: contractsErr } = await supabase
       .from('contracts')
