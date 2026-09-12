@@ -29,12 +29,17 @@ export const createExpenseCategory = createServerFn({ method: "POST" })
   .validator((name: string) => z.string().min(1).parse(name))
   .handler(async ({ data: name, context }) => {
     const normalized = name.trim();
+    const payload = { name: normalized };
+    console.log("[createExpenseCategory payload]", JSON.stringify(payload));
     const { data, error } = await context.supabase
       .from("expense_categories")
-      .insert({ name: normalized })
+      .insert(payload)
       .select("*")
       .single();
-    if (error) throw error;
+    if (error) {
+      console.error("[createExpenseCategory error]", error.message, error.details);
+      throw error;
+    }
     return data;
   });
 
@@ -86,10 +91,14 @@ export const upsertPayable = createServerFn({ method: "POST" })
   .validator((data: unknown) => payableSchema.parse(data))
   .handler(async ({ data, context }) => {
     const payload = { ...data, updated_at: new Date().toISOString() };
+    console.log("[upsertPayable payload]", JSON.stringify(payload));
     const { error } = data.id
       ? await context.supabase.from("payables").update(payload).eq("id", data.id)
       : await context.supabase.from("payables").insert(payload);
-    if (error) throw error;
+    if (error) {
+      console.error("[upsertPayable error]", error.message, error.details);
+      throw error;
+    }
     return { success: true };
   });
 
