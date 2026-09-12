@@ -25,6 +25,7 @@ import { Route as AuthenticatedClientsContractsRouteImport } from './routes/_aut
 import { Route as AuthenticatedClientsManageRouteImport } from './routes/_authenticated.clients.manage'
 import { Route as AuthenticatedComercialCrmRouteImport } from './routes/_authenticated.comercial.crm'
 import { Route as AuthenticatedFinancasIndexRouteImport } from './routes/_authenticated.financas.index'
+import { Route as AuthenticatedFinancasContasAPagarRouteImport } from './routes/_authenticated.financas.contas-a-pagar'
 import { Route as AuthenticatedProjectsContentApprovalRouteImport } from './routes/_authenticated.projects.content-approval'
 import { Route as AuthenticatedProjectsDeliverablesRouteImport } from './routes/_authenticated.projects.deliverables'
 import { Route as AuthenticatedProjectsTasksRouteImport } from './routes/_authenticated.projects.tasks'
@@ -116,6 +117,12 @@ const AuthenticatedFinancasIndexRoute =
     path: '/financas/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedFinancasContasAPagarRoute =
+  AuthenticatedFinancasContasAPagarRouteImport.update({
+    id: '/financas/contas-a-pagar',
+    path: '/financas/contas-a-pagar',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProjectsContentApprovalRoute =
   AuthenticatedProjectsContentApprovalRouteImport.update({
     id: '/content-approval',
@@ -181,6 +188,8 @@ export interface FileRoutesByTo {
   '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
   '/financas': typeof AuthenticatedFinancasIndexRoute
+  '/financas/contas-a-pagar': typeof AuthenticatedFinancasContasAPagarRoute
+  '/financas/contas-a-pagar/': typeof AuthenticatedFinancasContasAPagarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -204,6 +213,7 @@ export interface FileRoutesById {
   '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
   '/_authenticated/financas/': typeof AuthenticatedFinancasIndexRoute
+  '/_authenticated/financas/contas-a-pagar': typeof AuthenticatedFinancasContasAPagarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -227,6 +237,8 @@ export interface FileRouteTypes {
     | '/public/approval/$token'
     | '/clients/'
     | '/financas/'
+    | '/financas/contas-a-pagar'
+    | '/financas/contas-a-pagar/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -394,6 +406,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinancasIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/financas/contas-a-pagar': {
+      id: '/_authenticated/financas/contas-a-pagar'
+      path: '/financas/contas-a-pagar'
+      fullPath: '/financas/contas-a-pagar'
+      preLoaderRoute: typeof AuthenticatedFinancasContasAPagarRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/projects/content-approval': {
       id: '/_authenticated/projects/content-approval'
       path: '/content-approval'
@@ -457,6 +476,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedComercialCrmRoute: typeof AuthenticatedComercialCrmRoute
   AuthenticatedClientsIndexRoute: typeof AuthenticatedClientsIndexRoute
   AuthenticatedFinancasIndexRoute: typeof AuthenticatedFinancasIndexRoute
+  AuthenticatedFinancasContasAPagarRoute: typeof AuthenticatedFinancasContasAPagarRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -472,6 +492,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedComercialCrmRoute: AuthenticatedComercialCrmRoute,
   AuthenticatedClientsIndexRoute: AuthenticatedClientsIndexRoute,
   AuthenticatedFinancasIndexRoute: AuthenticatedFinancasIndexRoute,
+  AuthenticatedFinancasContasAPagarRoute: AuthenticatedFinancasContasAPagarRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

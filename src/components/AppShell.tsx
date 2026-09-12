@@ -199,6 +199,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href="/financas"
               collapsed={sidebarCollapsed}
               active={location.pathname.startsWith("/financas")}
+              children={[
+                { label: "Recebimentos", href: "/financas" },
+                { label: "Contas a pagar", href: "/financas/contas-a-pagar" },
+              ]}
             />
             <SidebarItem
               icon={UserCheck}
