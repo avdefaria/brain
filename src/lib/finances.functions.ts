@@ -68,7 +68,8 @@ export const getReceivables = createServerFn({ method: "POST" })
       .select(`
         *,
         client:client_id(id, name),
-        contract:contract_id(id, type)
+        contract:contract_id(id, type),
+        category:category_id(id, name)
       `)
       .order('due_date', { ascending: true });
 
@@ -249,6 +250,76 @@ export const updateReceivableAmount = createServerFn({ method: "POST" })
 
     if (error) throw error;
     return { success: true };
+  });
+
+export const getRevenueCategories = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("revenue_categories" as any)
+      .select("*")
+      .order("name", { ascending: true });
+    if (error) throw error;
+    return (data as any[]) || [];
+  });
+
+export const createRevenueCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((name: string) => z.string().min(1).parse(name))
+  .handler(async ({ data: name, context }) => {
+    const normalized = name.trim();
+    const { data, error } = await context.supabase
+      .from("revenue_categories" as any)
+      .insert({ name: normalized } as any)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return data as any;
+  });
+
+const oneOffReceivableSchema = z.object({
+  client_id: z.string().nullable().optional(),
+  client_name: z.string().nullable().optional(),
+  description: z.string().min(5, "Descrição deve ter ao menos 5 caracteres"),
+  category_id: z.string().nullable().optional(),
+  total_amount: z.coerce.number().positive("Valor deve ser maior que zero"),
+  installments: z.coerce.number().int().min(1).max(120).default(1),
+  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+  payment_method: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+
+export const createOneOffReceivable = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: unknown) => oneOffReceivableSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
+    const n = data.installments || 1;
+    const totalCents = Math.round(Number(data.total_amount) * 100);
+    const perCents = Math.floor(totalCents / n);
+    const remainder = totalCents - perCents * n;
+    const rows: any[] = [];
+    for (let i = 0; i < n; i++) {
+      const cents = perCents + (i === n - 1 ? remainder : 0);
+      const due = new Date(data.due_date + "T00:00:00");
+      due.setMonth(due.getMonth() + i);
+      rows.push({
+        client_id: data.client_id ?? null,
+        client_name: data.client_name ?? null,
+        contract_id: null,
+        description: data.description.trim(),
+        category_id: data.category_id ?? null,
+        amount: cents / 100,
+        due_date: due.toISOString().split("T")[0],
+        installment_number: n > 1 ? i + 1 : null,
+        status: "pendente",
+        payment_method: data.payment_method ?? null,
+        notes: data.notes ?? null,
+      });
+    }
+    const { error } = await supabase.from("receivables" as any).insert(rows as any);
+    if (error) throw error;
+    return { success: true, count: rows.length };
   });
 
 export const getFinanceDashboard = createServerFn({ method: "GET" })

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DollarSign, Search, Calendar, CheckCircle2, Clock, AlertCircle, MoreVertical, ArrowUpRight, ArrowDownRight, Download, Wallet, Building2, Trash2, Check, ChevronsUpDown } from "lucide-react";
+import { DollarSign, Search, Calendar, CheckCircle2, Clock, AlertCircle, MoreVertical, ArrowUpRight, ArrowDownRight, Download, Wallet, Building2, Trash2, Check, ChevronsUpDown, Plus } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getFinanceSummary, getReceivables, getRecurringClients, updateReceivableStatus, deleteReceivable, updateReceivableDueDate, updateReceivableAmount } from "@/lib/finances.functions";
+import { getFinanceSummary, getReceivables, getRecurringClients, updateReceivableStatus, deleteReceivable, updateReceivableDueDate, updateReceivableAmount, getRevenueCategories, createRevenueCategory, createOneOffReceivable } from "@/lib/finances.functions";
 import { getClientsWithChannels } from "@/lib/sales-channels.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +48,21 @@ function RecebimentosPage() {
   const [effectiveDate, setEffectiveDate] = useState(() => new Date().toISOString().split("T")[0] as string);
   const [adjustNotes, setAdjustNotes] = useState("");
   const [savingAdjust, setSavingAdjust] = useState(false);
+  const [oneOffOpen, setOneOffOpen] = useState(false);
+  const [oneOffClientMode, setOneOffClientMode] = useState<"registered" | "simple">("registered");
+  const [oneOffClientId, setOneOffClientId] = useState("");
+  const [oneOffClientName, setOneOffClientName] = useState("");
+  const [oneOffDescription, setOneOffDescription] = useState("");
+  const [oneOffCategoryId, setOneOffCategoryId] = useState("");
+  const [oneOffTotal, setOneOffTotal] = useState("");
+  const [oneOffParcelled, setOneOffParcelled] = useState(false);
+  const [oneOffInstallments, setOneOffInstallments] = useState("2");
+  const [oneOffDueDate, setOneOffDueDate] = useState(() => new Date().toISOString().split("T")[0] as string);
+  const [oneOffPaymentMethod, setOneOffPaymentMethod] = useState("");
+  const [oneOffNotes, setOneOffNotes] = useState("");
+  const [oneOffCatOpen, setOneOffCatOpen] = useState(false);
+  const [oneOffCatSearch, setOneOffCatSearch] = useState("");
+  const [savingOneOff, setSavingOneOff] = useState(false);
 
   const fetchSummary = useServerFn(getFinanceSummary);
   const fetchReceivables = useServerFn(getReceivables);
@@ -56,6 +72,9 @@ function RecebimentosPage() {
   const deleteReceivableFn = useServerFn(deleteReceivable);
   const updateDueDateFn = useServerFn(updateReceivableDueDate);
   const updateAmountFn = useServerFn(updateReceivableAmount);
+  const fetchRevenueCategories = useServerFn(getRevenueCategories);
+  const createRevenueCategoryFn = useServerFn(createRevenueCategory);
+  const createOneOffFn = useServerFn(createOneOffReceivable);
 
   const { data: summary, isLoading: loadingSummary, refetch: refetchSummary } = useQuery({
     queryKey: ['finance-summary'],
@@ -77,9 +96,21 @@ function RecebimentosPage() {
     })
   });
 
-  const filteredReceivables = receivables?.filter((r: any) =>
-    r.client?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const { data: revenueCategories, refetch: refetchRevenueCategories } = useQuery({
+    queryKey: ['revenue-categories'],
+    queryFn: () => fetchRevenueCategories()
+  });
+
+  const filteredReceivables = receivables?.filter((r: any) => {
+    const term = searchTerm.toLowerCase();
+    if (!term) {
+      return true;
+    } else {
+      const name = (r.client?.name || r.client_name || "").toLowerCase();
+      const desc = (r.description || "").toLowerCase();
+      return name.includes(term) || desc.includes(term);
+    }
+  });
 
   const { data: recurringClients, isLoading: loadingRecurring, refetch: refetchRecurring } = useQuery({
     queryKey: ['recurring-clients'],
@@ -260,6 +291,90 @@ function RecebimentosPage() {
     }
   };
 
+  const openOneOffModal = () => {
+    setOneOffClientMode("registered");
+    setOneOffClientId("");
+    setOneOffClientName("");
+    setOneOffDescription("");
+    setOneOffCategoryId("");
+    setOneOffTotal("");
+    setOneOffParcelled(false);
+    setOneOffInstallments("2");
+    setOneOffDueDate(new Date().toISOString().split("T")[0] as string);
+    setOneOffPaymentMethod("");
+    setOneOffNotes("");
+    setOneOffCatSearch("");
+    setOneOffOpen(true);
+  };
+
+  const selectedOneOffCategory = ((revenueCategories as any[]) || []).find((c: any) => c.id === oneOffCategoryId) || null;
+  const oneOffFilteredCats = ((revenueCategories as any[]) || []).filter((c: any) =>
+    (c.name || "").toLowerCase().includes(oneOffCatSearch.toLowerCase())
+  );
+  const canCreateOneOffCat = oneOffCatSearch.trim().length > 0 && !oneOffFilteredCats.some((c: any) => c.name.toLowerCase() === oneOffCatSearch.trim().toLowerCase());
+
+  const handleCreateOneOffCategory = async () => {
+    const name = oneOffCatSearch.trim();
+    if (!name) {
+      toast.error("Digite o nome da categoria");
+    } else {
+      try {
+        const created: any = await createRevenueCategoryFn({ data: name });
+        toast.success("Categoria criada!");
+        await refetchRevenueCategories();
+        if (created?.id) setOneOffCategoryId(created.id);
+        setOneOffCatOpen(false);
+        setOneOffCatSearch("");
+      } catch (error) {
+        toast.error("Erro ao criar categoria");
+      }
+    }
+  };
+
+  const handleSaveOneOff = async () => {
+    const total = Number(String(oneOffTotal).replace(",", "."));
+    const n = oneOffParcelled ? Number(oneOffInstallments) : 1;
+    const desc = oneOffDescription.trim();
+    if (oneOffClientMode === "registered" && !oneOffClientId) {
+      toast.error("Selecione o cliente cadastrado");
+    } else if (oneOffClientMode === "simple" && !oneOffClientName.trim()) {
+      toast.error("Informe o nome do cliente");
+    } else if (desc.length < 5) {
+      toast.error("Descrição deve ter ao menos 5 caracteres");
+    } else if (Number.isNaN(total) || total <= 0) {
+      toast.error("Informe um valor total válido");
+    } else if (oneOffParcelled && (!Number.isInteger(n) || n < 2 || n > 120)) {
+      toast.error("Informe o número de parcelas (2 a 120)");
+    } else if (!oneOffDueDate) {
+      toast.error("Informe a data de vencimento");
+    } else {
+      setSavingOneOff(true);
+      try {
+        await createOneOffFn({
+          data: {
+            client_id: oneOffClientMode === "registered" ? oneOffClientId : null,
+            client_name: oneOffClientMode === "simple" ? oneOffClientName.trim() : null,
+            description: desc,
+            category_id: oneOffCategoryId || null,
+            total_amount: total,
+            installments: n,
+            due_date: oneOffDueDate,
+            payment_method: oneOffPaymentMethod || null,
+            notes: oneOffNotes.trim() || null,
+          },
+        });
+        toast.success(n > 1 ? `${n} parcelas criadas!` : "Recebimento pontual criado!");
+        setOneOffOpen(false);
+        refetchReceivables();
+        refetchSummary();
+      } catch (error: any) {
+        toast.error(error?.message || "Erro ao salvar recebimento pontual");
+      } finally {
+        setSavingOneOff(false);
+      }
+    }
+  };
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
@@ -358,6 +473,10 @@ function RecebimentosPage() {
               />
             </div>
             <div className="flex flex-wrap items-center gap-3">
+              <Button onClick={openOneOffModal} className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-xs font-bold">
+                <Plus className="h-4 w-4 mr-1" />
+                Adicionar Pontual
+              </Button>
               <Select defaultValue="all" onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[140px] border-[#E4E6F0] rounded-full text-xs">
                   <SelectValue placeholder="Status" />
@@ -424,8 +543,8 @@ function RecebimentosPage() {
                           <Building2 className="h-4 w-4" />
                         </div>
                         <div>
-                          <div className="font-bold text-[#0E0E16] dark:text-white leading-none mb-1">{r.client?.name}</div>
-                          <div className="text-[10px] text-[#8A8FA3]">{r.payment_method || "--"}</div>
+                          <div className="font-bold text-[#0E0E16] dark:text-white leading-none mb-1">{r.client?.name || r.client_name || "—"}</div>
+                          <div className="text-[10px] text-[#8A8FA3]">{r.description || r.payment_method || "--"}</div>
                         </div>
                       </div>
                     </TableCell>
