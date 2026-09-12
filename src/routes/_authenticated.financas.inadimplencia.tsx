@@ -17,7 +17,7 @@ import { ptBR } from "date-fns/locale";
 export const Route = createFileRoute("/_authenticated/financas/inadimplencia")({ component: DelinquencyPage });
 
 const money = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
-const todayStr = () => new Date().toISOString().split("T")[0];
+const todayStr = () => new Date().toISOString().split("T")[0] as string;
 const daysLate = (due: string) => {
   if (!due) return 0;
   const t = new Date(); t.setHours(0, 0, 0, 0);
