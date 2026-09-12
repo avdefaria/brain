@@ -126,3 +126,43 @@ export const deleteReceivable = createServerFn({ method: "POST" })
     if (error) throw error;
     return { success: true };
   });
+
+export const updateReceivableDueDate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: {
+    id: string,
+    due_date: string
+  }) => z.object({
+    id: z.string(),
+    due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+  }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
+    const { error } = await supabase
+      .from('receivables')
+      .update({ due_date: data.due_date })
+      .eq('id', data.id);
+
+    if (error) throw error;
+    return { success: true };
+  });
+
+export const updateReceivableAmount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: {
+    id: string,
+    amount: number
+  }) => z.object({
+    id: z.string(),
+    amount: z.number().positive("Valor deve ser maior que zero"),
+  }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
+    const { error } = await supabase
+      .from('receivables')
+      .update({ amount: data.amount })
+      .eq('id', data.id);
+
+    if (error) throw error;
+    return { success: true };
+  });

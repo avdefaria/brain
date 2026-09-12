@@ -21,7 +21,7 @@ import {
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getFinanceSummary, getReceivables, updateReceivableStatus, deleteReceivable } from "@/lib/finances.functions";
+import { getFinanceSummary, getReceivables, updateReceivableStatus, deleteReceivable, updateReceivableDueDate, updateReceivableAmount } from "@/lib/finances.functions";
 import { getClientsWithChannels } from "@/lib/sales-channels.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -77,12 +84,19 @@ function FinancesPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [clientFilter, setClientFilter] = useState("all");
   const [openClientCombo, setOpenClientCombo] = useState(false);
+  const [editingDueDate, setEditingDueDate] = useState<any | null>(null);
+  const [newDueDate, setNewDueDate] = useState("");
+  const [editingAmount, setEditingAmount] = useState<any | null>(null);
+  const [newAmount, setNewAmount] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchSummary = useServerFn(getFinanceSummary);
   const fetchReceivables = useServerFn(getReceivables);
   const fetchClients = useServerFn(getClientsWithChannels);
   const updateStatusFn = useServerFn(updateReceivableStatus);
   const deleteReceivableFn = useServerFn(deleteReceivable);
+  const updateDueDateFn = useServerFn(updateReceivableDueDate);
+  const updateAmountFn = useServerFn(updateReceivableAmount);
 
   const { data: summary, isLoading: loadingSummary, refetch: refetchSummary } = useQuery({
     queryKey: ['finance-summary'],
@@ -128,6 +142,55 @@ function FinancesPage() {
       refetchSummary();
     } catch (error) {
       toast.error("Erro ao excluir");
+    }
+  };
+
+  const openDueDateModal = (r: any) => {
+    setEditingDueDate(r);
+    setNewDueDate(r.due_date ? String(r.due_date).slice(0, 10) : "");
+  };
+
+  const openAmountModal = (r: any) => {
+    setEditingAmount(r);
+    setNewAmount(r.amount != null ? String(r.amount) : "");
+  };
+
+  const handleSaveDueDate = async () => {
+    if (!editingDueDate || !newDueDate) {
+      toast.error("Informe a nova data de vencimento");
+    } else {
+      setSavingEdit(true);
+      try {
+        await updateDueDateFn({ data: { id: editingDueDate.id, due_date: newDueDate } });
+        toast.success("Vencimento atualizado!");
+        setEditingDueDate(null);
+        refetchReceivables();
+        refetchSummary();
+      } catch (error) {
+        toast.error("Erro ao atualizar vencimento");
+      } finally {
+        setSavingEdit(false);
+      }
+    }
+  };
+
+  const handleSaveAmount = async () => {
+    const parsed = Number(String(newAmount).replace(",", "."));
+    if (!editingAmount || !newAmount || Number.isNaN(parsed) || parsed <= 0) {
+      toast.error("Informe um valor válido maior que zero");
+    } else {
+      setSavingEdit(true);
+      try {
+        await updateAmountFn({ data: { id: editingAmount.id, amount: parsed } });
+        toast.success("Valor atualizado!");
+        setEditingAmount(null);
+        refetchReceivables();
+        refetchSummary();
+      } catch (error) {
+        toast.error("Erro ao atualizar valor");
+      } finally {
+        setSavingEdit(false);
+      }
     }
   };
 
@@ -388,10 +451,16 @@ function FinancesPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48 border-[#E4E6F0] rounded-xl">
                             <DropdownMenuLabel className="text-[10px] font-bold text-[#8A8FA3] uppercase">Opções</DropdownMenuLabel>
-                            <DropdownMenuItem className="gap-2 cursor-pointer">
+                            <DropdownMenuItem
+                              className="gap-2 cursor-pointer"
+                              onSelect={() => openDueDateModal(r)}
+                            >
                               <Calendar className="h-4 w-4 text-[#8A8FA3]" /> Alterar vencimento
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2 cursor-pointer">
+                            <DropdownMenuItem
+                              className="gap-2 cursor-pointer"
+                              onSelect={() => openAmountModal(r)}
+                            >
                               <DollarSign className="h-4 w-4 text-[#8A8FA3]" /> Editar valor
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
@@ -422,6 +491,62 @@ function FinancesPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!editingDueDate} onOpenChange={(open) => { if (!open) setEditingDueDate(null); }}>
+        <DialogContent className="sm:max-w-md rounded-2xl border-[#E4E6F0]">
+          <DialogHeader>
+            <DialogTitle className="font-title font-bold text-[#0E0E16]">Alterar vencimento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <p className="text-xs text-[#8A8FA3]">
+              {editingDueDate?.client?.name ? `${editingDueDate.client.name} • ` : ""}{editingDueDate?.installment_number ? `${editingDueDate.installment_number}ª parcela` : "Parcela única"}
+            </p>
+            <Input
+              type="date"
+              value={newDueDate}
+              onChange={(e) => setNewDueDate(e.target.value)}
+              className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full"
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]" onClick={() => setEditingDueDate(null)} disabled={savingEdit}>
+              Cancelar
+            </Button>
+            <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90" onClick={handleSaveDueDate} disabled={savingEdit}>
+              {savingEdit ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingAmount} onOpenChange={(open) => { if (!open) setEditingAmount(null); }}>
+        <DialogContent className="sm:max-w-md rounded-2xl border-[#E4E6F0]">
+          <DialogHeader>
+            <DialogTitle className="font-title font-bold text-[#0E0E16]">Editar valor</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <p className="text-xs text-[#8A8FA3]">
+              {editingAmount?.client?.name ? `${editingAmount.client.name} • ` : ""}{editingAmount?.installment_number ? `${editingAmount.installment_number}ª parcela` : "Parcela única"}
+            </p>
+            <Input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={newAmount}
+              onChange={(e) => setNewAmount(e.target.value)}
+              className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full"
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]" onClick={() => setEditingAmount(null)} disabled={savingEdit}>
+              Cancelar
+            </Button>
+            <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90" onClick={handleSaveAmount} disabled={savingEdit}>
+              {savingEdit ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
