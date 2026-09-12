@@ -441,7 +441,7 @@ function FinancesPage() {
                     {(dashboard?.charts?.costsByCategory || []).map((_: any, index: number) => (
                       <Cell
                         key={`cost-cat-${index}`}
-                        fill={["#3D4FE8", "#22C55E", "#F5A524", "#EF4444", "#8A8FA3"][index % 5]}
+                        fill={["#3D4FE8", "#22C55E", "#F5A524", "#EF4444", "#8A8FA3"][index % 5] ?? "#3D4FE8"}
                       />
                     ))}
                   </Pie>
