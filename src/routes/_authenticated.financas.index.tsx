@@ -48,7 +48,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, Legend
 } from "recharts";
 import { toast } from "sonner";
 
@@ -358,6 +358,96 @@ function FinancesPage() {
                   <Tooltip formatter={(value: any) => formatCurrency(Number(value) || 0)} />
                   <Line type="monotone" dataKey="total" stroke="#22C55E" strokeWidth={2} dot={false} name="MRR" />
                 </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      {/* Gráficos Linha 2: Distribuição + Faturamento vs Custos */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border-[#E4E6F0] shadow-sm">
+          <CardHeader className="p-6 pb-2">
+            <CardTitle className="text-lg font-title font-semibold text-[#0E0E16]">Distribuição de Faturamento</CardTitle>
+            <p className="text-xs text-[#8A8FA3]">Recorrente vs avulso no ano atual</p>
+          </CardHeader>
+          <CardContent className="p-6 pt-2">
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={dashboard?.charts?.revenueDistribution || []}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={2}
+                  >
+                    {(dashboard?.charts?.revenueDistribution || []).map((entry: any, index: number) => (
+                      <Cell
+                        key={`dist-${index}`}
+                        fill={entry.name === "Recorrente" ? "#3D4FE8" : "#8A8FA3"}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: any) => formatCurrency(Number(value) || 0)} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-[#E4E6F0] shadow-sm">
+          <CardHeader className="p-6 pb-2">
+            <CardTitle className="text-lg font-title font-semibold text-[#0E0E16]">Faturamento vs Custos</CardTitle>
+            <p className="text-xs text-[#8A8FA3]">Receita e custo pagos nos últimos 6 meses</p>
+          </CardHeader>
+          <CardContent className="p-6 pt-2">
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dashboard?.charts?.revenueVsCosts || []}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#8A8FA3', fontSize: 12 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8FA3', fontSize: 12 }} />
+                  <Tooltip formatter={(value: any) => formatCurrency(Number(value) || 0)} />
+                  <Legend />
+                  <Bar dataKey="receita" name="Receita" fill="#3D4FE8" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="custo" name="Custo" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Gráfico Linha 3: Custos por Categoria */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border-[#E4E6F0] shadow-sm">
+          <CardHeader className="p-6 pb-2">
+            <CardTitle className="text-lg font-title font-semibold text-[#0E0E16]">Custos por Categoria</CardTitle>
+            <p className="text-xs text-[#8A8FA3]">Custos pagos no ano atual por categoria</p>
+          </CardHeader>
+          <CardContent className="p-6 pt-2">
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={dashboard?.charts?.costsByCategory || []}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={2}
+                  >
+                    {(dashboard?.charts?.costsByCategory || []).map((_: any, index: number) => (
+                      <Cell
+                        key={`cost-cat-${index}`}
+                        fill={["#3D4FE8", "#22C55E", "#F5A524", "#EF4444", "#8A8FA3"][index % 5]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: any) => formatCurrency(Number(value) || 0)} />
+                  <Legend />
+                </PieChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
