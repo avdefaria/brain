@@ -160,7 +160,7 @@ function FinancesPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await removeReceivable({ data: { id } });
+      await removeReceivable({ data: id });
       toast.success("Recebível excluído");
       refetchReceivables();
     } catch {
