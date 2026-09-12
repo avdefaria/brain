@@ -68,8 +68,7 @@ export const getReceivables = createServerFn({ method: "POST" })
       .select(`
         *,
         client:client_id(id, name),
-        contract:contract_id(id, type),
-        category:category_id(id, name)
+        contract:contract_id(id, type)
       `)
       .order('due_date', { ascending: true });
 
