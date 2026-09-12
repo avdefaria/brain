@@ -250,3 +250,140 @@ export const updateReceivableAmount = createServerFn({ method: "POST" })
     if (error) throw error;
     return { success: true };
   });
+
+export const getFinanceDashboard = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+    const months: { key: string; label: string; endDate: string }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+      const endDate = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split("T")[0] as string;
+      months.push({ key, label, endDate });
+    }
+    const monthKeys = new Set(months.map((m) => m.key));
+
+    const monthKeyOf = (paid_at: string | null, due_date: string | null) => {
+      const ref = (paid_at || due_date || "") as string;
+      return ref ? ref.slice(0, 7) : "";
+    };
+
+    const { data: paidReceivables, error: recErr } = await supabase
+      .from("receivables")
+      .select("amount, paid_at, due_date, contract_id, client_id")
+      .eq("status", "pago");
+    if (recErr) throw recErr;
+
+    const { data: paidPayables, error: payErr } = await supabase
+      .from("payables")
+      .select("amount, paid_at, due_date, category_id")
+      .eq("status", "pago");
+    if (payErr) throw payErr;
+
+    const { data: categories } = await supabase
+      .from("expense_categories")
+      .select("id, name");
+    const catName = new Map((categories || []).map((c: any) => [c.id, c.name]));
+
+    const { data: contracts } = await supabase
+      .from("contracts")
+      .select("id, type, status, monthly_value, start_date");
+    const contractType = new Map((contracts || []).map((c: any) => [c.id, c.type]));
+    const recurringActive = (contracts || []).filter(
+      (c: any) => c.type === "recurring" && c.status === "active"
+    );
+
+    const monthlyTotals = new Map<string, number>();
+    let annualRevenue = 0;
+    let annualCount = 0;
+    let monthlyRevenue = 0;
+    const distribution = new Map<string, number>();
+
+    for (const r of (paidReceivables as any[]) || []) {
+      const amt = Number(r.amount) || 0;
+      const key = monthKeyOf(r.paid_at, r.due_date);
+      const year = key ? Number(key.slice(0, 4)) : NaN;
+      if (key && monthKeys.has(key)) {
+        monthlyTotals.set(key, (monthlyTotals.get(key) || 0) + amt);
+      }
+      if (key === currentMonthKey) monthlyRevenue += amt;
+      if (year === currentYear) {
+        annualRevenue += amt;
+        annualCount += 1;
+        const t = r.contract_id ? contractType.get(r.contract_id) : null;
+        const label = t === "recurring" ? "Recorrente" : "Avulso";
+        distribution.set(label, (distribution.get(label) || 0) + amt);
+      }
+    }
+
+    const ticketMedio = annualCount > 0 ? annualRevenue / annualCount : 0;
+
+    let totalCost = 0;
+    const costMonthly = new Map<string, number>();
+    const costsByCat = new Map<string, number>();
+    for (const p of (paidPayables as any[]) || []) {
+      const amt = Number(p.amount) || 0;
+      const key = monthKeyOf(p.paid_at, p.due_date);
+      const year = key ? Number(key.slice(0, 4)) : NaN;
+      if (key && monthKeys.has(key)) {
+        costMonthly.set(key, (costMonthly.get(key) || 0) + amt);
+      }
+      if (key === currentMonthKey) totalCost += amt;
+      if (year === currentYear) {
+        const label = (p.category_id && catName.get(p.category_id)) || "Sem categoria";
+        costsByCat.set(label, (costsByCat.get(label) || 0) + amt);
+      }
+    }
+
+    const profitMargin = monthlyRevenue > 0 ? ((monthlyRevenue - totalCost) / monthlyRevenue) * 100 : 0;
+
+    const monthlyRevenueChart = months.map((m) => ({
+      month: m.label,
+      total: Math.round((monthlyTotals.get(m.key) || 0) * 100) / 100,
+    }));
+
+    const mrrChart = months.map((m) => {
+      let mrr = 0;
+      for (const c of recurringActive as any[]) {
+        const start = String(c.start_date || "").slice(0, 10);
+        if (!start || start <= m.endDate) mrr += Number(c.monthly_value) || 0;
+      }
+      return { month: m.label, total: Math.round(mrr * 100) / 100 };
+    });
+
+    const last6 = months.slice(-6);
+    const revenueVsCosts = last6.map((m) => ({
+      month: m.label,
+      receita: Math.round((monthlyTotals.get(m.key) || 0) * 100) / 100,
+      custo: Math.round((costMonthly.get(m.key) || 0) * 100) / 100,
+    }));
+
+    return {
+      kpis: {
+        monthlyRevenue,
+        annualRevenue,
+        ticketMedio,
+        totalCost,
+        profitMargin,
+      },
+      charts: {
+        monthlyRevenue: monthlyRevenueChart,
+        mrr: mrrChart,
+        revenueDistribution: Array.from(distribution.entries()).map(([name, value]) => ({
+          name,
+          value: Math.round(value * 100) / 100,
+        })),
+        revenueVsCosts,
+        costsByCategory: Array.from(costsByCat.entries()).map(([name, value]) => ({
+          name,
+          value: Math.round(value * 100) / 100,
+        })),
+      },
+    };
+  });

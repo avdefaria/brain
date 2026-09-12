@@ -21,7 +21,7 @@ import {
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getFinanceSummary, getReceivables, getRecurringClients, updateReceivableStatus, deleteReceivable, updateReceivableDueDate, updateReceivableAmount } from "@/lib/finances.functions";
+import { getFinanceSummary, getFinanceDashboard, getReceivables, getRecurringClients, updateReceivableStatus, deleteReceivable, updateReceivableDueDate, updateReceivableAmount } from "@/lib/finances.functions";
 import { getClientsWithChannels } from "@/lib/sales-channels.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, Legend
+} from "recharts";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -93,6 +97,7 @@ function FinancesPage() {
   const [recurringPaymentFilter, setRecurringPaymentFilter] = useState("all");
 
   const fetchSummary = useServerFn(getFinanceSummary);
+  const fetchDashboard = useServerFn(getFinanceDashboard);
   const fetchReceivables = useServerFn(getReceivables);
   const fetchClients = useServerFn(getClientsWithChannels);
   const fetchRecurringClients = useServerFn(getRecurringClients);
@@ -104,6 +109,11 @@ function FinancesPage() {
   const { data: summary, isLoading: loadingSummary, refetch: refetchSummary } = useQuery({
     queryKey: ['finance-summary'],
     queryFn: () => fetchSummary()
+  });
+
+  const { data: dashboard, isLoading: loadingDashboard, refetch: refetchDashboard } = useQuery({
+    queryKey: ['finance-dashboard'],
+    queryFn: () => fetchDashboard()
   });
 
   const { data: clients } = useQuery({
@@ -310,6 +320,143 @@ function FinancesPage() {
           </CardContent>
         </Card>
       </div>
+      {/* KPIs Financeiros */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <Card className="border-[#E4E6F0] shadow-sm overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+            <DollarSign className="h-12 w-12 text-[#3D4FE8]" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold text-[#8A8FA3] uppercase tracking-wider">Faturamento Mensal</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-title font-bold text-[#0E0E16] dark:text-white">
+              {loadingDashboard ? "..." : formatCurrency(dashboard?.kpis?.monthlyRevenue || 0)}
+            </div>
+            <div className="flex items-center mt-1 text-[10px] text-[#8A8FA3]">
+              <ArrowUpRight className="h-3 w-3 mr-1" />
+              Recebido no mês atual
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-[#E4E6F0] shadow-sm overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+            <Wallet className="h-12 w-12 text-[#3D4FE8]" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold text-[#8A8FA3] uppercase tracking-wider">Faturamento Anual</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-title font-bold text-[#0E0E16] dark:text-white">
+              {loadingDashboard ? "..." : formatCurrency(dashboard?.kpis?.annualRevenue || 0)}
+            </div>
+            <div className="flex items-center mt-1 text-[10px] text-[#8A8FA3]">
+              <Calendar className="h-3 w-3 mr-1" />
+              Acumulado no ano
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-[#E4E6F0] shadow-sm overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+            <Building2 className="h-12 w-12 text-[#22C55E]" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold text-[#8A8FA3] uppercase tracking-wider">Ticket Médio</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-title font-bold text-[#0E0E16] dark:text-white">
+              {loadingDashboard ? "..." : formatCurrency(dashboard?.kpis?.ticketMedio || 0)}
+            </div>
+            <div className="flex items-center mt-1 text-[10px] text-[#8A8FA3]">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Média por recebimento pago
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-[#E4E6F0] shadow-sm overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+            <ArrowDownRight className="h-12 w-12 text-[#EF4444]" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold text-[#8A8FA3] uppercase tracking-wider">Custo Total</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-title font-bold text-[#EF4444]">
+              {loadingDashboard ? "..." : formatCurrency(dashboard?.kpis?.totalCost || 0)}
+            </div>
+            <div className="flex items-center mt-1 text-[10px] text-[#EF4444]">
+              <ArrowDownRight className="h-3 w-3 mr-1" />
+              Pago no mês atual
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-[#E4E6F0] shadow-sm overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+            <ArrowUpRight className="h-12 w-12 text-[#22C55E]" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold text-[#8A8FA3] uppercase tracking-wider">Margem de Lucro</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-title font-bold text-[#22C55E]">
+              {loadingDashboard ? "..." : `${(dashboard?.kpis?.profitMargin || 0).toFixed(1)}%`}
+            </div>
+            <div className="flex items-center mt-1 text-[10px] text-[#8A8FA3]">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              (Receita - Custo) / Receita
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      {/* Gráficos Linha 1: Faturamento Mensal + MRR */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border-[#E4E6F0] shadow-sm">
+          <CardHeader className="p-6 pb-2">
+            <CardTitle className="text-lg font-title font-semibold text-[#0E0E16]">Faturamento Mensal</CardTitle>
+            <p className="text-xs text-[#8A8FA3]">Receita paga nos últimos 12 meses</p>
+          </CardHeader>
+          <CardContent className="p-6 pt-2">
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={dashboard?.charts?.monthlyRevenue || []}>
+                  <defs>
+                    <linearGradient id="colorFaturamento" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3D4FE8" stopOpacity={0.12} />
+                      <stop offset="95%" stopColor="#3D4FE8" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#8A8FA3', fontSize: 12 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8FA3', fontSize: 12 }} />
+                  <Tooltip formatter={(value: any) => formatCurrency(Number(value) || 0)} />
+                  <Area type="monotone" dataKey="total" stroke="#3D4FE8" strokeWidth={2} fill="url(#colorFaturamento)" name="Faturamento" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-[#E4E6F0] shadow-sm">
+          <CardHeader className="p-6 pb-2">
+            <CardTitle className="text-lg font-title font-semibold text-[#0E0E16]">MRR</CardTitle>
+            <p className="text-xs text-[#8A8FA3]">Receita recorrente mensal contratada</p>
+          </CardHeader>
+          <CardContent className="p-6 pt-2">
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dashboard?.charts?.mrr || []}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E4E6F0" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#8A8FA3', fontSize: 12 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8FA3', fontSize: 12 }} />
+                  <Tooltip formatter={(value: any) => formatCurrency(Number(value) || 0)} />
+                  <Line type="monotone" dataKey="total" stroke="#22C55E" strokeWidth={2} dot={false} name="MRR" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+
 
       <Card className="border-[#E4E6F0] shadow-sm">
         <CardHeader className="border-b border-[#E4E6F0] bg-[#F7F8FC]/50 p-6">
