@@ -582,7 +582,7 @@ function RecebimentosPage() {
                     </TableCell>
                     <TableCell className="text-[#8A8FA3] text-xs">{r.installment_number ? `${r.installment_number}ª` : "Única"}</TableCell>
                     <TableCell className="font-bold text-[#0E0E16] dark:text-white">{formatCurrency(r.amount)}</TableCell>
-                    <TableCell>{getStatusBadge(r.status, r.due_date)}</TableCell>
+                    <TableCell><div className="flex flex-col gap-1 items-start">{getStatusBadge(r.status, r.due_date)}{r.status === 'pago' && r.paid_at ? (<span className="text-[10px] text-[#8A8FA3]">Pago em {format(new Date(r.paid_at), 'dd/MM')}</span>) : null}</div></TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex items-center justify-end gap-2">
                         {r.status === 'pendente' && (

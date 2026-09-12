@@ -56,7 +56,7 @@ function PayablesPage() {
     } catch { toast.error("Erro ao liquidar"); } finally { setSavingLiquidate(false); }
   };
   const remove = async (id: string) => { try { await del({ data: id }); toast.success("Conta excluída"); refresh(); } catch { toast.error("Erro ao excluir"); } };
-  const badge = (p: any) => { const s = statusOf(p); return <Badge className={cn("rounded-full px-3 py-1 border-0", s === "pago" ? "bg-[#22C55E]/10 text-[#22C55E]" : s === "atrasado" ? "bg-[#EF4444]/10 text-[#EF4444]" : "bg-[#F5A524]/10 text-[#F5A524]")}>{s}</Badge>; };
+  const badge = (p: any) => { const s = statusOf(p); return <div className="flex flex-col gap-1 items-start"><Badge className={cn("rounded-full px-3 py-1 border-0", s === "pago" ? "bg-[#22C55E]/10 text-[#22C55E]" : s === "atrasado" ? "bg-[#EF4444]/10 text-[#EF4444]" : "bg-[#F5A524]/10 text-[#F5A524]")}>{s}</Badge>{p.status === "pago" && p.paid_at ? (<span className="text-[10px] text-[#8A8FA3]">Pago em {format(new Date(p.paid_at), "dd/MM")}</span>) : null}</div>; };
   const selectedCat = cats?.find((c: any) => c.id === form.category_id); const canCreate = catSearch.trim() && !cats?.some((c: any) => c.name.toLowerCase() === catSearch.trim().toLowerCase());
 
   return <div className="space-y-6 animate-in fade-in duration-500 font-sans">
