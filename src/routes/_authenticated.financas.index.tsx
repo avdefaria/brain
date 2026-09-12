@@ -21,7 +21,7 @@ import {
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getFinanceSummary, getReceivables, updateReceivableStatus, deleteReceivable, updateReceivableDueDate, updateReceivableAmount } from "@/lib/finances.functions";
+import { getFinanceSummary, getReceivables, getRecurringClients, updateReceivableStatus, deleteReceivable, updateReceivableDueDate, updateReceivableAmount } from "@/lib/finances.functions";
 import { getClientsWithChannels } from "@/lib/sales-channels.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -89,10 +89,13 @@ function FinancesPage() {
   const [editingAmount, setEditingAmount] = useState<any | null>(null);
   const [newAmount, setNewAmount] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [recurringSearch, setRecurringSearch] = useState("");
+  const [recurringPaymentFilter, setRecurringPaymentFilter] = useState("all");
 
   const fetchSummary = useServerFn(getFinanceSummary);
   const fetchReceivables = useServerFn(getReceivables);
   const fetchClients = useServerFn(getClientsWithChannels);
+  const fetchRecurringClients = useServerFn(getRecurringClients);
   const updateStatusFn = useServerFn(updateReceivableStatus);
   const deleteReceivableFn = useServerFn(deleteReceivable);
   const updateDueDateFn = useServerFn(updateReceivableDueDate);
@@ -122,12 +125,23 @@ function FinancesPage() {
     r.client?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const { data: recurringClients, isLoading: loadingRecurring, refetch: refetchRecurring } = useQuery({
+    queryKey: ['recurring-clients'],
+    queryFn: () => fetchRecurringClients()
+  });
+
+  const filteredRecurringClients = ((recurringClients as any[]) || []).filter((c: any) =>
+    (c.client_name || "").toLowerCase().includes(recurringSearch.toLowerCase()) &&
+    (recurringPaymentFilter === "all" || c.payment_status === recurringPaymentFilter)
+  );
+
   const handleMarkAsPaid = async (id: string) => {
     try {
       await updateStatusFn({ data: { id, status: 'pago' } });
       toast.success("Pagamento baixado com sucesso!");
       refetchReceivables();
       refetchSummary();
+      refetchRecurring();
     } catch (error) {
       toast.error("Erro ao baixar pagamento");
     }
@@ -140,6 +154,7 @@ function FinancesPage() {
       toast.success("Recebível excluído");
       refetchReceivables();
       refetchSummary();
+      refetchRecurring();
     } catch (error) {
       toast.error("Erro ao excluir");
     }
@@ -492,6 +507,36 @@ function FinancesPage() {
         </CardContent>
       </Card>
 
+      <Card className="border-[#E4E6F0] shadow-sm">
+        <CardHeader className="border-b border-[#E4E6F0] bg-[#F7F8FC]/50 p-6">
+          <div className="flex flex-col gap-4">
+            <div>
+              <CardTitle className="font-title font-bold text-[#0E0E16] dark:text-white">Clientes Recorrentes</CardTitle>
+              <p className="text-xs text-[#8A8FA3] mt-1">Um registro por cliente com contrato recorrente ativo</p>
+            </div>
+            <div className="flex flex-col md:flex-row md:items-center gap-3">
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A8FA3]" />
+                <Input
+                  placeholder="Buscar cliente..."
+                  className="pl-10 border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full"
+                  value={recurringSearch}
+                  onChange={(e) => setRecurringSearch(e.target.value)}
+                />
+              </div>
+              <Select value={recurringPaymentFilter} onValueChange={setRecurringPaymentFilter}>
+                <SelectTrigger className="w-[160px] border-[#E4E6F0] rounded-full text-xs">
+                  <SelectValue placeholder="Status Pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="em_dia">Em dia</SelectItem>
+                  <SelectItem value="atrasado">Atrasado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
       <Dialog open={!!editingDueDate} onOpenChange={(open) => { if (!open) setEditingDueDate(null); }}>
         <DialogContent className="sm:max-w-md rounded-2xl border-[#E4E6F0]">
           <DialogHeader>

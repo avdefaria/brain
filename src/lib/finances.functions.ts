@@ -147,6 +147,90 @@ export const updateReceivableDueDate = createServerFn({ method: "POST" })
     return { success: true };
   });
 
+export const getRecurringClients = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: contracts, error: contractsErr } = await supabase
+      .from('contracts')
+      .select(`
+        id,
+        client_id,
+        monthly_value,
+        mrr_months,
+        start_date,
+        status,
+        type,
+        client:client_id(id, name, city, state, address, country, health_score)
+      `)
+      .eq('type', 'recurring')
+      .eq('status', 'active')
+      .order('start_date', { ascending: false });
+
+    if (contractsErr) throw contractsErr;
+    if (!contracts || contracts.length === 0) return [];
+
+    const seen = new Set<string>();
+    const uniqueContracts = (contracts as any[]).filter((c: any) => {
+      if (seen.has(c.client_id)) return false;
+      seen.add(c.client_id);
+      return true;
+    });
+
+    const clientIds = uniqueContracts.map((c: any) => c.client_id);
+
+    const { data: receivables, error: recErr } = await supabase
+      .from('receivables')
+      .select('id, client_id, contract_id, amount, status, due_date')
+      .in('client_id', clientIds);
+
+    if (recErr) throw recErr;
+
+    const byClient: Record<string, any[]> = {};
+    for (const r of (receivables as any[]) || []) {
+      if (!byClient[r.client_id]) byClient[r.client_id] = [];
+      byClient[r.client_id].push(r);
+    }
+
+    return uniqueContracts.map((c: any) => {
+      const clientRecs = byClient[c.client_id] || [];
+      const ltv = clientRecs
+        .filter((r: any) => r.status === 'pago')
+        .reduce((sum: number, r: any) => sum + (Number(r.amount) || 0), 0);
+
+      const contractRecs = clientRecs.filter((r: any) =>
+        r.contract_id ? r.contract_id === c.id : true
+      );
+      const paidCount = contractRecs.filter((r: any) => r.status === 'pago').length;
+      const mrrMonths = c.mrr_months != null ? Number(c.mrr_months) : null;
+      const remainingMonths = mrrMonths != null ? Math.max(0, mrrMonths - paidCount) : null;
+
+      const hasOverdue = clientRecs.some((r: any) => {
+        if (r.status === 'atrasado') return true;
+        if (r.status !== 'pago' && r.due_date && r.due_date < today) return true;
+        return false;
+      });
+
+      return {
+        client_id: c.client_id,
+        client_name: c.client?.name || '—',
+        city: c.client?.city || null,
+        state: c.client?.state || null,
+        address: c.client?.address || null,
+        country: c.client?.country || null,
+        monthly_value: c.monthly_value != null ? Number(c.monthly_value) : null,
+        ltv,
+        mrr_months: mrrMonths,
+        paid_count: paidCount,
+        remaining_months: remainingMonths,
+        health_score: c.client?.health_score ?? null,
+        payment_status: hasOverdue ? 'atrasado' : 'em_dia',
+      };
+    });
+  });
+
 export const updateReceivableAmount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: {
