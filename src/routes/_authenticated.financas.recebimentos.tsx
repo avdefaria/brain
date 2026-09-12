@@ -217,10 +217,6 @@ function RecebimentosPage() {
           setAdjustContracts((data as any[]) || []);
         }
         setLoadingAdjustContracts(false);
-      })
-      .catch(() => {
-        toast.error("Erro ao carregar clientes recorrentes");
-        setLoadingAdjustContracts(false);
       });
   };
 
