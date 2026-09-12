@@ -322,6 +322,18 @@ function RecebimentosPage() {
         setOneOffCatOpen(false);
         setOneOffCatSearch("");
       } catch (error) {
+        console.error("[oneOffCategory] create FAILED FULL:", error);
+        console.error(
+          "[oneOffCategory] code:",
+          (error as any)?.code,
+          "message:",
+          (error as any)?.message,
+          "details:",
+          (error as any)?.details,
+          "hint:",
+          (error as any)?.hint
+        );
+        console.error("[oneOffCategory] JSON:", JSON.stringify(error, null, 2));
         toast.error("Erro ao criar categoria");
       }
     }

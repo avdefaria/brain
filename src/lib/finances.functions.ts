@@ -272,7 +272,21 @@ export const createRevenueCategory = createServerFn({ method: "POST" })
       .insert({ name: normalized } as any)
       .select("*")
       .single();
-    if (error) throw error;
+    if (error) {
+      console.error("[createRevenueCategory] Supabase insert error FULL:", error);
+      console.error(
+        "[createRevenueCategory] code:",
+        (error as any)?.code,
+        "message:",
+        (error as any)?.message,
+        "details:",
+        (error as any)?.details,
+        "hint:",
+        (error as any)?.hint
+      );
+      console.error("[createRevenueCategory] JSON:", JSON.stringify(error, null, 2));
+      throw error;
+    }
     return data as any;
   });
 
