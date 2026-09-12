@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/financas/contas-a-pagar")({ component: PayablesPage });
 const emptyForm = { description: "", category_id: "", amount: "", due_date: "", supplier_name: "", payment_method: "", notes: "" };
 const money = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
-const statusOf = (p: any) => p.status !== "pago" && p.due_date < new Date().toISOString().split("T")[0] ? "atrasado" : p.status;
+const statusOf = (p: any) => p.status !== "pago" && p.due_date < (new Date().toISOString().split("T")[0] as string) ? "atrasado" : p.status;
 
 function PayablesPage() {
   const [search, setSearch] = useState(""); const [status, setStatus] = useState("all"); const [cat, setCat] = useState("all");

@@ -151,7 +151,7 @@ export const getRecurringClients = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const supabase = context.supabase;
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0] as string;
 
     const { data: contracts, error: contractsErr } = await supabase
       .from('contracts')
@@ -190,8 +190,8 @@ export const getRecurringClients = createServerFn({ method: "GET" })
 
     const byClient: Record<string, any[]> = {};
     for (const r of (receivables as any[]) || []) {
-      if (!byClient[r.client_id]) byClient[r.client_id] = [];
-      byClient[r.client_id].push(r);
+      const bucket = byClient[r.client_id] ?? (byClient[r.client_id] = []);
+      bucket.push(r);
     }
 
     return uniqueContracts.map((c: any) => {

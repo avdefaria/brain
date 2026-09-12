@@ -70,7 +70,7 @@ export const getPayables = createServerFn({ method: "POST" })
 
     if (data.status === "atrasado") {
       query = query.neq("status", "pago").lt("due_date", new Date().toISOString().split("T")[0]);
-    } else if (data.status) query = query.eq("status", data.status);
+    } else if (data.status) query = query.eq("status", data.status as "pendente" | "pago" | "atrasado");
     if (data.categoryId) query = query.eq("category_id", data.categoryId);
 
     const { data: payables, error } = await query;
@@ -103,8 +103,16 @@ export const upsertPayable = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => payableSchema.parse(data))
   .handler(async ({ data, context }) => {
-    const payload = { ...data, updated_at: new Date().toISOString() };
-    console.log("[upsertPayable payload]", JSON.stringify(payload));
+    const payload = {
+      description: data.description,
+      amount: data.amount,
+      due_date: data.due_date,
+      category_id: data.category_id ?? null,
+      supplier_name: data.supplier_name ?? null,
+      payment_method: data.payment_method ?? null,
+      notes: data.notes ?? null,
+      updated_at: new Date().toISOString(),
+    };
     const { error } = data.id
       ? await context.supabase.from("payables").update(payload).eq("id", data.id)
       : await context.supabase.from("payables").insert(payload);
