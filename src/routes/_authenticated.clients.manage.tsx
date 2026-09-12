@@ -96,7 +96,7 @@ function ClientsManagePage() {
     const revenue = activeRecurringContract?.monthly_value != null ? Number(activeRecurringContract.monthly_value) : null;
     const todayInSaoPauloParts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
     const todayInSaoPauloValues = Object.fromEntries(todayInSaoPauloParts.map((part) => [part.type, part.value]));
-    const todayInSaoPaulo = new Date(`${todayInSaoPauloValues.year}-${todayInSaoPauloValues.month}-${todayInSaoPauloValues.day}T00:00:00`);
+    const todayInSaoPaulo = new Date(`${todayInSaoPauloValues['year']}-${todayInSaoPauloValues['month']}-${todayInSaoPauloValues['day']}T00:00:00`);
     const ltDays = activeRecurringContract?.start_date
       ? Math.max(0, Math.floor((todayInSaoPaulo.getTime() - new Date(`${activeRecurringContract.start_date}T00:00:00`).getTime()) / 86400000))
       : null;
