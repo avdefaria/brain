@@ -768,6 +768,122 @@ function RecebimentosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={oneOffOpen} onOpenChange={(open) => { if (!open) setOneOffOpen(false); }}>
+        <DialogContent className="sm:max-w-md rounded-2xl border-[#E4E6F0]">
+          <DialogHeader>
+            <DialogTitle className="font-title font-bold text-[#0E0E16]">Adicionar recebimento pontual</DialogTitle>
+            <DialogDescription className="text-xs text-[#8A8FA3]">
+              Preencha os dados do recebimento avulso
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Cliente</Label>
+              <div className="flex gap-2">
+                <Button type="button" variant={oneOffClientMode === "registered" ? "default" : "outline"} className={oneOffClientMode === "registered" ? "rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-xs" : "rounded-full border-[#E4E6F0] text-[#8A8FA3] text-xs"} onClick={() => setOneOffClientMode("registered")}>Cliente cadastrado</Button>
+                <Button type="button" variant={oneOffClientMode === "simple" ? "default" : "outline"} className={oneOffClientMode === "simple" ? "rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-xs" : "rounded-full border-[#E4E6F0] text-[#8A8FA3] text-xs"} onClick={() => setOneOffClientMode("simple")}>Cliente simplificado</Button>
+              </div>
+              {oneOffClientMode === "registered" ? (
+                <Select value={oneOffClientId} onValueChange={(v) => setOneOffClientId(v)}>
+                  <SelectTrigger className="border-[#E4E6F0] rounded-full">
+                    <SelectValue placeholder="Selecione o cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {((clients as any[]) || []).map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input value={oneOffClientName} onChange={(e) => setOneOffClientName(e.target.value)} placeholder="Nome do cliente" className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Descrição do serviço</Label>
+              <Input value={oneOffDescription} onChange={(e) => setOneOffDescription(e.target.value)} placeholder="Ex.: Consultoria de janeiro" className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Categoria</Label>
+              <Popover open={oneOffCatOpen} onOpenChange={setOneOffCatOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" aria-expanded={oneOffCatOpen} className="w-full justify-between border-[#E4E6F0] rounded-full font-normal">
+                    {selectedOneOffCategory ? selectedOneOffCategory.name : "Selecione a categoria"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 border-[#E4E6F0] rounded-xl overflow-hidden" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar ou criar categoria..." value={oneOffCatSearch} onValueChange={setOneOffCatSearch} className="h-9" />
+                    <CommandList>
+                      <CommandEmpty>
+                        {canCreateOneOffCat ? (
+                          <button type="button" onClick={handleCreateOneOffCategory} className="w-full text-xs font-bold text-[#3D4FE8] py-2">
+                            Criar &quot;{oneOffCatSearch.trim()}&quot;
+                          </button>
+                        ) : "Nenhuma categoria encontrada."}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {oneOffFilteredCats.map((c: any) => (
+                          <CommandItem key={c.id} value={c.name} onSelect={() => { setOneOffCategoryId(c.id); setOneOffCatOpen(false); setOneOffCatSearch(""); }} className="text-xs cursor-pointer">
+                            <Check className={cn("mr-2 h-4 w-4", oneOffCategoryId === c.id ? "opacity-100" : "opacity-0")} />
+                            {c.name}
+                          </CommandItem>
+                        ))}
+                        {canCreateOneOffCat && (
+                          <CommandItem value={oneOffCatSearch} onSelect={handleCreateOneOffCategory} className="text-xs cursor-pointer font-bold text-[#3D4FE8]">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Criar &quot;{oneOffCatSearch.trim()}&quot;
+                          </CommandItem>
+                        )}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Valor total</Label>
+              <Input type="number" min="0.01" step="0.01" value={oneOffTotal} onChange={(e) => setOneOffTotal(e.target.value)} placeholder="0,00" className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+            </div>
+            <div className="flex items-center justify-between rounded-xl bg-[#F7F8FC] border border-[#E4E6F0] p-3">
+              <Label className="text-xs font-bold text-[#0E0E16]">Parcelar este recebimento</Label>
+              <Switch checked={oneOffParcelled} onCheckedChange={setOneOffParcelled} />
+            </div>
+            {oneOffParcelled && (
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Número de parcelas</Label>
+                <Input type="number" min="2" max="120" step="1" value={oneOffInstallments} onChange={(e) => setOneOffInstallments(e.target.value)} className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Data de vencimento</Label>
+              <Input type="date" value={oneOffDueDate} onChange={(e) => setOneOffDueDate(e.target.value)} className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Forma de pagamento</Label>
+              <Select value={oneOffPaymentMethod} onValueChange={(v) => setOneOffPaymentMethod(v)}>
+                <SelectTrigger className="border-[#E4E6F0] rounded-full">
+                  <SelectValue placeholder="Selecione a forma de pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pix">Pix</SelectItem>
+                  <SelectItem value="Boleto">Boleto</SelectItem>
+                  <SelectItem value="Cartão">Cartão</SelectItem>
+                  <SelectItem value="Transferência">Transferência</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Observações</Label>
+              <Textarea value={oneOffNotes} onChange={(e) => setOneOffNotes(e.target.value)} placeholder="Informações adicionais (opcional)" className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-xl min-h-[80px]" />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]" onClick={() => setOneOffOpen(false)} disabled={savingOneOff}>Cancelar</Button>
+            <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90" onClick={handleSaveOneOff} disabled={savingOneOff}>{savingOneOff ? "Salvando..." : "Criar recebimento"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
