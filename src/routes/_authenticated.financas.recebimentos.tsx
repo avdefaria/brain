@@ -398,9 +398,6 @@ function RecebimentosPage() {
           <p className="text-sm text-[#8A8FA3]">Controle de recebíveis e fluxo de caixa</p>
         </div>
         <div className="flex gap-3">
-          <Button onClick={openAdjustModal} className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90">
-            Ajustar valor recorrente
-          </Button>
           <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]">
             <Download className="h-4 w-4 mr-2" />
             Exportar
@@ -476,6 +473,9 @@ function RecebimentosPage() {
               <Button onClick={openOneOffModal} className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-xs font-bold">
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Pontual
+              </Button>
+              <Button onClick={openAdjustModal} className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-xs font-bold">
+                Ajustar valor recorrente
               </Button>
               <Select defaultValue="all" onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[140px] border-[#E4E6F0] rounded-full text-xs">
