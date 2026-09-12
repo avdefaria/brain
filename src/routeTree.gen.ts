@@ -27,6 +27,7 @@ import { Route as AuthenticatedComercialCrmRouteImport } from './routes/_authent
 import { Route as AuthenticatedFinancasIndexRouteImport } from './routes/_authenticated.financas.index'
 import { Route as AuthenticatedFinancasContasAPagarRouteImport } from './routes/_authenticated.financas.contas-a-pagar'
 import { Route as AuthenticatedFinancasInadimplenciaRouteImport } from './routes/_authenticated.financas.inadimplencia'
+import { Route as AuthenticatedFinancasRecebimentosRouteImport } from './routes/_authenticated.financas.recebimentos'
 import { Route as AuthenticatedProjectsContentApprovalRouteImport } from './routes/_authenticated.projects.content-approval'
 import { Route as AuthenticatedProjectsDeliverablesRouteImport } from './routes/_authenticated.projects.deliverables'
 import { Route as AuthenticatedProjectsTasksRouteImport } from './routes/_authenticated.projects.tasks'
@@ -130,6 +131,12 @@ const AuthenticatedFinancasInadimplenciaRoute =
     path: '/financas/inadimplencia',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedFinancasRecebimentosRoute =
+  AuthenticatedFinancasRecebimentosRouteImport.update({
+    id: '/financas/recebimentos',
+    path: '/financas/recebimentos',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProjectsContentApprovalRoute =
   AuthenticatedProjectsContentApprovalRouteImport.update({
     id: '/content-approval',
@@ -170,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/comercial/crm': typeof AuthenticatedComercialCrmRoute
   '/financas/contas-a-pagar': typeof AuthenticatedFinancasContasAPagarRoute
   '/financas/inadimplencia': typeof AuthenticatedFinancasInadimplenciaRoute
+  '/financas/recebimentos': typeof AuthenticatedFinancasRecebimentosRoute
   '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
@@ -193,6 +201,7 @@ export interface FileRoutesByTo {
   '/comercial/crm': typeof AuthenticatedComercialCrmRoute
   '/financas/contas-a-pagar': typeof AuthenticatedFinancasContasAPagarRoute
   '/financas/inadimplencia': typeof AuthenticatedFinancasInadimplenciaRoute
+  '/financas/recebimentos': typeof AuthenticatedFinancasRecebimentosRoute
   '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
@@ -218,6 +227,7 @@ export interface FileRoutesById {
   '/_authenticated/comercial/crm': typeof AuthenticatedComercialCrmRoute
   '/_authenticated/financas/contas-a-pagar': typeof AuthenticatedFinancasContasAPagarRoute
   '/_authenticated/financas/inadimplencia': typeof AuthenticatedFinancasInadimplenciaRoute
+  '/_authenticated/financas/recebimentos': typeof AuthenticatedFinancasRecebimentosRoute
   '/_authenticated/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/_authenticated/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
   '/_authenticated/projects/tasks': typeof AuthenticatedProjectsTasksRoute
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/comercial/crm'
     | '/financas/contas-a-pagar'
     | '/financas/inadimplencia'
+    | '/financas/recebimentos'
     | '/projects/content-approval'
     | '/projects/deliverables'
     | '/projects/tasks'
@@ -266,6 +277,7 @@ export interface FileRouteTypes {
     | '/comercial/crm'
     | '/financas/contas-a-pagar'
     | '/financas/inadimplencia'
+    | '/financas/recebimentos'
     | '/projects/content-approval'
     | '/projects/deliverables'
     | '/projects/tasks'
@@ -290,6 +302,7 @@ export interface FileRouteTypes {
     | '/_authenticated/comercial/crm'
     | '/_authenticated/financas/contas-a-pagar'
     | '/_authenticated/financas/inadimplencia'
+    | '/_authenticated/financas/recebimentos'
     | '/_authenticated/projects/content-approval'
     | '/_authenticated/projects/deliverables'
     | '/_authenticated/projects/tasks'
@@ -434,6 +447,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinancasInadimplenciaRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/financas/recebimentos': {
+      id: '/_authenticated/financas/recebimentos'
+      path: '/financas/recebimentos'
+      fullPath: '/financas/recebimentos'
+      preLoaderRoute: typeof AuthenticatedFinancasRecebimentosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/projects/content-approval': {
       id: '/_authenticated/projects/content-approval'
       path: '/content-approval'
@@ -497,6 +517,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedComercialCrmRoute: typeof AuthenticatedComercialCrmRoute
   AuthenticatedFinancasContasAPagarRoute: typeof AuthenticatedFinancasContasAPagarRoute
   AuthenticatedFinancasInadimplenciaRoute: typeof AuthenticatedFinancasInadimplenciaRoute
+  AuthenticatedFinancasRecebimentosRoute: typeof AuthenticatedFinancasRecebimentosRoute
   AuthenticatedClientsIndexRoute: typeof AuthenticatedClientsIndexRoute
   AuthenticatedFinancasIndexRoute: typeof AuthenticatedFinancasIndexRoute
 }
@@ -516,6 +537,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
     AuthenticatedFinancasContasAPagarRoute,
   AuthenticatedFinancasInadimplenciaRoute:
     AuthenticatedFinancasInadimplenciaRoute,
+  AuthenticatedFinancasRecebimentosRoute:
+    AuthenticatedFinancasRecebimentosRoute,
   AuthenticatedClientsIndexRoute: AuthenticatedClientsIndexRoute,
   AuthenticatedFinancasIndexRoute: AuthenticatedFinancasIndexRoute,
 }
