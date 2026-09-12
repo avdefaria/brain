@@ -200,7 +200,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               collapsed={sidebarCollapsed}
               active={location.pathname.startsWith("/financas")}
               children={[
-                { label: "Recebimentos", href: "/financas" },
+                { label: "Recebimentos", href: "/financas/recebimentos" },
                 { label: "Contas a pagar", href: "/financas/contas-a-pagar" },
                 { label: "Inadimplência", href: "/financas/inadimplencia" },
               ]}
