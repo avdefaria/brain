@@ -537,6 +537,65 @@ function FinancesPage() {
             </div>
           </div>
         </CardHeader>
+        <CardContent className="p-0">
+          {loadingRecurring ? (
+            <div className="p-12 text-center text-sm text-[#8A8FA3]">Carregando clientes...</div>
+          ) : filteredRecurringClients.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-[#F7F8FC]/50">
+                  <TableHead className="pl-6">Cliente</TableHead>
+                  <TableHead>Localização</TableHead>
+                  <TableHead>Mensalidade</TableHead>
+                  <TableHead>LTV</TableHead>
+                  <TableHead>Meses restantes</TableHead>
+                  <TableHead>Health Score</TableHead>
+                  <TableHead className="pr-6">Pagamento</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRecurringClients.map((c: any) => (
+                  <TableRow key={c.client_id} className="border-[#E4E6F0] hover:bg-[#F7F8FC]/50">
+                    <TableCell className="pl-6 font-medium text-[#0E0E16]">{c.client_name}</TableCell>
+                    <TableCell className="text-[#8A8FA3] text-sm">
+                      {[c.city, c.state].filter(Boolean).join(" / ") || "—"}
+                    </TableCell>
+                    <TableCell className="text-[#0E0E16]">{c.monthly_value != null ? formatCurrency(c.monthly_value) : "—"}</TableCell>
+                    <TableCell className="font-bold text-[#0E0E16]">{formatCurrency(c.ltv)}</TableCell>
+                    <TableCell className="text-[#8A8FA3] text-sm">
+                      {c.remaining_months != null ? `${c.remaining_months} de ${c.mrr_months}` : "—"}
+                    </TableCell>
+                    <TableCell className="text-[#0E0E16]">{c.health_score ?? "—"}</TableCell>
+                    <TableCell className="pr-6">
+                      <Badge
+                        className={cn(
+                          "rounded-full border-0 px-3 py-1 text-xs font-semibold",
+                          c.payment_status === "atrasado"
+                            ? "bg-[#EF4444]/10 text-[#EF4444]"
+                            : "bg-[#22C55E]/10 text-[#22C55E]",
+                        )}
+                      >
+                        {c.payment_status === "atrasado" ? "Atrasado" : "Em dia"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="p-20 text-center flex flex-col items-center justify-center space-y-4">
+              <div className="h-16 w-16 rounded-full bg-[#F7F8FC] flex items-center justify-center text-[#8A8FA3]">
+                <DollarSign className="h-8 w-8 opacity-20" />
+              </div>
+              <div>
+                <h3 className="text-lg font-title font-bold text-[#0E0E16]">Nenhum cliente recorrente</h3>
+                <p className="text-sm text-[#8A8FA3]">Contratos recorrentes ativos aparecem aqui.</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Dialog open={!!editingDueDate} onOpenChange={(open) => { if (!open) setEditingDueDate(null); }}>
         <DialogContent className="sm:max-w-md rounded-2xl border-[#E4E6F0]">
           <DialogHeader>
