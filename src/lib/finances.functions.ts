@@ -190,8 +190,8 @@ export const getRecurringClients = createServerFn({ method: "GET" })
 
     const byClient: Record<string, any[]> = {};
     for (const r of (receivables as any[]) || []) {
-      if (!byClient[r.client_id]) byClient[r.client_id] = [];
-      byClient[r.client_id].push(r);
+      const bucket = byClient[r.client_id] ?? (byClient[r.client_id] = []);
+      bucket.push(r);
     }
 
     return uniqueContracts.map((c: any) => {
