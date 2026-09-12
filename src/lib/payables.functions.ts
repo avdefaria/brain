@@ -70,7 +70,7 @@ export const getPayables = createServerFn({ method: "POST" })
 
     if (data.status === "atrasado") {
       query = query.neq("status", "pago").lt("due_date", new Date().toISOString().split("T")[0]);
-    } else if (data.status) query = query.eq("status", data.status);
+    } else if (data.status) query = query.eq("status", data.status as "pendente" | "pago" | "atrasado");
     if (data.categoryId) query = query.eq("category_id", data.categoryId);
 
     const { data: payables, error } = await query;
