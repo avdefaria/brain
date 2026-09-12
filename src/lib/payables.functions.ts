@@ -37,7 +37,20 @@ export const createExpenseCategory = createServerFn({ method: "POST" })
       .select("*")
       .single();
     if (error) {
-      console.error("[createExpenseCategory error]", error.message, error.details);
+      console.error(
+        "[createExpenseCategory error FULL]",
+        JSON.stringify(
+          {
+            message: (error as any)?.message,
+            code: (error as any)?.code,
+            details: (error as any)?.details,
+            hint: (error as any)?.hint,
+            full: error,
+          },
+          null,
+          2,
+        ),
+      );
       throw error;
     }
     return data;
