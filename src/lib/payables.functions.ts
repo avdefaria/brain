@@ -103,8 +103,16 @@ export const upsertPayable = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => payableSchema.parse(data))
   .handler(async ({ data, context }) => {
-    const payload = { ...data, updated_at: new Date().toISOString() };
-    console.log("[upsertPayable payload]", JSON.stringify(payload));
+    const payload = {
+      description: data.description,
+      amount: data.amount,
+      due_date: data.due_date,
+      category_id: data.category_id ?? null,
+      supplier_name: data.supplier_name ?? null,
+      payment_method: data.payment_method ?? null,
+      notes: data.notes ?? null,
+      updated_at: new Date().toISOString(),
+    };
     const { error } = data.id
       ? await context.supabase.from("payables").update(payload).eq("id", data.id)
       : await context.supabase.from("payables").insert(payload);
