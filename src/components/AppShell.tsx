@@ -220,8 +220,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarItem
               icon={Network}
               label="Gestão de usuários"
-              href="/em-breve"
+              href="/users"
               collapsed={sidebarCollapsed}
+              active={location.pathname.startsWith("/users")}
             />
             <SidebarItem
               icon={User}
