@@ -410,6 +410,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
 
         // 4. Create or update contract record with financial data
         let financialError: string | null = null;
+        try {
         if (clientId) {
           // Find or create account for this client
           let accountId;
@@ -417,24 +418,23 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
 
           if (findAccountError) {
             console.error("Error finding account:", findAccountError);
-            financialError = findAccountError.message;
+            throw new Error(`Falha ao buscar conta operacional: ${findAccountError.message}`);
           } else if (accounts && accounts.length > 0) {
             accountId = (accounts[0] as any).id;
           } else {
             const { data: newAccount, error: newAccountError } = await supabase.from('accounts').insert({ client_id: clientId, account_name: data.name } as any).select('id').single();
             if (newAccountError) {
               console.error("Error creating account:", newAccountError);
-              financialError = newAccountError.message;
+              throw new Error(`Falha ao criar conta operacional: ${newAccountError.message}`);
             } else {
               accountId = newAccount?.id;
             }
-            if (!accountId && !financialError) {
-              financialError = "Não foi possível criar a conta (accounts) do cliente.";
+            if (!accountId) {
+              throw new Error("Falha ao criar conta operacional: ID não retornado.");
             }
           }
 
-          if (accountId) {
-            const contractData = {
+          const contractData = {
               client_id: clientId,
               account_id: accountId,
               type: data.contract_type,
@@ -451,44 +451,51 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             let contractId;
             if (findContractError) {
               console.error("Error finding contract:", findContractError);
-              financialError = findContractError.message;
+              throw new Error(`Falha ao buscar contrato: ${findContractError.message}`);
             } else if (existingContracts && existingContracts.length > 0) {
               contractId = (existingContracts[0] as any).id;
               const { error: updateContractError } = await supabase.from('contracts').update(contractData as any).eq('id', contractId);
               if (updateContractError) {
                 console.error("Error updating contract:", updateContractError);
-                financialError = updateContractError.message;
+                throw new Error(`Falha ao atualizar contrato: ${updateContractError.message}`);
               }
             } else {
               const { data: newContract, error: newContractError } = await supabase.from('contracts').insert([contractData] as any).select('id').single();
               if (newContractError) {
                 console.error("Error creating contract:", newContractError);
-                financialError = newContractError.message;
+                throw new Error(`Falha ao criar contrato: ${newContractError.message}`);
               } else {
                 contractId = newContract?.id;
               }
-              if (!contractId && !financialError) {
-                financialError = "Não foi possível criar o contrato do cliente.";
+              if (!contractId) {
+                throw new Error("Falha ao criar contrato: ID não retornado.");
               }
             }
 
             // Generate receivables if new or no receivables exist
-            if (contractId) {
-              const { count } = await supabase
-                .from('receivables')
-                .select('*', { count: 'exact', head: true })
-                .eq('contract_id', contractId);
-              
-              if (count === 0) {
+            if (!contractId) {
+              throw new Error("Falha ao gerar recebíveis: contrato sem ID.");
+            }
+            const { count, error: countError } = await supabase
+              .from('receivables')
+              .select('*', { count: 'exact', head: true })
+              .eq('contract_id', contractId);
+
+            if (countError) {
+              console.error("Error counting receivables:", countError);
+              throw new Error(`Falha ao verificar recebíveis: ${countError.message}`);
+            }
+
+            if (count === 0) {
                 const receivables: any[] = [];
                 const startDateStr = data.start_date || new Date().toISOString().split('T')[0];
-                
+
                 if (data.contract_type === 'recurring') {
                   const months = data.mrr_months || 1;
                   for (let i = 0; i < months; i++) {
                     const dueDate = new Date(startDateStr + 'T00:00:00');
                     dueDate.setMonth(dueDate.getMonth() + i);
-                    
+
                     receivables.push({
                       client_id: clientId,
                       contract_id: contractId,
@@ -515,19 +522,18 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                   const { error: recError } = await supabase.from('receivables').insert(receivables);
                   if (recError) {
                     console.error("Error generating receivables:", recError);
-                    financialError = recError.message;
+                    throw new Error(`Falha ao criar recebíveis: ${recError.message}`);
                   }
                 }
-              }
-            } else if (!financialError) {
-              financialError = "Não foi possível criar o contrato do cliente.";
             }
-          }
         }
-      }
+        } catch (finErr: any) {
+          console.error("Financial block error:", finErr);
+          financialError = finErr?.message || "Erro desconhecido ao criar contrato/recebíveis.";
+        }
 
       if (financialError) {
-        toast.warning(`Lead convertido, mas houve um problema ao criar o contrato/recebíveis: ${financialError}. Contate o suporte ou tente novamente.`);
+        toast.error(`Lead convertido, mas houve um problema ao criar o contrato/recebíveis: ${financialError} Contate o suporte ou tente novamente.`);
       } else {
         toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
       }
