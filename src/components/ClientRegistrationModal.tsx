@@ -548,8 +548,9 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
           toast.error(
             `Lead convertido, mas houve um problema ao criar o contrato/recebíveis: ${financialError} Contate o suporte ou tente novamente.`
           );
-      } else {
-        toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
+        } else {
+          toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
+        }
       }
       onOpenChange(false);
       form.reset();
