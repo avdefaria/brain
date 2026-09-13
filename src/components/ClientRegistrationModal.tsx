@@ -409,16 +409,28 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         }
 
         // 4. Create or update contract record with financial data
+        let financialError: string | null = null;
         if (clientId) {
           // Find or create account for this client
           let accountId;
-          const { data: accounts } = await supabase.from('accounts').select('id').eq('client_id', clientId).limit(1);
-          
-          if (accounts && accounts.length > 0) {
+          const { data: accounts, error: findAccountError } = await supabase.from('accounts').select('id').eq('client_id', clientId).limit(1);
+
+          if (findAccountError) {
+            console.error("Error finding account:", findAccountError);
+            financialError = findAccountError.message;
+          } else if (accounts && accounts.length > 0) {
             accountId = (accounts[0] as any).id;
           } else {
-            const { data: newAccount } = await supabase.from('accounts').insert({ client_id: clientId, name: data.name } as any).select('id').single();
-            accountId = newAccount?.id;
+            const { data: newAccount, error: newAccountError } = await supabase.from('accounts').insert({ client_id: clientId, account_name: data.name } as any).select('id').single();
+            if (newAccountError) {
+              console.error("Error creating account:", newAccountError);
+              financialError = newAccountError.message;
+            } else {
+              accountId = newAccount?.id;
+            }
+            if (!accountId && !financialError) {
+              financialError = "Não foi possível criar a conta (accounts) do cliente.";
+            }
           }
 
           if (accountId) {
@@ -434,15 +446,30 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             };
 
             // Check if contract exists
-            const { data: existingContracts } = await supabase.from('contracts').select('id').eq('client_id', clientId).limit(1);
-            
+            const { data: existingContracts, error: findContractError } = await supabase.from('contracts').select('id').eq('client_id', clientId).limit(1);
+
             let contractId;
-            if (existingContracts && existingContracts.length > 0) {
+            if (findContractError) {
+              console.error("Error finding contract:", findContractError);
+              financialError = findContractError.message;
+            } else if (existingContracts && existingContracts.length > 0) {
               contractId = (existingContracts[0] as any).id;
-              await supabase.from('contracts').update(contractData as any).eq('id', contractId);
+              const { error: updateContractError } = await supabase.from('contracts').update(contractData as any).eq('id', contractId);
+              if (updateContractError) {
+                console.error("Error updating contract:", updateContractError);
+                financialError = updateContractError.message;
+              }
             } else {
-              const { data: newContract } = await supabase.from('contracts').insert([contractData] as any).select('id').single();
-              contractId = newContract?.id;
+              const { data: newContract, error: newContractError } = await supabase.from('contracts').insert([contractData] as any).select('id').single();
+              if (newContractError) {
+                console.error("Error creating contract:", newContractError);
+                financialError = newContractError.message;
+              } else {
+                contractId = newContract?.id;
+              }
+              if (!contractId && !financialError) {
+                financialError = "Não foi possível criar o contrato do cliente.";
+              }
             }
 
             // Generate receivables if new or no receivables exist
@@ -486,15 +513,24 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
 
                 if (receivables.length > 0) {
                   const { error: recError } = await supabase.from('receivables').insert(receivables);
-                  if (recError) console.error("Error generating receivables:", recError);
+                  if (recError) {
+                    console.error("Error generating receivables:", recError);
+                    financialError = recError.message;
+                  }
                 }
               }
+            } else if (!financialError) {
+              financialError = "Não foi possível criar o contrato do cliente.";
             }
           }
         }
       }
 
-      toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
+      if (financialError) {
+        toast.warning(`Lead convertido, mas houve um problema ao criar o contrato/recebíveis: ${financialError}. Contate o suporte ou tente novamente.`);
+      } else {
+        toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
+      }
       onOpenChange(false);
       form.reset();
       setFile(null);
