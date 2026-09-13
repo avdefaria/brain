@@ -83,6 +83,7 @@ interface ClientRegistrationModalProps {
 
 export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initialData }: ClientRegistrationModalProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableChannels, setAvailableChannels] = useState<{id: string, name: string}[]>([]);
   const [availableNiches, setAvailableNiches] = useState<{id: string, name: string}[]>([]);
 
@@ -240,6 +241,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
   });
 
   const onSubmit = async (data: any) => {
+    setIsSubmitting(true);
     try {
       const cleanUuid = (val: any) => {
         if (!val || val === "undefined" || val === "") return null;
@@ -268,9 +270,18 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
 
       let clientId = initialData?.id;
 
-      // Se temos initialData.id, é uma edição de cliente existente.
-      // Se não temos id (mesmo que venha de lead_id), é uma criação.
-      if (initialData?.id) {
+      const conversionLeadId = cleanUuid(data.lead_id);
+      if (conversionLeadId && !initialData?.id) {
+        const { data: existingClient } = await supabase.from('clients').select('id').eq('lead_id', conversionLeadId).limit(1).maybeSingle();
+        if (existingClient?.id) {
+          toast.info("Este lead já foi convertido anteriormente. Atualizando o cliente existente.");
+          clientId = (existingClient as any).id;
+        }
+      }
+
+      // Se temos initialData.id (ou reaproveitamos o cliente já convertido do lead_id), é uma edição/atualização.
+      // Se não temos id, é uma criação.
+      if (clientId) {
         const { error } = await supabase.from('clients').update(payload).eq('id', clientId);
         if (error) {
           console.error("Error updating client:", error);
@@ -549,6 +560,8 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
       // Capture literal database error if available
       const dbError = error.details || error.hint || error.message;
       toast.error(`Erro: ${dbError}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -886,9 +899,10 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             </Button>
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-white rounded-full px-12 font-bold"
             >
-              {initialData ? "Salvar alterações" : "Salvar cliente"}
+              {isSubmitting ? "Salvando..." : initialData ? "Salvar alterações" : "Salvar cliente"}
             </Button>
           </div>
         </form>
