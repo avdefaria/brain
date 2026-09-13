@@ -527,13 +527,16 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                 }
             }
         }
-        } catch (finErr: any) {
-          console.error("Financial block error:", finErr);
-          financialError = finErr?.message || "Erro desconhecido ao criar contrato/recebíveis.";
+        } catch (err: any) {
+          console.error("Financial block error:", err);
+          financialError =
+            err?.message || "Erro desconhecido ao criar contrato/recebíveis.";
         }
 
-      if (financialError) {
-        toast.error(`Lead convertido, mas houve um problema ao criar o contrato/recebíveis: ${financialError} Contate o suporte ou tente novamente.`);
+        if (financialError) {
+          toast.error(
+            `Lead convertido, mas houve um problema ao criar o contrato/recebíveis: ${financialError} Contate o suporte ou tente novamente.`
+          );
       } else {
         toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
       }
