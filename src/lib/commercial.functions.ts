@@ -92,19 +92,19 @@ export const getCommercialDashboard = createServerFn({ method: "GET" })
 
     const { data: createdLeads } = await supabase
       .from("leads")
-      .select("id, created_at, converted_at, funnel_stage, recurring_revenue, one_time_revenue")
+      .select("id, created_at, converted_at, funnel_stage, recurring_revenue, one_time_revenue, responsible_id")
       .gte("created_at", sixMonthsAgoISO)
       .limit(5000);
 
     const { data: convertedLeads } = await supabase
       .from("leads")
-      .select("id, created_at, converted_at, funnel_stage, recurring_revenue, one_time_revenue")
+      .select("id, created_at, converted_at, funnel_stage, recurring_revenue, one_time_revenue, responsible_id")
       .gte("converted_at", sixMonthsAgoISO)
       .limit(5000);
 
     const { data: openLeads } = await supabase
       .from("leads")
-      .select("id, created_at, converted_at, funnel_stage, recurring_revenue, one_time_revenue")
+      .select("id, created_at, converted_at, funnel_stage, recurring_revenue, one_time_revenue, responsible_id")
       .is("converted_at", null)
       .not("funnel_stage", "in", "(vendas_feitas,vendas_perdidas)")
       .limit(5000);
@@ -190,11 +190,32 @@ export const getCommercialDashboard = createServerFn({ method: "GET" })
 
     let vendasMrr = 0;
     let vendasAvulso = 0;
+    const raceByResponsible = new Map<string, { id: string; name: string; avatar_url: string | null; mrr: number; avulso: number }>();
+    const responsibleIds = [...new Set(monthConverted.map((l: any) => l.responsible_id).filter(Boolean))] as string[];
+    const nameByResponsible = new Map<string, { full_name: string; avatar_url: string | null }>();
+    if (responsibleIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", responsibleIds);
+      for (const p of ((profiles as any[]) || []) as any[]) {
+        if (p?.id) nameByResponsible.set(p.id, { full_name: p.full_name || "Sem responsável", avatar_url: p.avatar_url || null });
+      }
+    }
     for (const l of monthConverted) {
       const s = realSplit(l.id);
       vendasMrr += s.mrr;
       vendasAvulso += s.avulso;
+      const responsibleId = l.responsible_id || "unassigned";
+      const profile = nameByResponsible.get(responsibleId);
+      const item = raceByResponsible.get(responsibleId) || { id: responsibleId, name: profile?.full_name || "Sem responsável", avatar_url: profile?.avatar_url || null, mrr: 0, avulso: 0 };
+      item.mrr += s.mrr;
+      item.avulso += s.avulso;
+      raceByResponsible.set(responsibleId, item);
     }
+    const commercialRace = [...raceByResponsible.values()]
+      .filter((r) => r.mrr > 0 || r.avulso > 0)
+      .sort((a, b) => b.mrr - a.mrr || b.avulso - a.avulso);
 
     const pipelineList = (openLeads as any[]) || [];
     let pipelineMrr = 0;
@@ -217,6 +238,7 @@ export const getCommercialDashboard = createServerFn({ method: "GET" })
       leadsByMonth,
       closedValueByMonth,
       funnelLeads: allLeads.map((l: any) => ({ funnel_stage: l.funnel_stage })),
+      commercialRace,
       month: cur.month,
       year: cur.year,
     };

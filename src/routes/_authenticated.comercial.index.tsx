@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Target, Users, Send, BadgeCheck, Wallet, Pencil, Loader2, TrendingUp, HandCoins } from "lucide-react";
+import { Target, Users, Send, BadgeCheck, Wallet, Pencil, Loader2, TrendingUp, HandCoins, Trophy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,12 @@ function ComercialPage() {
   const closedValueByMonth = ((dash as any)?.closedValueByMonth || []) as { key: string; label: string; mrr: number; avulso: number }[];
   const funnelLeads = ((dash as any)?.funnelLeads || []) as any[];
   const trendData = closedValueByMonth.map((d) => ({ ...d, total: (Number(d.mrr) || 0) + (Number(d.avulso) || 0) }));
+  const commercialRace = (((dash as any)?.commercialRace || []) as { id: string; name: string; avatar_url: string | null; mrr: number; avulso: number }[]);
+  const shortBRL = (v: number) => {
+    const abs = Math.abs(Number(v) || 0);
+    const num = Number(v) || 0;
+    return abs >= 1000000 ? `${(num / 1000000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}M` : abs >= 1000 ? `${(num / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}K` : `${Math.round(num)}`;
+  };
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ leads: "", proposals: "", deals: "", revenue: "" });
@@ -73,31 +79,32 @@ function ComercialPage() {
         <h1 className="text-2xl font-title font-bold text-[#0E0E16]">Comercial</h1>
         <p className="text-sm text-[#8A8FA3]">Dashboard comercial e meta do mês</p>
       </div>
-      <Card className="border-[#E4E6F0] shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+      <Card className="border-0 shadow-sm rounded-2xl bg-[#3D4FE8] text-white flex flex-col">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-[#3D4FE8]/10 text-[#3D4FE8] flex items-center justify-center"><Target className="h-5 w-5" /></div>
-              <div><CardTitle className="text-lg font-title font-bold text-[#0E0E16]">Meta do Mês</CardTitle><p className="text-xs text-[#8A8FA3]">{title}</p></div>
+              <div className="h-10 w-10 rounded-2xl bg-white/15 text-white flex items-center justify-center"><Target className="h-5 w-5" /></div>
+              <div><CardTitle className="text-lg font-title font-bold text-white">Meta do Mês</CardTitle><p className="text-xs text-white/70">{title}</p></div>
             </div>
-            <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#3D4FE8] gap-2" onClick={openEdit}><Pencil className="h-4 w-4" />Editar metas</Button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[11px] font-bold tabular text-white/80">L: {targets.leads}  P: {targets.proposals}  F: {targets.deals}  R: R${shortBRL(targets.revenue)}</span>
+              <Button variant="outline" className="rounded-full bg-white/15 hover:bg-white/25 text-white border-white/25 gap-2" onClick={openEdit}><Pencil className="h-4 w-4" />Editar metas</Button>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-4">
-          {isLoading ? (<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 text-[#3D4FE8] animate-spin" /></div>) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <CardContent className="pt-4 flex-1">
+          {isLoading ? (<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 text-white animate-spin" /></div>) : (
+          <div className="space-y-3">
             {bars.map((b) => {
               const pct = pctOf(b.cur, b.tgt);
               return (
-                <div key={b.key} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2"><b.icon className="h-4 w-4 text-[#3D4FE8]" /><span className="text-xs font-bold text-[#0E0E16] uppercase tracking-wider">{b.label}</span></div>
-                    <span className={cn("text-xs font-bold tabular", pctColor(pct))}>{b.disp} | {pct}%</span>
+                <div key={b.key} className="flex items-center gap-3">
+                  <span className="w-24 shrink-0 text-xs font-bold text-white uppercase tracking-wider">{b.label}</span>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#2A37B5]" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+                    <div className="h-full rounded-full bg-white/90 transition-all" style={{ width: `${pct}%` }} />
                   </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#E4E6F0]" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor(pct) }} />
-                  </div>
-                  <p className="text-[11px] text-[#8A8FA3]">Meta: <span className="font-bold text-[#0E0E16]">{b.meta}</span>{b.tgt === 0 ? " — defina a meta" : ""}</p>
+                  <span className="w-28 shrink-0 text-right text-xs font-bold tabular text-white">{b.disp} | {pct}%</span>
                 </div>
               );
             })}
@@ -105,6 +112,63 @@ function ComercialPage() {
           )}
         </CardContent>
       </Card>
+      <Card className="border-0 shadow-sm rounded-2xl bg-[#3D4FE8] text-white flex flex-col">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-white/15 text-white flex items-center justify-center"><Trophy className="h-5 w-5" /></div>
+              <div><CardTitle className="text-lg font-title font-bold text-white">Corrida Comercial</CardTitle><p className="text-xs text-white/70">{title}</p></div>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[11px] font-bold tabular text-white/80">MRR: R${shortBRL(targets.revenue)}</span>
+              <Button variant="outline" className="rounded-full bg-white/15 hover:bg-white/25 text-white border-white/25 gap-2" onClick={openEdit}><Pencil className="h-4 w-4" />Editar metas</Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4 flex-1">
+          {dashLoading ? (<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 text-white animate-spin" /></div>) : (
+            commercialRace.length > 0 ? (
+            <div className="space-y-4">
+              {commercialRace.map((r, idx) => {
+                const mrrPct = pctOf(Number(r.mrr) || 0, targets.revenue);
+                const avuPct = pctOf(Number(r.avulso) || 0, targets.revenue);
+                const initial = (r.name || "?").trim().charAt(0).toUpperCase() || "?";
+                return (
+                  <div key={r.id} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="h-6 w-6 shrink-0 rounded-full bg-white/15 border border-white/25 text-white text-[11px] font-bold flex items-center justify-center tabular">{idx + 1}</span>
+                      {r.avatar_url ? (
+                        <img src={r.avatar_url} alt={r.name} className="h-6 w-6 shrink-0 rounded-full object-cover border border-white/25" />
+                      ) : (
+                        <span className="h-6 w-6 shrink-0 rounded-full bg-white/15 border border-white/25 text-white text-[11px] font-bold flex items-center justify-center">{initial}</span>
+                      )}
+                      <span className="text-xs font-bold text-white truncate">{r.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="w-10 shrink-0 text-[11px] font-bold text-white/70 uppercase">MRR</span>
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#2A37B5]" role="progressbar" aria-valuenow={mrrPct} aria-valuemin={0} aria-valuemax={100}>
+                        <div className="h-full rounded-full bg-white/90 transition-all" style={{ width: `${mrrPct}%` }} />
+                      </div>
+                      <span className="w-28 shrink-0 text-right text-xs font-bold tabular text-white">{money(Number(r.mrr) || 0)} | {mrrPct}%</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="w-10 shrink-0 text-[11px] font-bold text-white/70 uppercase">AVU</span>
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#2A37B5]" role="progressbar" aria-valuenow={avuPct} aria-valuemin={0} aria-valuemax={100}>
+                        <div className="h-full rounded-full bg-white/60 transition-all" style={{ width: `${avuPct}%` }} />
+                      </div>
+                      <span className="w-28 shrink-0 text-right text-xs font-bold tabular text-white">{money(Number(r.avulso) || 0)} | {avuPct}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            ) : (
+              <div className="flex items-center justify-center py-12"><p className="text-xs text-white/70">Nenhum fechamento no mês ainda.</p></div>
+            )
+          )}
+        </CardContent>
+      </Card>
+      </div>
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="border-[#E4E6F0] shadow-sm"><CardContent className="pt-5"><div className="flex items-center gap-2"><Users className="h-4 w-4 text-[#3D4FE8]" /><span className="text-xs font-bold text-[#8A8FA3] uppercase tracking-wider">Leads</span></div><p className="mt-2 text-2xl font-bold text-[#0E0E16] tabular">{dashLoading ? "…" : Number(kpis.leads) || 0}</p><p className="text-[11px] text-[#8A8FA3]">Criados no mês</p></CardContent></Card>
         <Card className="border-[#E4E6F0] shadow-sm"><CardContent className="pt-5"><div className="flex items-center gap-2"><Send className="h-4 w-4 text-[#3D4FE8]" /><span className="text-xs font-bold text-[#8A8FA3] uppercase tracking-wider">Propostas</span></div><p className="mt-2 text-2xl font-bold text-[#0E0E16] tabular">{dashLoading ? "…" : Number(kpis.propostas) || 0}</p><p className="text-[11px] text-[#8A8FA3]">Proposta enviada no mês</p></CardContent></Card>
