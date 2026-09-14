@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { CreateCollaboratorModal, type CreatedCredential } from "@/components/CreateCollaboratorModal";
 
 export const Route = createFileRoute("/_authenticated/users")({
   component: UsersPage,
@@ -36,6 +37,12 @@ export const Route = createFileRoute("/_authenticated/users")({
 
 function UsersPage() {
   const [view, setView] = useState<"grid" | "list">("grid");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [lastCredential, setLastCredential] = useState<CreatedCredential | null>(null);
+
+  const handleCreated = (credential: CreatedCredential) => {
+    setLastCredential(credential);
+  };
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
@@ -49,11 +56,21 @@ function UsersPage() {
             Gerencie a equipe e atribua funções no sistema.
           </p>
         </div>
-        <Button className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full px-6">
+        <Button onClick={() => setModalOpen(true)} className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full px-6">
           <Plus className="h-4 w-4 mr-2" />
           Cadastrar Colaborador
         </Button>
       </div>
+
+      {lastCredential ? (
+        <Card className="border-[#D6F0DB] bg-[#F0FAF2] shadow-sm">
+          <CardContent className="p-4 text-sm text-[#0E0E16]">
+            E-mail: {lastCredential.email} — Senha temporária: {lastCredential.temporaryPassword}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="hidden" />
+      )}
 
       {/* Filters Bar */}
       <Card className="border-[#E4E6F0] shadow-sm">
@@ -123,10 +140,16 @@ function UsersPage() {
             Você ainda não cadastrou nenhum membro para a sua equipe no Brain.
           </p>
         </div>
-        <Button className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full">
+        <Button onClick={() => setModalOpen(true)} className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full">
           Cadastrar meu primeiro colaborador
         </Button>
       </div>
+
+      <CreateCollaboratorModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSuccess={handleCreated}
+      />
     </div>
   );
 }
