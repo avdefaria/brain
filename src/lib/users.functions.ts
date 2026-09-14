@@ -131,3 +131,104 @@ export const createCollaborator = createServerFn({ method: "POST" })
 
     return result;
   });
+
+const updateCollaboratorSchema = z.object({
+  userId: z.string().uuid("Usuário inválido"),
+  fullName: z.string().trim().min(2, "Nome completo é obrigatório"),
+  function: userFunctionEnum,
+  commercialRoles: z.array(commercialRoleEnum).optional().default([]),
+  squadId: z.string().uuid("Squad inválido").nullable().optional(),
+  employmentType: employmentTypeEnum,
+  role: appRoleEnum,
+  active: z.boolean(),
+});
+
+export const updateCollaborator = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: z.infer<typeof updateCollaboratorSchema>) =>
+    updateCollaboratorSchema.parse(data),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const commercialRoles =
+      data.commercialRoles && data.commercialRoles.length > 0
+        ? data.commercialRoles
+        : null;
+
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        full_name: data.fullName.trim(),
+        function: data.function,
+        employment_type: data.employmentType,
+        squad_id: data.squadId ?? null,
+        commercial_roles: commercialRoles,
+        active: data.active,
+      } as never)
+      .eq("id", data.userId);
+
+    if (profileError) {
+      throw new Error(profileError.message);
+    }
+
+    const { data: existingRoles } = await supabaseAdmin
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", data.userId)
+      .limit(1);
+
+    const roleList = (existingRoles ?? []) as Array<{ id: string }>;
+    if (roleList.length > 0) {
+      const { error: roleError } = await supabaseAdmin
+        .from("user_roles")
+        .update({ role: data.role } as never)
+        .eq("user_id", data.userId);
+      if (roleError) {
+        throw new Error(roleError.message);
+      }
+    } else {
+      const { error: roleError } = await supabaseAdmin
+        .from("user_roles")
+        .insert({
+          user_id: data.userId,
+          role: data.role,
+        } as never);
+      if (roleError) {
+        throw new Error(roleError.message);
+      }
+    }
+
+    return { success: true };
+  });
+
+const resetCollaboratorPasswordSchema = z.object({
+  userId: z.string().uuid("Usuário inválido"),
+});
+
+export const resetCollaboratorPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: z.infer<typeof resetCollaboratorPasswordSchema>) =>
+    resetCollaboratorPasswordSchema.parse(data),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const temporaryPassword = generateTemporaryPassword(12);
+
+    const { error: updateError } =
+      await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+        password: temporaryPassword,
+      });
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+
+    await supabaseAdmin
+      .from("profiles")
+      .update({ must_change_password: true } as never)
+      .eq("id", data.userId);
+
+    return { temporaryPassword };
+  });
