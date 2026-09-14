@@ -93,8 +93,7 @@ export const createCollaborator = createServerFn({ method: "POST" })
             ? data.commercialRoles
             : null;
 
-        const { error: profileError } = await supabaseAdmin.from("profiles").insert({
-          id: userId,
+        const profilePayload = {
           full_name: data.fullName.trim(),
           function: data.function,
           employment_type: data.employmentType,
@@ -102,13 +101,39 @@ export const createCollaborator = createServerFn({ method: "POST" })
           commercial_roles: commercialRoles,
           must_change_password: true,
           active: true,
-        } as never);
+        };
 
-        if (profileError) {
+        // A linha base em profiles já é criada pelo trigger
+        // on_auth_user_created_profile — então atualizamos em vez de inserir.
+        const { data: updatedRows, error: updateError } = await supabaseAdmin
+          .from("profiles")
+          .update(profilePayload as never)
+          .eq("id", userId)
+          .select("id");
+
+        if (updateError) {
           // Evita usuario orfao no auth quando o profile falha
           await supabaseAdmin.auth.admin.deleteUser(userId);
-          throw new Error(profileError.message);
-        } else {
+          throw new Error(updateError.message);
+        }
+
+        // Fallback raro: se o trigger não disparou a tempo (0 linhas afetadas),
+        // faz UPSERT para funcionar nos dois cenários sem erro de duplicate key.
+        if (!updatedRows || updatedRows.length === 0) {
+          const { error: upsertError } = await supabaseAdmin
+            .from("profiles")
+            .upsert({ id: userId, ...profilePayload } as never, {
+              onConflict: "id",
+            });
+
+          if (upsertError) {
+            // Evita usuario orfao no auth quando o profile falha
+            await supabaseAdmin.auth.admin.deleteUser(userId);
+            throw new Error(upsertError.message);
+          }
+        }
+
+        {
           const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
             user_id: userId,
             role: data.role,
