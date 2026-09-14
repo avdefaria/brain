@@ -34,6 +34,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { CreateCollaboratorModal, type CreatedCredential } from "@/components/CreateCollaboratorModal";
+import { EditCollaboratorModal } from "@/components/EditCollaboratorModal";
 
 type CollaboratorRow = {
   id: string;
@@ -162,6 +163,8 @@ export const Route = createFileRoute("/_authenticated/users")({
 function UsersPage() {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [modalOpen, setModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedCollaborator, setSelectedCollaborator] = useState<CollaboratorRow | null>(null);
   const [lastCredential, setLastCredential] = useState<CreatedCredential | null>(null);
   const [search, setSearch] = useState("");
   const [squadFilter, setSquadFilter] = useState("all");
@@ -210,6 +213,15 @@ function UsersPage() {
 
   const handleCreated = (credential: CreatedCredential) => {
     setLastCredential(credential);
+    queryClient.invalidateQueries({ queryKey: ["collaborators"] });
+  };
+
+  const handleOpenEdit = (collaborator: CollaboratorRow) => {
+    setSelectedCollaborator(collaborator);
+    setEditModalOpen(true);
+  };
+
+  const handleEditSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["collaborators"] });
   };
 
@@ -346,7 +358,7 @@ function UsersPage() {
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Ver detalhes</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenEdit(c)}>Ver detalhes</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -458,6 +470,13 @@ function UsersPage() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         onSuccess={handleCreated}
+      />
+
+      <EditCollaboratorModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        collaborator={selectedCollaborator}
+        onSuccess={handleEditSuccess}
       />
     </div>
   );

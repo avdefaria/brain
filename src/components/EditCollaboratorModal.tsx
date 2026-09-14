@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Copy, Check, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { getSquads } from "@/lib/squads.functions";
@@ -75,9 +76,10 @@ export function EditCollaboratorModal({
   const [squadId, setSquadId] = useState<string>("none");
   const [employmentType, setEmploymentType] = useState<string>("CLT");
   const [role, setRole] = useState<string>("collaborator");
-  const [status, setStatus] = useState<string>("active");
+  const [active, setActive] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [confirmingReset, setConfirmingReset] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -113,10 +115,11 @@ export function EditCollaboratorModal({
         ? (collaborator.role as string)
         : "collaborator";
       setRole(validRole);
-      setStatus(collaborator.active === false ? "inactive" : "active");
+      setActive(collaborator.active === false ? false : true);
       setFormError(null);
       setNewPassword(null);
       setCopied(false);
+      setConfirmingReset(false);
     }
   }, [collaborator, open]);
 
@@ -130,9 +133,10 @@ export function EditCollaboratorModal({
 
   const handleClose = (nextOpen: boolean) => {
     if (isSaving || isResetting) {
-      return;
+      onOpenChange(false);
+    } else {
+      onOpenChange(nextOpen);
     }
-    onOpenChange(nextOpen);
   };
 
   const handleCopyPassword = async () => {
@@ -152,67 +156,74 @@ export function EditCollaboratorModal({
   };
 
   const handleSave = async () => {
-    if (!collaborator) {
-      return;
-    }
     setFormError(null);
     if (fullName.trim().length < 2) {
       setFormError("Informe o nome completo.");
-      return;
-    }
-    setIsSaving(true);
-    try {
-      await updateCollaboratorFn({
-        data: {
-          userId: collaborator.id,
-          fullName: fullName.trim(),
-          function: userFunction as
-            | "Designer"
-            | "Copywriter"
-            | "Gestor de Tráfego"
-            | "Redator"
-            | "Desenvolvedor"
-            | "Administrador",
-          commercialRoles: commercialRoles as ("SDR" | "Closer" | "Dono" | "Gestor")[],
-          squadId: squadId === "none" ? null : squadId,
-          employmentType: employmentType as "CLT" | "PJ" | "Estágio",
-          role: role as "admin" | "leader" | "collaborator",
-          active: status === "active",
-        },
-      });
-      toast.success("Colaborador atualizado com sucesso");
-      if (onSuccess) {
-        onSuccess();
+    } else {
+      if (collaborator) {
+        setIsSaving(true);
+        try {
+          await updateCollaboratorFn({
+            data: {
+              userId: collaborator.id,
+              fullName: fullName.trim(),
+              function: userFunction as
+                | "Designer"
+                | "Copywriter"
+                | "Gestor de Tráfego"
+                | "Redator"
+                | "Desenvolvedor"
+                | "Administrador",
+              commercialRoles: commercialRoles as ("SDR" | "Closer" | "Dono" | "Gestor")[],
+              squadId: squadId === "none" ? null : squadId,
+              employmentType: employmentType as "CLT" | "PJ" | "Estágio",
+              role: role as "admin" | "leader" | "collaborator",
+              active: active,
+            },
+          });
+          toast.success("Colaborador atualizado com sucesso");
+          if (onSuccess) {
+            onSuccess();
+          }
+          onOpenChange(false);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : "Erro ao salvar alterações";
+          setFormError(message);
+          toast.error(message);
+        } finally {
+          setIsSaving(false);
+        }
+      } else {
+        setFormError("Nenhum colaborador selecionado.");
       }
-      onOpenChange(false);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro ao salvar alterações";
-      setFormError(message);
-      toast.error(message);
-    } finally {
-      setIsSaving(false);
     }
   };
 
   const handleResetPassword = async () => {
-    if (!collaborator) {
-      return;
-    }
     setFormError(null);
-    setIsResetting(true);
-    try {
-      const result = await resetPasswordFn({
-        data: { userId: collaborator.id },
-      });
-      setNewPassword((result as { temporaryPassword: string }).temporaryPassword);
-      setCopied(false);
-      toast.success("Nova senha temporária gerada");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro ao resetar senha";
-      setFormError(message);
-      toast.error(message);
-    } finally {
-      setIsResetting(false);
+    if (collaborator) {
+      if (confirmingReset) {
+        setIsResetting(true);
+        try {
+          const result = await resetPasswordFn({
+            data: { userId: collaborator.id },
+          });
+          setNewPassword((result as { temporaryPassword: string }).temporaryPassword);
+          setCopied(false);
+          setConfirmingReset(false);
+          toast.success("Nova senha temporária gerada");
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : "Erro ao resetar senha";
+          setFormError(message);
+          toast.error(message);
+        } finally {
+          setIsResetting(false);
+        }
+      } else {
+        setConfirmingReset(true);
+      }
+    } else {
+      setFormError("Nenhum colaborador selecionado.");
     }
   };
 
@@ -305,26 +316,28 @@ export function EditCollaboratorModal({
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="flex items-center justify-between rounded-xl border border-[#E4E6F0] p-3">
+            <div>
               <Label>Status</Label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="border-[#E4E6F0] rounded-xl h-11">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-[#E4E6F0]">
-                  <SelectItem value="active">Ativo</SelectItem>
-                  <SelectItem value="inactive">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
+              <p className="text-xs text-[#8A8FA3]">
+                {active ? "Ativo" : "Inativo"}
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label>Senha</Label>
-              <Button type="button" variant="outline" onClick={handleResetPassword} disabled={isResetting || !collaborator} className="w-full rounded-xl h-11 border-[#E4E6F0]">
-                <KeyRound className="h-4 w-4 mr-2" />
-                {isResetting ? "Gerando..." : "Resetar Senha"}
-              </Button>
-            </div>
+            <Switch checked={active} onCheckedChange={setActive} />
+          </div>
+          <div className="space-y-2">
+            <Label>Senha</Label>
+            <Button type="button" variant="outline" onClick={handleResetPassword} disabled={isResetting || !collaborator} className="w-full rounded-xl h-11 border-[#E4E6F0]">
+              <KeyRound className="h-4 w-4 mr-2" />
+              {confirmingReset ? "Confirmar reset de senha" : isResetting ? "Gerando..." : "Resetar Senha"}
+            </Button>
+            {confirmingReset ? (
+              <p className="text-xs text-[#8A8FA3]">
+                Clique novamente para confirmar. Uma nova senha temporária de 12 caracteres será gerada.
+              </p>
+            ) : (
+              <p className="hidden" />
+            )}
           </div>
           {newPassword ? (
             <div className="rounded-xl border border-[#D6F0DB] bg-[#F0FAF2] p-4">
