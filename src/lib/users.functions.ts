@@ -71,90 +71,189 @@ export const createCollaborator = createServerFn({ method: "POST" })
       normalizedEmail.endsWith(ALLOWED_DOMAINS[0] as string) ||
       normalizedEmail.endsWith(ALLOWED_DOMAINS[1] as string);
 
-    let result: { email: string; temporaryPassword: string; userId: string };
-
-    if (domainOk) {
-      const temporaryPassword = generateTemporaryPassword(12);
-
-      const { data: created, error: createError } =
-        await supabaseAdmin.auth.admin.createUser({
-          email: normalizedEmail,
-          password: temporaryPassword,
-          email_confirm: true,
-          user_metadata: { full_name: data.fullName.trim() },
-        });
-
-      if (createError) {
-        throw new Error(createError.message);
-      } else {
-        const userId = created.user.id;
-        const commercialRoles =
-          data.commercialRoles && data.commercialRoles.length > 0
-            ? data.commercialRoles
-            : null;
-
-        const profilePayload = {
-          full_name: data.fullName.trim(),
-          function: data.function,
-          employment_type: data.employmentType,
-          squad_id: data.squadId ?? null,
-          commercial_roles: commercialRoles,
-          must_change_password: true,
-          active: true,
-        };
-
-        // A linha base em profiles já é criada pelo trigger
-        // on_auth_user_created_profile — então atualizamos em vez de inserir.
-        const { data: updatedRows, error: updateError } = await supabaseAdmin
-          .from("profiles")
-          .update(profilePayload as never)
-          .eq("id", userId)
-          .select("id");
-
-        if (updateError) {
-          // Evita usuario orfao no auth quando o profile falha
-          await supabaseAdmin.auth.admin.deleteUser(userId);
-          throw new Error(updateError.message);
-        }
-
-        // Fallback raro: se o trigger não disparou a tempo (0 linhas afetadas),
-        // faz UPSERT para funcionar nos dois cenários sem erro de duplicate key.
-        if (!updatedRows || updatedRows.length === 0) {
-          const { error: upsertError } = await supabaseAdmin
-            .from("profiles")
-            .upsert({ id: userId, ...profilePayload } as never, {
-              onConflict: "id",
-            });
-
-          if (upsertError) {
-            // Evita usuario orfao no auth quando o profile falha
-            await supabaseAdmin.auth.admin.deleteUser(userId);
-            throw new Error(upsertError.message);
-          }
-        }
-
-        {
-          const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
-            user_id: userId,
-            role: data.role,
-          } as never);
-
-          if (roleError) {
-            throw new Error(roleError.message);
-          } else {
-            result = {
-              email: normalizedEmail,
-              temporaryPassword,
-              userId,
-            };
-          }
-        }
-      }
-    } else {
+    if (!domainOk) {
       throw new Error(DOMAIN_ERROR);
     }
 
-    return result;
+    const temporaryPassword = generateTemporaryPassword(12);
+    const commercialRolesForPayload =
+      data.commercialRoles && data.commercialRoles.length > 0 ? data.commercialRoles : null;
+
+    const profilePayload = {
+      full_name: data.fullName.trim(),
+      function: data.function,
+      employment_type: data.employmentType,
+      squad_id: data.squadId ?? null,
+      commercial_roles: commercialRolesForPayload,
+      must_change_password: true,
+      active: true,
+    };
+
+    // listUsers não tem filtro por e-mail — varre páginas como em
+    // setup.functions.ts / listCollaborators.
+    const findUserIdByEmail = async (email: string): Promise<string | null> => {
+      const target = email.trim().toLowerCase();
+      for (let page = 1; page <= 10; page = page + 1) {
+        const { data: listed, error: listError } =
+          await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+        if (listError) {
+          break;
+        }
+        const users = (listed?.users ?? []) as Array<{ id: string; email?: string | null }>;
+        if (users.length === 0) {
+          break;
+        }
+        const found = users.find(
+          (u) => typeof u.email === "string" && u.email.toLowerCase() === target,
+        );
+        if (found) {
+          return found.id;
+        }
+        if (users.length < 1000) {
+          break;
+        }
+      }
+      return null;
+    };
+
+    const completeProfileAndRole = async (userId: string) => {
+      const { data: updatedRows, error: updateError } = await supabaseAdmin
+        .from("profiles")
+        .update(profilePayload as never)
+        .eq("id", userId)
+        .select("id");
+
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      if (!updatedRows || updatedRows.length === 0) {
+        const { error: upsertError } = await supabaseAdmin
+          .from("profiles")
+          .upsert({ id: userId, ...profilePayload } as never, {
+            onConflict: "id",
+          });
+        if (upsertError) {
+          throw new Error(upsertError.message);
+        }
+      }
+
+      const { data: existingRoles } = await supabaseAdmin
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", userId)
+        .limit(1);
+
+      const roleList = (existingRoles ?? []) as Array<{ id: string }>;
+      if (roleList.length > 0) {
+        const { error: roleUpdateError } = await supabaseAdmin
+          .from("user_roles")
+          .update({ role: data.role } as never)
+          .eq("user_id", userId);
+        if (roleUpdateError) {
+          throw new Error(roleUpdateError.message);
+        }
+      } else {
+        const { error: roleInsertError } = await supabaseAdmin
+          .from("user_roles")
+          .insert({ user_id: userId, role: data.role } as never);
+        if (roleInsertError) {
+          throw new Error(roleInsertError.message);
+        }
+      }
+    };
+
+    const isAlreadyRegisteredError = (message: string): boolean => {
+      const msg = (message ?? "").toLowerCase();
+      return (
+        msg.includes("already") ||
+        msg.includes("already registered") ||
+        msg.includes("already exists") ||
+        msg.includes("duplicate")
+      );
+    };
+
+    // 1. Pre-checagem: e-mail já existe em auth.users? (caso do orfao)
+    const preExistingId = await findUserIdByEmail(normalizedEmail);
+    if (preExistingId) {
+      const [{ data: existingProfile }, { data: existingRoles }] = await Promise.all([
+        supabaseAdmin.from("profiles").select("id").eq("id", preExistingId).maybeSingle(),
+        supabaseAdmin.from("user_roles").select("id").eq("user_id", preExistingId).limit(1),
+      ]);
+
+      const hasProfile = !!existingProfile;
+      const hasRole = ((existingRoles ?? []) as Array<{ id: string }>).length > 0;
+
+      if (hasProfile && hasRole) {
+        throw new Error("Este e-mail já está cadastrado no sistema.");
+      }
+
+      // Orfao: completa o cadastro existente em vez de criar do zero.
+      const { error: resetError } = await supabaseAdmin.auth.admin.updateUserById(
+        preExistingId,
+        { password: temporaryPassword, email_confirm: true },
+      );
+      if (resetError) {
+        throw new Error(resetError.message);
+      }
+
+      await completeProfileAndRole(preExistingId);
+
+      return { email: normalizedEmail, temporaryPassword, userId: preExistingId };
+    }
+
+    const { data: created, error: createError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email: normalizedEmail,
+        password: temporaryPassword,
+        email_confirm: true,
+        user_metadata: { full_name: data.fullName.trim() },
+      });
+
+    if (createError) {
+      // Race: e-mail criado entre a pre-checagem e o createUser.
+      if (isAlreadyRegisteredError(createError.message)) {
+        const racedId = await findUserIdByEmail(normalizedEmail);
+        if (racedId) {
+          const [{ data: racedProfile }, { data: racedRoles }] = await Promise.all([
+            supabaseAdmin.from("profiles").select("id").eq("id", racedId).maybeSingle(),
+            supabaseAdmin.from("user_roles").select("id").eq("user_id", racedId).limit(1),
+          ]);
+          const racedComplete =
+            !!racedProfile && ((racedRoles ?? []) as Array<{ id: string }>).length > 0;
+          if (!racedComplete) {
+            const { error: resetError } = await supabaseAdmin.auth.admin.updateUserById(
+              racedId,
+              { password: temporaryPassword, email_confirm: true },
+            );
+            if (!resetError) {
+              await completeProfileAndRole(racedId);
+              return { email: normalizedEmail, temporaryPassword, userId: racedId };
+            }
+          }
+        }
+        throw new Error("Este e-mail já está cadastrado no sistema.");
+      }
+      throw new Error(createError.message);
+    }
+
+    const userId = created.user.id;
+
+    try {
+      await completeProfileAndRole(userId);
+    } catch (err) {
+      // Evita usuario orfao no auth quando o profile/role falha.
+      // O deleteUser fica aqui (fora do caminho do erro de duplicate key da
+      // versao antiga) e com try/catch proprio para nao mascarar o erro original.
+      try {
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+      } catch {
+        // Mantem o erro original se a limpeza tambem falhar
+      }
+      throw err instanceof Error ? err : new Error(String(err));
+    }
+
+    return { email: normalizedEmail, temporaryPassword, userId };
   });
 
 const updateCollaboratorSchema = z.object({
