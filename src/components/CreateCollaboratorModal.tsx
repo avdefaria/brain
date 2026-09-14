@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -71,6 +71,7 @@ export function CreateCollaboratorModal({
   const [formError, setFormError] = useState<string | null>(null);
   const [credential, setCredential] = useState<CreatedCredential | null>(null);
   const [copied, setCopied] = useState(false);
+  const submittingRef = useRef(false);
 
   const fetchSquads = useServerFn(getSquads);
   const createCollaboratorFn = useServerFn(createCollaborator);
@@ -103,10 +104,9 @@ export function CreateCollaboratorModal({
 
   const handleClose = (nextOpen: boolean) => {
     if (isSubmitting) {
-      onOpenChange(false);
-    } else {
-      onOpenChange(nextOpen);
+      return;
     }
+    onOpenChange(nextOpen);
   };
 
   const handleCopy = async () => {
@@ -130,6 +130,7 @@ export function CreateCollaboratorModal({
     setCredential(null);
   };
   const handleSubmit = async () => {
+    if (submittingRef.current || isSubmitting) return;
     setFormError(null);
     if (fullName.trim().length < 2) {
       setFormError("Informe o nome completo.");
@@ -137,6 +138,7 @@ export function CreateCollaboratorModal({
       if (email.trim().length === 0) {
         setFormError("Informe o e-mail corporativo.");
       } else {
+        submittingRef.current = true;
         setIsSubmitting(true);
         try {
           const result = await createCollaboratorFn({
@@ -172,6 +174,7 @@ export function CreateCollaboratorModal({
           setFormError(message);
           toast.error(message);
         } finally {
+          submittingRef.current = false;
           setIsSubmitting(false);
         }
       }

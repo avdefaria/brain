@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -83,6 +83,8 @@ export function EditCollaboratorModal({
   const [formError, setFormError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const savingRef = useRef(false);
+  const resettingRef = useRef(false);
 
   const fetchSquads = useServerFn(getSquads);
   const updateCollaboratorFn = useServerFn(updateCollaborator);
@@ -133,10 +135,9 @@ export function EditCollaboratorModal({
 
   const handleClose = (nextOpen: boolean) => {
     if (isSaving || isResetting) {
-      onOpenChange(false);
-    } else {
-      onOpenChange(nextOpen);
+      return;
     }
+    onOpenChange(nextOpen);
   };
 
   const handleCopyPassword = async () => {
@@ -156,11 +157,13 @@ export function EditCollaboratorModal({
   };
 
   const handleSave = async () => {
+    if (savingRef.current || isSaving) return;
     setFormError(null);
     if (fullName.trim().length < 2) {
       setFormError("Informe o nome completo.");
     } else {
       if (collaborator) {
+        savingRef.current = true;
         setIsSaving(true);
         try {
           await updateCollaboratorFn({
@@ -191,6 +194,7 @@ export function EditCollaboratorModal({
           setFormError(message);
           toast.error(message);
         } finally {
+          savingRef.current = false;
           setIsSaving(false);
         }
       } else {
@@ -200,9 +204,11 @@ export function EditCollaboratorModal({
   };
 
   const handleResetPassword = async () => {
+    if (resettingRef.current || isResetting) return;
     setFormError(null);
     if (collaborator) {
       if (confirmingReset) {
+        resettingRef.current = true;
         setIsResetting(true);
         try {
           const result = await resetPasswordFn({
@@ -217,6 +223,7 @@ export function EditCollaboratorModal({
           setFormError(message);
           toast.error(message);
         } finally {
+          resettingRef.current = false;
           setIsResetting(false);
         }
       } else {
