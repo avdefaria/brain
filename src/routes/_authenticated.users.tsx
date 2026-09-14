@@ -55,17 +55,43 @@ export const listCollaborators = createServerFn({ method: "GET" })
   .handler(async () => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: profiles, error: profilesError } = await supabaseAdmin
+    let profileList: Array<Record<string, unknown>> = [];
+
+    const { data: profilesFull, error: fullError } = await supabaseAdmin
       .from("profiles")
       .select("id, full_name, function, commercial_roles, squad_id, active, avatar_url, employment_type")
       .order("full_name");
 
+    if (!fullError) {
+      profileList = (profilesFull ?? []) as Array<Record<string, unknown>>;
+    } else {
+      const msg = (fullError.message ?? "").toLowerCase();
+      const isMissingColumn =
+        msg.includes("commercial_roles") ||
+        msg.includes("active") ||
+        (fullError as { code?: string }).code === "42703" ||
+        msg.includes("does not exist") ||
+        msg.includes("column");
+      if (isMissingColumn) {
+        const { data: profilesBase, error: baseError } = await supabaseAdmin
+          .from("profiles")
+          .select("id, full_name, function, squad_id, avatar_url, employment_type")
+          .order("full_name");
+        if (baseError) {
+          throw new Error(baseError.message);
+        } else {
+          profileList = (profilesBase ?? []) as Array<Record<string, unknown>>;
+        }
+      } else {
+        throw new Error(fullError.message);
+      }
+    }
+
     let rows: CollaboratorRow[] = [];
 
-    if (profilesError) {
-      throw new Error(profilesError.message);
+    if (profileList.length === 0) {
+      rows = [];
     } else {
-      const profileList = (profiles ?? []) as Array<Record<string, unknown>>;
       const ids = profileList
         .map((p) => p["id"] as string)
         .filter((id) => typeof id === "string" && id.length > 0);
