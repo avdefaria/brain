@@ -105,48 +105,60 @@ export const listCollaborators = createServerFn({ method: "GET" })
 
       let roleByUser = new Map<string, string>();
       if (ids.length > 0) {
-        const { data: roles } = await supabaseAdmin
-          .from("user_roles")
-          .select("user_id, role")
-          .in("user_id", ids);
-        const roleList = (roles ?? []) as Array<Record<string, unknown>>;
-        roleList.forEach((r) => {
-          const uid = r["user_id"] as string;
-          const role = r["role"] as string;
-          if (typeof uid === "string" && typeof role === "string" && !roleByUser.has(uid)) {
-            roleByUser.set(uid, role);
-          }
-        });
+        try {
+          const { data: roles } = await supabaseAdmin
+            .from("user_roles")
+            .select("user_id, role")
+            .in("user_id", ids);
+          const roleList = (roles ?? []) as Array<Record<string, unknown>>;
+          roleList.forEach((r) => {
+            const uid = r["user_id"] as string;
+            const role = r["role"] as string;
+            if (typeof uid === "string" && typeof role === "string" && !roleByUser.has(uid)) {
+              roleByUser.set(uid, role);
+            }
+          });
+        } catch (err) {
+          console.warn("[listCollaborators] Falha ao enriquecer user_roles, seguindo sem papel:", err);
+        }
       }
 
       let squadNameById = new Map<string, string>();
       if (squadIds.length > 0) {
-        const { data: squads } = await supabaseAdmin
-          .from("squads")
-          .select("id, name")
-          .in("id", squadIds);
-        const squadList = (squads ?? []) as Array<Record<string, unknown>>;
-        squadList.forEach((s) => {
-          const sid = s["id"] as string;
-          const name = s["name"] as string;
-          if (typeof sid === "string" && typeof name === "string") {
-            squadNameById.set(sid, name);
-          }
-        });
+        try {
+          const { data: squads } = await supabaseAdmin
+            .from("squads")
+            .select("id, name")
+            .in("id", squadIds);
+          const squadList = (squads ?? []) as Array<Record<string, unknown>>;
+          squadList.forEach((s) => {
+            const sid = s["id"] as string;
+            const name = s["name"] as string;
+            if (typeof sid === "string" && typeof name === "string") {
+              squadNameById.set(sid, name);
+            }
+          });
+        } catch (err) {
+          console.warn("[listCollaborators] Falha ao enriquecer squads, seguindo sem nome do squad:", err);
+        }
       }
 
       let emailById = new Map<string, string>();
       if (ids.length > 0) {
-        const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({
-          page: 1,
-          perPage: 1000,
-        });
-        const users = (usersData?.users ?? []) as Array<{ id: string; email?: string | null }>;
-        users.forEach((u) => {
-          if (u && typeof u.id === "string" && typeof u.email === "string") {
-            emailById.set(u.id, u.email);
-          }
-        });
+        try {
+          const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({
+            page: 1,
+            perPage: 1000,
+          });
+          const users = (usersData?.users ?? []) as Array<{ id: string; email?: string | null }>;
+          users.forEach((u) => {
+            if (u && typeof u.id === "string" && typeof u.email === "string") {
+              emailById.set(u.id, u.email);
+            }
+          });
+        } catch (err) {
+          console.warn("[listCollaborators] Falha ao enriquecer e-mails (auth.admin.listUsers), seguindo sem e-mail:", err);
+        }
       }
 
       rows = profileList.map((p) => {
@@ -200,7 +212,7 @@ function UsersPage() {
   const fetchCollaborators = useServerFn(listCollaborators);
 
   const { data: collaborators = [], isLoading, isError } = useQuery({
-    queryKey: ["collaborators"],
+    queryKey: ["collaborators-list"],
     queryFn: () => fetchCollaborators(),
   });
 
@@ -239,7 +251,7 @@ function UsersPage() {
 
   const handleCreated = (credential: CreatedCredential) => {
     setLastCredential(credential);
-    queryClient.invalidateQueries({ queryKey: ["collaborators"] });
+    queryClient.invalidateQueries({ queryKey: ["collaborators-list"] });
   };
 
   const handleOpenEdit = (collaborator: CollaboratorRow) => {
@@ -248,7 +260,7 @@ function UsersPage() {
   };
 
   const handleEditSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ["collaborators"] });
+    queryClient.invalidateQueries({ queryKey: ["collaborators-list"] });
   };
 
   return (
