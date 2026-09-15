@@ -40,6 +40,7 @@ type CollaboratorRow = {
   id: string;
   full_name: string;
   function: string | null;
+  job_function_id: string | null;
   commercial_roles: string[] | null;
   squad_id: string | null;
   squad_name: string | null;
@@ -59,7 +60,7 @@ export const listCollaborators = createServerFn({ method: "GET" })
 
     const { data: profilesFull, error: fullError } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, function, commercial_roles, squad_id, active, avatar_url, employment_type")
+      .select("id, full_name, function, job_function_id, commercial_roles, squad_id, active, avatar_url, employment_type, job_functions:job_function_id(id, name)")
       .order("full_name");
 
     if (!fullError) {
@@ -83,7 +84,20 @@ export const listCollaborators = createServerFn({ method: "GET" })
           profileList = (profilesBase ?? []) as Array<Record<string, unknown>>;
         }
       } else {
-        throw new Error(fullError.message);
+        const msgLower = (fullError.message ?? "").toLowerCase();
+        if (msgLower.includes("job_function") || msgLower.includes("job_functions")) {
+          const { data: profilesLegacy, error: legacyError } = await supabaseAdmin
+            .from("profiles")
+            .select("id, full_name, function, commercial_roles, squad_id, active, avatar_url, employment_type")
+            .order("full_name");
+          if (legacyError) {
+            throw new Error(legacyError.message);
+          } else {
+            profileList = (profilesLegacy ?? []) as Array<Record<string, unknown>>;
+          }
+        } else {
+          throw new Error(fullError.message);
+        }
       }
     }
 

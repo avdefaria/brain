@@ -25,15 +25,7 @@ import { Copy, Check, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { getSquads } from "@/lib/squads.functions";
 import { updateCollaborator, resetCollaboratorPassword } from "@/lib/users.functions";
-
-const USER_FUNCTIONS = [
-  "Designer",
-  "Copywriter",
-  "Gestor de Tráfego",
-  "Redator",
-  "Desenvolvedor",
-  "Administrador",
-] as const;
+import { JobFunctionCombobox } from "@/components/JobFunctionCombobox";
 
 const EMPLOYMENT_TYPES = ["CLT", "PJ", "Estágio"] as const;
 
@@ -49,6 +41,7 @@ export type EditCollaboratorData = {
   id: string;
   full_name: string;
   function: string | null;
+  job_function_id: string | null;
   commercial_roles: string[] | null;
   squad_id: string | null;
   employment_type: string | null;
@@ -71,7 +64,7 @@ export function EditCollaboratorModal({
   onSuccess,
 }: EditCollaboratorModalProps) {
   const [fullName, setFullName] = useState("");
-  const [userFunction, setUserFunction] = useState<string>("Designer");
+  const [jobFunctionId, setJobFunctionId] = useState<string | null>(null);
   const [commercialRoles, setCommercialRoles] = useState<string[]>([]);
   const [squadId, setSquadId] = useState<string>("none");
   const [employmentType, setEmploymentType] = useState<string>("CLT");
@@ -99,11 +92,7 @@ export function EditCollaboratorModal({
   useEffect(() => {
     if (collaborator && open) {
       setFullName(collaborator.full_name ?? "");
-      setUserFunction(
-        (USER_FUNCTIONS as readonly string[]).includes(collaborator.function ?? "")
-          ? (collaborator.function as string)
-          : "Designer",
-      );
+      setJobFunctionId(collaborator.job_function_id ?? null);
       setCommercialRoles(collaborator.commercial_roles ?? []);
       setSquadId(collaborator.squad_id ?? "none");
       setEmploymentType(
@@ -163,6 +152,9 @@ export function EditCollaboratorModal({
       setFormError("Informe o nome completo.");
     } else {
       if (collaborator) {
+        if (!jobFunctionId) {
+          setFormError("Selecione o cargo.");
+        } else {
         savingRef.current = true;
         setIsSaving(true);
         try {
@@ -170,13 +162,7 @@ export function EditCollaboratorModal({
             data: {
               userId: collaborator.id,
               fullName: fullName.trim(),
-              function: userFunction as
-                | "Designer"
-                | "Copywriter"
-                | "Gestor de Tráfego"
-                | "Redator"
-                | "Desenvolvedor"
-                | "Administrador",
+              jobFunctionId,
               commercialRoles: commercialRoles as ("SDR" | "Closer" | "Dono" | "Gestor")[],
               squadId: squadId === "none" ? null : squadId,
               employmentType: employmentType as "CLT" | "PJ" | "Estágio",
@@ -196,6 +182,7 @@ export function EditCollaboratorModal({
         } finally {
           savingRef.current = false;
           setIsSaving(false);
+        }
         }
       } else {
         setFormError("Nenhum usuário selecionado.");
@@ -258,16 +245,7 @@ export function EditCollaboratorModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Cargo / Funcao</Label>
-              <Select value={userFunction} onValueChange={setUserFunction}>
-                <SelectTrigger className="border-[#E4E6F0] rounded-xl h-11">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-[#E4E6F0]">
-                  {USER_FUNCTIONS.map((f) => (
-                    <SelectItem key={f} value={f}>{f}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <JobFunctionCombobox value={jobFunctionId} onChange={setJobFunctionId} />
             </div>
             <div className="space-y-2">
               <Label>Tipo de Contrato</Label>

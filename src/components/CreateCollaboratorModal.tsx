@@ -24,15 +24,7 @@ import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { getSquads } from "@/lib/squads.functions";
 import { createCollaborator } from "@/lib/users.functions";
-
-const USER_FUNCTIONS = [
-  "Designer",
-  "Copywriter",
-  "Gestor de Tráfego",
-  "Redator",
-  "Desenvolvedor",
-  "Administrador",
-] as const;
+import { JobFunctionCombobox } from "@/components/JobFunctionCombobox";
 
 const EMPLOYMENT_TYPES = ["CLT", "PJ", "Estágio"] as const;
 
@@ -62,7 +54,7 @@ export function CreateCollaboratorModal({
 }: CreateCollaboratorModalProps) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [userFunction, setUserFunction] = useState<string>("Designer");
+  const [jobFunctionId, setJobFunctionId] = useState<string | null>(null);
   const [commercialRoles, setCommercialRoles] = useState<string[]>([]);
   const [squadId, setSquadId] = useState<string>("none");
   const [employmentType, setEmploymentType] = useState<string>("CLT");
@@ -93,7 +85,7 @@ export function CreateCollaboratorModal({
   const resetForm = () => {
     setFullName("");
     setEmail("");
-    setUserFunction("Designer");
+    setJobFunctionId(null);
     setCommercialRoles([]);
     setSquadId("none");
     setEmploymentType("CLT");
@@ -138,6 +130,9 @@ export function CreateCollaboratorModal({
       if (email.trim().length === 0) {
         setFormError("Informe o e-mail corporativo.");
       } else {
+        if (!jobFunctionId) {
+          setFormError("Selecione o cargo.");
+        } else {
         submittingRef.current = true;
         setIsSubmitting(true);
         try {
@@ -145,13 +140,7 @@ export function CreateCollaboratorModal({
             data: {
               fullName: fullName.trim(),
               email: email.trim(),
-              function: userFunction as
-                | "Designer"
-                | "Copywriter"
-                | "Gestor de Tráfego"
-                | "Redator"
-                | "Desenvolvedor"
-                | "Administrador",
+              jobFunctionId,
               commercialRoles: commercialRoles as (
                 | "SDR"
                 | "Closer"
@@ -176,6 +165,7 @@ export function CreateCollaboratorModal({
         } finally {
           submittingRef.current = false;
           setIsSubmitting(false);
+        }
         }
       }
     }
@@ -228,16 +218,7 @@ export function CreateCollaboratorModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Cargo / Funcao</Label>
-                <Select value={userFunction} onValueChange={setUserFunction}>
-                  <SelectTrigger className="border-[#E4E6F0] rounded-xl h-11">
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-[#E4E6F0]">
-                    {USER_FUNCTIONS.map((f) => (
-                      <SelectItem key={f} value={f}>{f}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <JobFunctionCombobox value={jobFunctionId} onChange={setJobFunctionId} />
               </div>
               <div className="space-y-2">
                 <Label>Tipo de Contrato</Label>

@@ -21,10 +21,80 @@ const appRoleEnum = z.enum(["admin", "leader", "collaborator"]);
 
 const commercialRoleEnum = z.enum(["SDR", "Closer", "Dono", "Gestor"]);
 
+const LEGACY_FUNCTIONS = [
+  "Designer",
+  "Copywriter",
+  "Gestor de Tráfego",
+  "Redator",
+  "Desenvolvedor",
+  "Administrador",
+] as const;
+
+export type JobFunction = {
+  id: string;
+  name: string;
+};
+
+export const getJobFunctions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase as unknown as {
+      from: (table: string) => any;
+    };
+    const { data, error } = await supabase
+      .from("job_functions")
+      .select("id, name")
+      .order("name");
+    if (error) {
+      throw new Error(error.message);
+    } else {
+      return ((data ?? []) as unknown) as JobFunction[];
+    }
+  });
+
+export const createJobFunction = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((name: string) => z.string().trim().min(1, "Informe o nome do cargo").max(80).parse(name))
+  .handler(async ({ context, data: rawName }) => {
+    const supabase = context.supabase as unknown as {
+      from: (table: string) => any;
+    };
+    const name = rawName.trim();
+    if (name.length === 0) {
+      throw new Error("Informe o nome do cargo");
+    } else {
+      const { data: existing } = await supabase
+        .from("job_functions")
+        .select("id")
+        .ilike("name", name)
+        .maybeSingle();
+      if (existing) {
+        throw new Error("Este cargo já existe.");
+      } else {
+        const { data, error } = await supabase
+          .from("job_functions")
+          .insert({ name })
+          .select("id, name")
+          .single();
+        if (error) {
+          const msg = (error.message ?? "").toLowerCase();
+          if (msg.includes("duplicate") || msg.includes("unique") || msg.includes("already")) {
+            throw new Error("Este cargo já existe.");
+          } else {
+            throw new Error(error.message);
+          }
+        } else {
+          return (data as unknown) as JobFunction;
+        }
+      }
+    }
+  });
+
 const createCollaboratorSchema = z.object({
   fullName: z.string().trim().min(2, "Nome completo é obrigatório"),
   email: z.string().trim().email("E-mail inválido"),
-  function: userFunctionEnum,
+  function: userFunctionEnum.optional(),
+  jobFunctionId: z.string().uuid("Cargo inválido").nullable().optional(),
   commercialRoles: z.array(commercialRoleEnum).optional().default([]),
   squadId: z.string().uuid("Squad inválido").nullable().optional(),
   employmentType: employmentTypeEnum,
@@ -79,9 +149,53 @@ export const createCollaborator = createServerFn({ method: "POST" })
     const commercialRolesForPayload =
       data.commercialRoles && data.commercialRoles.length > 0 ? data.commercialRoles : null;
 
+    let resolvedJobFunctionId: string | null = data.jobFunctionId ?? null;
+    let resolvedLegacyFunction: string = data.function ?? "Designer";
+
+    if (resolvedJobFunctionId) {
+      const { data: jobRow } = await (supabaseAdmin as any)
+        .from("job_functions")
+        .select("id, name")
+        .eq("id", resolvedJobFunctionId)
+        .maybeSingle();
+      const jobName = ((jobRow ?? {}) as { name?: unknown }).name;
+      if (typeof jobName === "string" && jobName.length > 0) {
+        if ((LEGACY_FUNCTIONS as readonly string[]).includes(jobName)) {
+          resolvedLegacyFunction = jobName;
+        } else {
+          if (data.function) {
+            resolvedLegacyFunction = data.function;
+          } else {
+            resolvedLegacyFunction = "Designer";
+          }
+        }
+      } else {
+        resolvedJobFunctionId = null;
+      }
+    } else {
+      if (data.function) {
+        const { data: jobByName } = await (supabaseAdmin as any)
+          .from("job_functions")
+          .select("id")
+          .ilike("name", data.function)
+          .maybeSingle();
+        const foundId = ((jobByName ?? {}) as { id?: unknown }).id;
+        if (typeof foundId === "string" && foundId.length > 0) {
+          resolvedJobFunctionId = foundId;
+        } else {
+          resolvedJobFunctionId = null;
+        }
+        resolvedLegacyFunction = data.function;
+      } else {
+        resolvedJobFunctionId = null;
+        resolvedLegacyFunction = "Designer";
+      }
+    }
+
     const profilePayload = {
       full_name: data.fullName.trim(),
-      function: data.function,
+      function: resolvedLegacyFunction,
+      job_function_id: resolvedJobFunctionId,
       employment_type: data.employmentType,
       squad_id: data.squadId ?? null,
       commercial_roles: commercialRolesForPayload,
@@ -259,7 +373,8 @@ export const createCollaborator = createServerFn({ method: "POST" })
 const updateCollaboratorSchema = z.object({
   userId: z.string().uuid("Usuário inválido"),
   fullName: z.string().trim().min(2, "Nome completo é obrigatório"),
-  function: userFunctionEnum,
+  function: userFunctionEnum.optional(),
+  jobFunctionId: z.string().uuid("Cargo inválido").nullable().optional(),
   commercialRoles: z.array(commercialRoleEnum).optional().default([]),
   squadId: z.string().uuid("Squad inválido").nullable().optional(),
   employmentType: employmentTypeEnum,
@@ -280,16 +395,75 @@ export const updateCollaborator = createServerFn({ method: "POST" })
         ? data.commercialRoles
         : null;
 
+    let resolvedJobFunctionId: string | null = data.jobFunctionId ?? null;
+    let resolvedLegacyFunction: string | null = data.function ?? null;
+
+    if (resolvedJobFunctionId) {
+      const { data: jobRow } = await (supabaseAdmin as any)
+        .from("job_functions")
+        .select("id, name")
+        .eq("id", resolvedJobFunctionId)
+        .maybeSingle();
+      const jobName = ((jobRow ?? {}) as { name?: unknown }).name;
+      if (typeof jobName !== "string" || jobName.length === 0) {
+        throw new Error("Cargo inválido");
+      } else {
+        if ((LEGACY_FUNCTIONS as readonly string[]).includes(jobName)) {
+          resolvedLegacyFunction = jobName;
+        } else {
+          if (!resolvedLegacyFunction) {
+            const { data: currentProfile } = await supabaseAdmin
+              .from("profiles")
+              .select("function")
+              .eq("id", data.userId)
+              .maybeSingle();
+            const currentFn = ((currentProfile ?? {}) as { function?: unknown }).function;
+            if (typeof currentFn === "string" && currentFn.length > 0) {
+              resolvedLegacyFunction = currentFn;
+            } else {
+              resolvedLegacyFunction = "Designer";
+            }
+          }
+        }
+      }
+    } else {
+      if (data.function) {
+        const { data: jobByName } = await (supabaseAdmin as any)
+          .from("job_functions")
+          .select("id")
+          .ilike("name", data.function)
+          .maybeSingle();
+        const foundId = ((jobByName ?? {}) as { id?: unknown }).id;
+        if (typeof foundId === "string" && foundId.length > 0) {
+          resolvedJobFunctionId = foundId;
+        } else {
+          resolvedJobFunctionId = null;
+        }
+        resolvedLegacyFunction = data.function;
+      } else {
+        throw new Error("Informe o cargo");
+      }
+    }
+
+    const profileUpdate: Record<string, unknown> = {
+      full_name: data.fullName.trim(),
+      employment_type: data.employmentType,
+      squad_id: data.squadId ?? null,
+      commercial_roles: commercialRoles,
+      active: data.active,
+    };
+    if (resolvedJobFunctionId) {
+      profileUpdate["job_function_id"] = resolvedJobFunctionId;
+    } else {
+      profileUpdate["job_function_id"] = null;
+    }
+    if (resolvedLegacyFunction) {
+      profileUpdate["function"] = resolvedLegacyFunction;
+    }
+
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
-      .update({
-        full_name: data.fullName.trim(),
-        function: data.function,
-        employment_type: data.employmentType,
-        squad_id: data.squadId ?? null,
-        commercial_roles: commercialRoles,
-        active: data.active,
-      } as never)
+      .update(profileUpdate as never)
       .eq("id", data.userId);
 
     if (profileError) {
