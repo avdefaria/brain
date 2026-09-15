@@ -38,7 +38,7 @@ const USER_FUNCTIONS = [
 const EMPLOYMENT_TYPES = ["CLT", "PJ", "Estágio"] as const;
 
 const APP_ROLES = [
-  { value: "collaborator", label: "Colaborador" },
+  { value: "collaborator", label: "Usuário" },
   { value: "leader", label: "Líder" },
   { value: "admin", label: "Admin" },
 ] as const;
@@ -184,7 +184,7 @@ export function EditCollaboratorModal({
               active: active,
             },
           });
-          toast.success("Colaborador atualizado com sucesso");
+          toast.success("Usuário atualizado com sucesso");
           if (onSuccess) {
             onSuccess();
           }
@@ -198,7 +198,7 @@ export function EditCollaboratorModal({
           setIsSaving(false);
         }
       } else {
-        setFormError("Nenhum colaborador selecionado.");
+        setFormError("Nenhum usuário selecionado.");
       }
     }
   };
@@ -230,7 +230,7 @@ export function EditCollaboratorModal({
         setConfirmingReset(true);
       }
     } else {
-      setFormError("Nenhum colaborador selecionado.");
+      setFormError("Nenhum usuário selecionado.");
     }
   };
 
@@ -239,10 +239,10 @@ export function EditCollaboratorModal({
       <DialogContent className="sm:max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="mb-2">
           <DialogTitle className="text-xl font-bold text-[#0E0E16]">
-            Editar Colaborador
+            Editar Usuário
           </DialogTitle>
           <DialogDescription className="text-sm text-[#8A8FA3]">
-            Atualize os dados do colaborador. O e-mail não pode ser alterado.
+            Atualize os dados do usuário. O e-mail não pode ser alterado.
           </DialogDescription>
         </DialogHeader>
 

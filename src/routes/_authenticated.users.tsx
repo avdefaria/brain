@@ -191,7 +191,7 @@ function getInitials(name: string): string {
 }
 
 function roleLabel(role: string | null): string {
-  return role === "admin" ? "Admin" : role === "leader" ? "Líder" : role === "collaborator" ? "Colaborador" : "—";
+  return role === "admin" ? "Admin" : role === "leader" ? "Líder" : role === "collaborator" ? "Usuário" : "—";
 }
 
 export const Route = createFileRoute("/_authenticated/users")({
@@ -269,15 +269,15 @@ function UsersPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-title font-bold text-[#0E0E16]">
-            Colaboradores
+            Usuários
           </h1>
           <p className="text-[#8A8FA3] mt-1">
-            Gerencie a equipe e atribua funções no sistema.
+            Gerencie os usuários e atribua funções no sistema.
           </p>
         </div>
         <Button onClick={() => setModalOpen(true)} className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full px-6">
           <Plus className="h-4 w-4 mr-2" />
-          Cadastrar Colaborador
+          Cadastrar Usuário
         </Button>
       </div>
 
@@ -356,12 +356,12 @@ function UsersPage() {
           <div className="h-20 w-20 rounded-full bg-[#F7F8FC] flex items-center justify-center text-[#8A8FA3]">
             <Users className="h-10 w-10 animate-pulse" />
           </div>
-          <p className="text-sm text-[#8A8FA3]">Carregando colaboradores...</p>
+          <p className="text-sm text-[#8A8FA3]">Carregando usuários...</p>
         </div>
       ) : isError ? (
         <div className="flex flex-col items-center justify-center py-20 bg-white border border-dashed border-[#E4E6F0] rounded-2xl space-y-4">
           <div className="text-center max-w-sm">
-            <h3 className="text-lg font-bold text-[#0E0E16]">Não foi possível carregar os colaboradores</h3>
+            <h3 className="text-lg font-bold text-[#0E0E16]">Não foi possível carregar os usuários</h3>
             <p className="text-sm text-[#8A8FA3] mt-1">
               Tente recarregar a página.
             </p>
@@ -493,13 +493,13 @@ function UsersPage() {
             <Users className="h-10 w-10" />
           </div>
           <div className="text-center max-w-sm">
-            <h3 className="text-lg font-bold text-[#0E0E16]">Nenhum colaborador encontrado</h3>
+            <h3 className="text-lg font-bold text-[#0E0E16]">Nenhum usuário encontrado</h3>
             <p className="text-sm text-[#8A8FA3] mt-1">
               Você ainda não cadastrou nenhum membro para a sua equipe no Brain.
             </p>
           </div>
           <Button onClick={() => setModalOpen(true)} className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full">
-            Cadastrar meu primeiro colaborador
+            Cadastrar meu primeiro usuário
           </Button>
         </div>
       )}

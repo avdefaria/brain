@@ -37,7 +37,7 @@ const USER_FUNCTIONS = [
 const EMPLOYMENT_TYPES = ["CLT", "PJ", "Estágio"] as const;
 
 const APP_ROLES = [
-  { value: "collaborator", label: "Colaborador" },
+  { value: "collaborator", label: "Usuário" },
   { value: "leader", label: "Líder" },
   { value: "admin", label: "Admin" },
 ] as const;
@@ -164,13 +164,13 @@ export function CreateCollaboratorModal({
             },
           });
           setCredential(result as CreatedCredential);
-          toast.success("Colaborador cadastrado com sucesso");
+          toast.success("Usuário cadastrado com sucesso");
           if (onSuccess) {
             onSuccess(result as CreatedCredential);
           }
         } catch (err: unknown) {
           const message =
-            err instanceof Error ? err.message : "Erro ao cadastrar colaborador";
+            err instanceof Error ? err.message : "Erro ao cadastrar usuário";
           setFormError(message);
           toast.error(message);
         } finally {
@@ -185,7 +185,7 @@ export function CreateCollaboratorModal({
       <DialogContent className="sm:max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="mb-2">
           <DialogTitle className="text-xl font-bold text-[#0E0E16]">
-            Cadastrar Colaborador
+            Cadastrar Usuário
           </DialogTitle>
           <DialogDescription className="text-sm text-[#8A8FA3]">
             Apenas e-mails corporativos (@ongoo.com.br ou @ongoagency.com.br) podem ser
@@ -197,7 +197,7 @@ export function CreateCollaboratorModal({
           <div className="space-y-4 py-2">
             <div className="rounded-xl border border-[#D6F0DB] bg-[#F0FAF2] p-4">
               <p className="text-sm font-semibold text-[#0E0E16]">
-                Colaborador criado! Copie e repasse manualmente:
+                Usuário criado! Copie e repasse manualmente:
               </p>
               <p className="mt-2 text-sm text-[#0E0E16] break-all">
                 E-mail: {credential.email} — Senha temporária: {credential.temporaryPassword}
@@ -313,7 +313,7 @@ export function CreateCollaboratorModal({
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-white rounded-full px-8">
-              {isSubmitting ? "Salvando..." : "Salvar colaborador"}
+              {isSubmitting ? "Salvando..." : "Salvar usuário"}
             </Button>
           )}
         </DialogFooter>
