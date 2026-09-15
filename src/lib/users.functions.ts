@@ -99,6 +99,7 @@ const createCollaboratorSchema = z.object({
   squadId: z.string().uuid("Squad inválido").nullable().optional(),
   employmentType: employmentTypeEnum,
   role: appRoleEnum,
+  avatarUrl: z.string().trim().url("Avatar inválido").nullable().optional(),
 });
 
 type CreateCollaboratorInput = z.infer<typeof createCollaboratorSchema>;
@@ -201,6 +202,7 @@ export const createCollaborator = createServerFn({ method: "POST" })
       commercial_roles: commercialRolesForPayload,
       must_change_password: true,
       active: true,
+      avatar_url: data.avatarUrl ?? null,
     };
 
     // listUsers não tem filtro por e-mail — varre páginas como em
@@ -380,6 +382,7 @@ const updateCollaboratorSchema = z.object({
   employmentType: employmentTypeEnum,
   role: appRoleEnum,
   active: z.boolean(),
+  avatarUrl: z.string().trim().url("Avatar inválido").nullable().optional(),
 });
 
 export const updateCollaborator = createServerFn({ method: "POST" })
@@ -459,6 +462,9 @@ export const updateCollaborator = createServerFn({ method: "POST" })
     }
     if (resolvedLegacyFunction) {
       profileUpdate["function"] = resolvedLegacyFunction;
+    }
+    if (data.avatarUrl !== undefined) {
+      profileUpdate["avatar_url"] = data.avatarUrl ?? null;
     }
 
     const { error: profileError } = await supabaseAdmin
