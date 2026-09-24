@@ -60,21 +60,50 @@ export async function handleSofiaCreateTask(request: Request): Promise<Response>
     return json({ error: "Dados inválidos.", details: parsed.error.flatten() }, 400);
   }
 
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin.rpc("create_sofia_task", {
-    p_client_name: parsed.data.client_name,
-    p_account_name: parsed.data.account_name ?? null,
-    p_sku_reference: parsed.data.sku_reference ?? null,
-    p_title: parsed.data.title,
-    p_description: parsed.data.description ?? null,
-    p_assignee_name: parsed.data.assignee_name,
-  });
-
-  if (error) {
-    // Erros de negócio da função (cliente/responsável não encontrado) — não é
-    // falha do servidor, é a Sofia precisando confirmar melhor com o cliente.
-    return json({ error: error.message }, 422);
+  const supabaseUrl = process.env["SUPABASE_URL"];
+  const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("[sofia] SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY não configuradas no ambiente.");
+    return json({ error: "Integração não configurada." }, 500);
   }
 
-  return json({ task_id: data }, 200);
+  // Chamada direta via fetch, não supabase-js: o cliente supabase-js (mesmo
+  // com a service role key correta, confirmado byte a byte) devolvia
+  // "permission denied for function" nessa chamada específica em produção —
+  // causa não identificada no wrapper de fetch do client.server.ts. fetch
+  // puro com só o header apikey foi testado manualmente contra o projeto
+  // real e funciona de forma consistente, então contorna o problema.
+  let rpcResponse: Response;
+  try {
+    rpcResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/create_sofia_task`, {
+      method: "POST",
+      headers: {
+        apikey: serviceRoleKey,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        p_client_name: parsed.data.client_name,
+        p_account_name: parsed.data.account_name ?? null,
+        p_sku_reference: parsed.data.sku_reference ?? null,
+        p_title: parsed.data.title,
+        p_description: parsed.data.description ?? null,
+        p_assignee_name: parsed.data.assignee_name,
+      }),
+    });
+  } catch (err) {
+    console.error("[sofia] Falha de rede ao chamar o Supabase:", err);
+    return json({ error: "Erro ao conectar ao banco." }, 502);
+  }
+
+  if (!rpcResponse.ok) {
+    const errBody: unknown = await rpcResponse.json().catch(() => null);
+    const message =
+      (errBody as { message?: string } | null)?.message ?? "Erro ao criar tarefa.";
+    // Erros de negócio (cliente/responsável não encontrado) — não é falha do
+    // servidor, é a Sofia precisando confirmar melhor com o cliente.
+    return json({ error: message }, 422);
+  }
+
+  const taskId = await rpcResponse.json();
+  return json({ task_id: taskId }, 200);
 }
