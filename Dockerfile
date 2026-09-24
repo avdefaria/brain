@@ -7,8 +7,12 @@ COPY . .
 # Só os dois valores VITE_ (públicos por natureza — vão pro bundle do navegador
 # de qualquer forma) precisam existir em build-time. Segredos reais (service
 # role, Sofia) NUNCA entram aqui — ficam só como env de runtime, abaixo.
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_PUBLISHABLE_KEY
+# Defaults embutidos: alguns painéis de deploy (ex. Hostinger "Criar a partir
+# de URL") não repassam build args do docker-compose, então sem default o
+# build sai com esses valores vazios e o app quebra em produção. São valores
+# públicos por design (chave anon, protegida por RLS), sem risco em embutir.
+ARG VITE_SUPABASE_URL=https://pbkgvxvdwtgetomnupcy.supabase.co
+ARG VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_sZU0GTRN_YIYVY-vOIidSw_FNm-xUWk
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
 RUN bun run build
