@@ -23,9 +23,13 @@ function IndexComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--surface-2)]">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-8 bg-[var(--violet-500)] rounded-full flex items-center justify-center animate-pulse">
-          <div className="w-4 h-4 bg-[var(--surface-1)] rounded-full"></div>
-        </div>
+        <div
+          className="w-10 h-10 rounded-full animate-pulse"
+          style={{
+            background: "radial-gradient(circle at 35% 30%, var(--violet-200), var(--violet-500) 70%)",
+            boxShadow: "var(--glow-orb)",
+          }}
+        />
       </div>
     </div>
   );

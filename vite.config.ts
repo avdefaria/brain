@@ -12,4 +12,10 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Saímos do Cloudflare Workers (deploy era via Lovable Cloud) — agora hospedamos
+  // numa VPS própria (Hostinger), então o build precisa gerar um servidor Node
+  // comum em vez de um Worker.
+  nitro: {
+    preset: "node-server",
+  },
 });
