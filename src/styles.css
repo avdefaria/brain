@@ -1,15 +1,16 @@
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap");
 @import "tailwindcss" source(none);
-@source "../src";
 @import "tw-animate-css";
+@source "../src";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --radius-sm: 4px;
-  --radius-md: 8px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
   --radius-lg: 12px;
   --radius-xl: 16px;
-  --radius-2xl: 24px;
+  --radius-2xl: 20px;
   --radius-full: 9999px;
 
   --color-background: var(--background);
@@ -32,70 +33,202 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --font-title: "Sora", sans-serif;
-  --font-body: "Plus Jakarta Sans", sans-serif;
+  --font-title: "Geist", sans-serif;
+  --font-body: "Geist", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 :root {
-  --background: #F7F8FC;
-  --foreground: #0E0E16;
-  
-  --card: #FFFFFF;
-  --card-foreground: #0E0E16;
-  
-  --popover: #FFFFFF;
-  --popover-foreground: #0E0E16;
-  
-  --primary: #3D4FE8;
-  --primary-foreground: #FFFFFF;
-  
-  --secondary: #E4E6F0;
-  --secondary-foreground: #8A8FA3;
-  
-  --muted: #F7F8FC;
-  --muted-foreground: #8A8FA3;
-  
-  --accent: #3D4FE8;
-  --accent-foreground: #FFFFFF;
-  
-  --destructive: #EF4444;
+  /* ============================================================
+     Brain Design System — identidade escura/violeta (ref. Aivora).
+     Substitui integralmente a identidade clara anterior.
+     Fonte: pasta "Brain Design System" (tokens/, guidelines/).
+     ============================================================ */
+
+  /* App é dark-only. Sem isso, o navegador assume fundo claro pros
+     controles nativos (ícone do calendário de <input type="date">,
+     scrollbar etc.) e renderiza ícone escuro sobre fundo escuro —
+     invisível, parecendo que o campo não tem calendário. */
+  color-scheme: dark;
+
+  /* --- Base neutrals --- */
+  --bg-0: #08080C;
+  --bg-1: #0A0A0F;
+  --bg-2: #0F0F15;
+  --surface-1: #131318;
+  --surface-2: #17171E;
+  --surface-3: #1D1D25;
+  --surface-4: #23232D;
+
+  /* --- Ink --- */
+  --ink-1: #F5F5F7;
+  --ink-2: #C9C9D2;
+  --ink-3: #9B9BA8;
+  --ink-4: #6E6E7C;
+  --ink-inverse: #100F16;
+
+  /* --- Lines --- */
+  --line-1: rgba(255, 255, 255, .06);
+  --line-2: rgba(255, 255, 255, .10);
+  --line-3: rgba(255, 255, 255, .16);
+
+  /* --- Violeta (marca/ação) --- */
+  --violet-100: #EDE7FE;
+  --violet-200: #D8CCFD;
+  --violet-300: #C4B5FD;
+  --violet-400: #A78BFA;
+  --violet-500: #8B5CF6;
+  --violet-600: #7C3AED;
+  --violet-700: #5B21B6;
+  --violet-900: #2A1A54;
+  --violet-tint-08: rgba(139, 92, 246, .08);
+  --violet-tint-16: rgba(139, 92, 246, .16);
+  --violet-tint-28: rgba(139, 92, 246, .28);
+
+  /* --- Semântico de status --- */
+  --success: #22C55E;
+  --success-tint: rgba(34, 197, 94, .14);
+  --warning: #F5B417;
+  --warning-tint: rgba(245, 180, 23, .14);
+  --danger: #EF4444;
+  --danger-tint: rgba(239, 68, 68, .14);
+  --info: #3B82F6;
+  --info-tint: rgba(59, 130, 246, .14);
+
+  /* --- Séries de gráfico --- */
+  --chart-1: #A78BFA;
+  --chart-2: #F472B6;
+  --chart-3: #F97316;
+  --chart-4: #2DD4BF;
+  --chart-5: #3B82F6;
+  --chart-6: #22C55E;
+  --chart-7: #FACC15;
+
+  /* --- Aliases semânticos (nomenclatura do design system) --- */
+  --page-bg: var(--bg-1);
+  --surface-card: var(--surface-1);
+  --surface-card-inner: var(--surface-2);
+  --surface-hover: var(--surface-3);
+  --text-title: var(--ink-1);
+  --text-body: var(--ink-2);
+  --text-muted: var(--ink-3);
+  --text-faint: var(--ink-4);
+  --text-eyebrow: var(--ink-3);
+  --border-card: var(--line-1);
+  --border-control: var(--line-2);
+  --border-focus: var(--violet-500);
+  --action-primary-bg: var(--violet-300);
+  --action-primary-ink: var(--ink-inverse);
+  --action-primary-bg-hover: var(--violet-200);
+  --action-secondary-bg: var(--surface-3);
+  --action-secondary-ink: var(--ink-1);
+  --accent-brand: var(--violet-500);
+  --accent-soft: var(--violet-400);
+  --icon-idle: var(--ink-3);
+  --icon-active: var(--violet-300);
+
+  /* --- Tipografia --- */
+  --font-sans: "Geist", "General Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fs-display: 44px;
+  --fs-h1: 28px;
+  --fs-h2: 22px;
+  --fs-h3: 18px;
+  --fs-body: 14px;
+  --fs-body-sm: 13px;
+  --fs-label: 12px;
+  --fs-eyebrow: 11px;
+  --fs-micro: 10px;
+  --lh-tight: 1.12;
+  --lh-snug: 1.3;
+  --lh-body: 1.5;
+  --lh-loose: 1.65;
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --ls-display: -.02em;
+  --ls-title: -.01em;
+  --ls-body: 0;
+  --ls-eyebrow: .10em;
+
+  /* --- Espaçamento / raios --- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --gutter-page: 24px;
+  --gap-card: 16px;
+  --pad-card: 18px;
+  --pad-card-sm: 14px;
+  --pad-control-x: 14px;
+  --pad-control-y: 9px;
+  --sidebar-w: 232px;
+  --topbar-h: 60px;
+  --mobile-tabbar-h: 64px;
+  --hit-min: 44px;
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 12px;
+  --r-xl: 14px;
+  --r-2xl: 16px;
+  --r-3xl: 20px;
+  --r-pill: 999px;
+
+  /* --- Efeitos --- */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -12px rgba(0, 0, 0, .7);
+  --shadow-raised: 0 2px 4px rgba(0, 0, 0, .45), 0 18px 40px -16px rgba(0, 0, 0, .8);
+  --shadow-overlay: 0 24px 64px -16px rgba(0, 0, 0, .85);
+  --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, .04);
+  --glow-violet: 0 0 0 1px var(--violet-tint-28), 0 0 32px -6px rgba(139, 92, 246, .45);
+  --glow-violet-strong: 0 0 0 1px rgba(139, 92, 246, .5), 0 0 48px -4px rgba(139, 92, 246, .6);
+  --glow-orb: 0 0 24px 2px rgba(167, 139, 250, .55), 0 0 64px 8px rgba(139, 92, 246, .35);
+  --aurora-topbar: radial-gradient(120% 340% at 62% -140%, rgba(167, 139, 250, .55) 0%, rgba(93, 74, 180, .28) 32%, rgba(10, 10, 15, 0) 62%);
+  --sheen-card: linear-gradient(160deg, rgba(255, 255, 255, .05) 0%, rgba(255, 255, 255, 0) 42%);
+  --fill-sparkline: linear-gradient(180deg, rgba(167, 139, 250, .35) 0%, rgba(167, 139, 250, 0) 100%);
+  --ease-out: cubic-bezier(.22, .61, .36, 1);
+  --ease-in-out: cubic-bezier(.4, 0, .2, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 280ms;
+  --blur-panel: blur(18px);
+
+  /* --- Mapeamento pros nomes semânticos que o shadcn/ui já consome --- */
+  --background: var(--bg-1);
+  --foreground: var(--ink-1);
+
+  --card: var(--surface-1);
+  --card-foreground: var(--ink-1);
+
+  --popover: var(--surface-2);
+  --popover-foreground: var(--ink-1);
+
+  --primary: var(--violet-300);
+  --primary-foreground: var(--ink-inverse);
+
+  --secondary: var(--surface-3);
+  --secondary-foreground: var(--ink-1);
+
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-3);
+
+  --accent: var(--violet-500);
+  --accent-foreground: var(--ink-1);
+
+  --destructive: var(--danger);
   --destructive-foreground: #FFFFFF;
-  
-  --border: #E4E6F0;
-  --input: #E4E6F0;
-  --ring: #3D4FE8;
+
+  --border: var(--line-1);
+  --input: var(--line-2);
+  --ring: var(--violet-500);
 
   --radius: 12px;
-}
-
-.dark {
-  --background: #0E0E16;
-  --foreground: #F7F8FC;
-  
-  --card: #1A1A24;
-  --card-foreground: #F7F8FC;
-  
-  --popover: #1A1A24;
-  --popover-foreground: #F7F8FC;
-  
-  --primary: #3D4FE8;
-  --primary-foreground: #FFFFFF;
-  
-  --secondary: #2A2A36;
-  --secondary-foreground: #8A8FA3;
-  
-  --muted: #2A2A36;
-  --muted-foreground: #8A8FA3;
-  
-  --accent: #3D4FE8;
-  --accent-foreground: #FFFFFF;
-  
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  
-  --border: #2A2A36;
-  --input: #2A2A36;
-  --ring: #3D4FE8;
 }
 
 @layer base {
@@ -108,11 +241,41 @@
     color: var(--color-foreground);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-title);
-    font-weight: 700;
+    font-weight: var(--fw-medium);
+    letter-spacing: var(--ls-title);
+  }
+
+  a {
+    color: var(--violet-300);
+  }
+  a:hover {
+    color: var(--violet-200);
+  }
+
+  ::selection {
+    background: var(--violet-tint-28);
+    color: var(--ink-1);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--surface-4);
+    border-radius: var(--r-pill);
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--violet-500);
+    outline-offset: 2px;
   }
 }
 
@@ -120,8 +283,29 @@
   .pill {
     border-radius: 9999px;
   }
-  
+
   .tabular {
     font-variant-numeric: tabular-nums;
+  }
+
+  .brain-eyebrow {
+    font-size: var(--fs-eyebrow);
+    letter-spacing: var(--ls-eyebrow);
+    text-transform: uppercase;
+    color: var(--text-eyebrow);
+    font-weight: var(--fw-medium);
+  }
+
+  .brain-aurora {
+    background-image: var(--aurora-topbar);
+    background-repeat: no-repeat;
+  }
+
+  .brain-glow {
+    box-shadow: var(--glow-violet);
+  }
+
+  .brain-card-sheen {
+    background-image: var(--sheen-card);
   }
 }

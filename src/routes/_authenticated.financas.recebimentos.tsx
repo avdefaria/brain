@@ -1,28 +1,72 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DollarSign, Search, Calendar, CheckCircle2, Clock, AlertCircle, MoreVertical, ArrowUpRight, ArrowDownRight, Download, Wallet, Building2, Trash2, Check, ChevronsUpDown, Plus } from "lucide-react";
-import { useState } from "react";
+import { DollarSign, Search, Calendar, CheckCircle2, Clock, AlertCircle, MoreVertical, ArrowUpRight, ArrowDownRight, Download, Wallet, Building2, Trash2, Check, ChevronsUpDown, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getFinanceSummary, getReceivables, getRecurringClients, updateReceivableStatus, deleteReceivable, updateReceivableDueDate, updateReceivableAmount, getRevenueCategories, createRevenueCategory, createOneOffReceivable } from "@/lib/finances.functions";
+import { getFinanceSummary, getReceivables, getReceivablesSummaryTrends, getRecurringClients, updateReceivableStatus, deleteReceivable, updateReceivableDueDate, updateReceivableAmount, getRevenueCategories, createRevenueCategory, createOneOffReceivable } from "@/lib/finances.functions";
 import { getClientsWithChannels } from "@/lib/sales-channels.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { LineChart, Line, ResponsiveContainer } from "recharts";
+
+const PAGE_SIZE = 50;
+
+function MiniKpiCard({ icon: Icon, label, value, subtitle, trend, delta, color }: { icon: any; label: string; value: string; subtitle?: string; trend?: number[]; delta?: number; color: string }) {
+  const trendData = (trend && trend.length > 0 ? trend : [0]).map((v, i) => ({ i, v }));
+  const deltaColor = delta === undefined ? "text-[var(--ink-3)]" : delta > 0 ? "text-[var(--success)]" : delta < 0 ? "text-[var(--danger)]" : "text-[var(--ink-3)]";
+  const deltaLabel = delta === undefined ? null : `${delta > 0 ? "+" : ""}${delta}%`;
+  return (
+    <Card className="border-[var(--line-1)] shadow-sm">
+      <CardContent className="p-6 flex items-center gap-4">
+        <div className={cn("h-10 w-10 bg-[var(--surface-1)] border border-[var(--line-1)] rounded-2xl flex items-center justify-center shadow-sm shrink-0", color)}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] uppercase font-bold text-[var(--ink-3)] tracking-widest">{label}</p>
+          <h3 className="text-lg font-bold text-[var(--ink-1)] font-jakarta truncate">{value}</h3>
+          {subtitle && <p className="text-[10px] text-[var(--ink-3)] truncate">{subtitle}</p>}
+        </div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <div className="w-14 h-6">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+                <Line type="monotone" dataKey="v" stroke="var(--violet-500)" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          {deltaLabel && <span className={cn("text-[10px] font-bold", deltaColor)}>{deltaLabel}</span>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/financas/recebimentos")({
   component: RecebimentosPage,
@@ -32,6 +76,23 @@ function RecebimentosPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [clientFilter, setClientFilter] = useState("all");
+  const [periodPreset, setPeriodPreset] = useState<"hoje" | "semana" | "mes" | null>(null);
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [page, setPage] = useState(1);
+  const granularity: "day" | "week" | "month" = periodPreset === "hoje" ? "day" : periodPreset === "semana" ? "week" : "month";
+  const applyPreset = (preset: "hoje" | "semana" | "mes") => {
+    setPeriodPreset(preset);
+    setPage(1);
+    const now = new Date();
+    if (preset === "hoje") setDateRange({ from: startOfDay(now), to: endOfDay(now) });
+    else if (preset === "semana") setDateRange({ from: startOfWeek(now, { weekStartsOn: 1 }), to: endOfWeek(now, { weekStartsOn: 1 }) });
+    else setDateRange({ from: startOfMonth(now), to: endOfMonth(now) });
+  };
+  const clearPeriod = () => { setPeriodPreset(null); setDateRange({ from: undefined, to: undefined }); setPage(1); };
+  const periodParams = useMemo(() => ({
+    startDate: dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : null,
+    endDate: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : null,
+  }), [dateRange]);
   const [openClientCombo, setOpenClientCombo] = useState(false);
   const [editingDueDate, setEditingDueDate] = useState<any | null>(null);
   const [newDueDate, setNewDueDate] = useState("");
@@ -39,6 +100,7 @@ function RecebimentosPage() {
   const [newAmount, setNewAmount] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [liquidatingReceivable, setLiquidatingReceivable] = useState<any | null>(null);
+  const [receivableToDelete, setReceivableToDelete] = useState<string | null>(null);
   const [liquidateDate, setLiquidateDate] = useState("");
   const [savingLiquidate, setSavingLiquidate] = useState(false);
   const [recurringSearch, setRecurringSearch] = useState("");
@@ -68,6 +130,7 @@ function RecebimentosPage() {
   const [savingOneOff, setSavingOneOff] = useState(false);
 
   const fetchSummary = useServerFn(getFinanceSummary);
+  const fetchSummaryTrends = useServerFn(getReceivablesSummaryTrends);
   const fetchReceivables = useServerFn(getReceivables);
   const fetchClients = useServerFn(getClientsWithChannels);
   const fetchRecurringClients = useServerFn(getRecurringClients);
@@ -80,8 +143,13 @@ function RecebimentosPage() {
   const createOneOffFn = useServerFn(createOneOffReceivable);
 
   const { data: summary, isLoading: loadingSummary, refetch: refetchSummary } = useQuery({
-    queryKey: ['finance-summary'],
-    queryFn: () => fetchSummary()
+    queryKey: ['finance-summary', periodParams],
+    queryFn: () => fetchSummary({ data: periodParams })
+  });
+
+  const { data: summaryTrends } = useQuery({
+    queryKey: ['finance-summary-trends', granularity],
+    queryFn: () => fetchSummaryTrends({ data: { granularity } })
   });
 
   const { data: clients } = useQuery({
@@ -90,9 +158,10 @@ function RecebimentosPage() {
   });
 
   const { data: receivables, isLoading: loadingReceivables, refetch: refetchReceivables } = useQuery({
-    queryKey: ['receivables-list', statusFilter, clientFilter],
+    queryKey: ['receivables-list', statusFilter, clientFilter, periodParams],
     queryFn: () => fetchReceivables({
       data: {
+        ...periodParams,
         status: statusFilter === "all" ? null : [statusFilter],
         clientId: clientFilter === "all" ? null : clientFilter
       }
@@ -114,6 +183,10 @@ function RecebimentosPage() {
       return name.includes(term) || desc.includes(term);
     }
   });
+  const totalPages = Math.max(1, Math.ceil((filteredReceivables?.length || 0) / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedReceivables = (filteredReceivables || []).slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  useEffect(() => { setPage(1); }, [searchTerm, statusFilter, clientFilter, periodParams]);
 
   const { data: recurringClients, isLoading: loadingRecurring, refetch: refetchRecurring } = useQuery({
     queryKey: ['recurring-clients'],
@@ -150,16 +223,18 @@ function RecebimentosPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este recebível?")) return;
+  const confirmDeleteReceivable = async () => {
+    if (!receivableToDelete) return;
     try {
-      await deleteReceivableFn({ data: id });
+      await deleteReceivableFn({ data: receivableToDelete });
       toast.success("Recebível excluído");
       refetchReceivables();
       refetchSummary();
       refetchRecurring();
     } catch (error) {
       toast.error("Erro ao excluir");
+    } finally {
+      setReceivableToDelete(null);
     }
   };
 
@@ -404,121 +479,141 @@ function RecebimentosPage() {
   };
 
   const getStatusBadge = (status: string, dueDate: string) => {
-    const isOverdue = status === 'pendente' && new Date(dueDate) < new Date(new Date().setHours(0,0,0,0));
+    // Comparação por string (YYYY-MM-DD), não por Date — new Date("2026-09-20")
+    // vira meia-noite UTC, que em fusos atrás de UTC (Brasil) cai no dia anterior
+    // no horário local, marcando itens que vencem HOJE como já atrasados.
+    const isOverdue = status === 'pendente' && dueDate < (new Date().toISOString().split("T")[0] as string);
     if (status === 'pago') {
-      return (<Badge className="bg-[#22C55E]/10 text-[#22C55E] border-none rounded-full px-3 py-1 text-[10px] font-bold uppercase">Pago</Badge>);
+      return (<Badge className="bg-[var(--success)]/10 text-[var(--success)] border-none rounded-full px-3 py-1 text-[10px] font-bold uppercase">Pago</Badge>);
+    }
+    if (status === 'cancelado') {
+      return (<Badge className="bg-[var(--surface-3)] text-[var(--ink-3)] border-none rounded-full px-3 py-1 text-[10px] font-bold uppercase">Cancelado</Badge>);
     }
     if (isOverdue) {
-      return (<Badge className="bg-[#EF4444]/10 text-[#EF4444] border-none rounded-full px-3 py-1 text-[10px] font-bold uppercase">Atrasado</Badge>);
+      return (<Badge className="bg-[var(--danger)]/10 text-[var(--danger)] border-none rounded-full px-3 py-1 text-[10px] font-bold uppercase">Atrasado</Badge>);
     }
-    return (<Badge className="bg-[#F5A524]/10 text-[#F5A524] border-none rounded-full px-3 py-1 text-[10px] font-bold uppercase">Pendente</Badge>);
+    return (<Badge className="bg-[var(--warning)]/10 text-[var(--warning)] border-none rounded-full px-3 py-1 text-[10px] font-bold uppercase">Pendente</Badge>);
   };
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-title font-bold text-[#0E0E16] dark:text-white">Recebimentos</h1>
-          <p className="text-sm text-[#8A8FA3]">Controle de recebíveis e fluxo de caixa</p>
+          <h1 className="text-2xl font-title font-bold text-[var(--ink-1)]">Recebimentos</h1>
+          <p className="text-sm text-[var(--ink-3)]">Controle de recebíveis e fluxo de caixa</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1 bg-[var(--surface-1)] p-1 rounded-full border border-[var(--line-1)]">
+            {([["hoje", "Hoje"], ["semana", "Semana"], ["mes", "Mês"]] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => applyPreset(key)}
+                className={cn(
+                  "h-8 px-3 rounded-full text-xs font-bold transition-colors",
+                  periodPreset === key ? "bg-[var(--violet-500)] text-white" : "text-[var(--ink-3)] hover:bg-[var(--surface-2)]"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="h-10 px-4 rounded-full border-[var(--line-1)] bg-[var(--surface-1)] text-xs font-medium gap-2 hover:bg-[var(--surface-2)]">
+                <Calendar className="h-3.5 w-3.5 text-[var(--ink-3)]" />
+                {dateRange.from ? (dateRange.to ? <>{format(dateRange.from, "dd/MM/yy")} - {format(dateRange.to, "dd/MM/yy")}</> : format(dateRange.from, "dd/MM/yy")) : "Período"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <CalendarPicker
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange?.from || new Date()}
+                selected={{ from: dateRange?.from || undefined, to: dateRange?.to || undefined }}
+                onSelect={(range: any) => { setPeriodPreset(null); setDateRange(range || { from: undefined, to: undefined }); setPage(1); }}
+                numberOfMonths={2}
+                locale={ptBR}
+              />
+            </PopoverContent>
+          </Popover>
+          {dateRange.from && (
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-[var(--danger)] hover:bg-[var(--danger-tint)] hover:text-[var(--danger)]" onClick={clearPeriod} title="Limpar período">
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="outline" className="rounded-full border-[var(--line-1)] text-[var(--ink-3)]">
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-[#E4E6F0] shadow-sm overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-            <Wallet className="h-12 w-12 text-[#3D4FE8]" />
-          </div>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-[#8A8FA3] uppercase tracking-wider">Total a Receber</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-title font-bold text-[#0E0E16] dark:text-white">
-              {loadingSummary ? "..." : formatCurrency(summary?.totalPending || 0)}
-            </div>
-            <div className="flex items-center mt-1 text-[10px] text-[#8A8FA3]">
-              <Clock className="h-3 w-3 mr-1" />
-              Geral pendente
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-[#E4E6F0] shadow-sm overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-            <CheckCircle2 className="h-12 w-12 text-[#22C55E]" />
-          </div>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-[#8A8FA3] uppercase tracking-wider">Recebido no Mês</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-title font-bold text-[#22C55E]">
-              {loadingSummary ? "..." : formatCurrency(summary?.totalPaidMonth || 0)}
-            </div>
-            <div className="flex items-center mt-1 text-[10px] text-[#22C55E]">
-              <ArrowUpRight className="h-3 w-3 mr-1" />
-              Meta em dia
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-[#E4E6F0] shadow-sm overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-            <AlertCircle className="h-12 w-12 text-[#EF4444]" />
-          </div>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-[#8A8FA3] uppercase tracking-wider">Atrasados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-title font-bold text-[#EF4444]">
-              {loadingSummary ? "..." : formatCurrency(summary?.totalOverdue || 0)}
-            </div>
-            <div className="flex items-center mt-1 text-[10px] text-[#EF4444]">
-              <ArrowDownRight className="h-3 w-3 mr-1" />
-              Atenção necessária
-            </div>
-          </CardContent>
-        </Card>
+        <MiniKpiCard
+          icon={Wallet}
+          label="Total a Receber"
+          value={loadingSummary ? "..." : formatCurrency(summary?.totalPending || 0)}
+          subtitle={dateRange.from ? "No período selecionado" : "Geral pendente"}
+          trend={summaryTrends?.trends.pending}
+          delta={summaryTrends?.deltas.pending}
+          color="text-[var(--violet-500)]"
+        />
+        <MiniKpiCard
+          icon={CheckCircle2}
+          label={dateRange.from ? "Recebido no Período" : "Recebido no Mês"}
+          value={loadingSummary ? "..." : formatCurrency(summary?.totalPaidMonth || 0)}
+          subtitle="Pagamentos confirmados"
+          trend={summaryTrends?.trends.paid}
+          delta={summaryTrends?.deltas.paid}
+          color="text-[var(--success)]"
+        />
+        <MiniKpiCard
+          icon={AlertCircle}
+          label="Atrasados"
+          value={loadingSummary ? "..." : formatCurrency(summary?.totalOverdue || 0)}
+          subtitle="Atenção necessária"
+          color="text-[var(--danger)]"
+        />
       </div>
-      <Card className="border-[#E4E6F0] shadow-sm">
-        <CardHeader className="border-b border-[#E4E6F0] bg-[#F7F8FC]/50 p-6">
+      <Card className="border-[var(--line-1)] shadow-sm">
+        <CardHeader className="border-b border-[var(--line-1)] bg-[var(--surface-2)]/50 p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="relative w-full md:w-80">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A8FA3]" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-3)]" />
               <Input
                 placeholder="Buscar cliente..."
-                className="pl-10 border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full"
+                className="pl-10 border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <Button onClick={openOneOffModal} className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-xs font-bold">
+              <Button onClick={openOneOffModal} className="rounded-full bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90 text-xs font-bold">
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Pontual
               </Button>
-              <Button onClick={openAdjustModal} className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-xs font-bold">
+              <Button onClick={openAdjustModal} className="rounded-full bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90 text-xs font-bold">
                 Ajustar valor recorrente
               </Button>
               <Select defaultValue="all" onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px] border-[#E4E6F0] rounded-full text-xs">
+                <SelectTrigger className="w-[140px] border-[var(--line-1)] rounded-full text-xs">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos Status</SelectItem>
                   <SelectItem value="pendente">Pendente</SelectItem>
                   <SelectItem value="pago">Pago</SelectItem>
+                  <SelectItem value="cancelado">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
               <Popover open={openClientCombo} onOpenChange={setOpenClientCombo}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" role="combobox" aria-expanded={openClientCombo} className="w-[200px] justify-between border-[#E4E6F0] rounded-full text-xs font-normal">
+                  <Button variant="outline" role="combobox" aria-expanded={openClientCombo} className="w-[200px] justify-between border-[var(--line-1)] rounded-full text-xs font-normal">
                     {clientFilter === "all" ? "Todos Clientes" : clients?.find((c: any) => c.id === clientFilter)?.name}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0 border-[#E4E6F0] rounded-xl overflow-hidden" align="start">
+                <PopoverContent className="w-[200px] p-0 border-[var(--line-1)] rounded-xl overflow-hidden" align="start">
                   <Command>
                     <CommandInput placeholder="Buscar cliente..." className="h-9" />
                     <CommandList>
@@ -544,68 +639,68 @@ function RecebimentosPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loadingReceivables ? (
-            <div className="p-12 text-center text-[#8A8FA3]">Carregando dados financeiros...</div>
+            <div className="p-12 text-center text-[var(--ink-3)]">Carregando dados financeiros...</div>
           ) : filteredReceivables && filteredReceivables.length > 0 ? (
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-[#E4E6F0]">
-                  <TableHead className="font-bold text-[#0E0E16] pl-6">Cliente</TableHead>
-                  <TableHead className="font-bold text-[#0E0E16]">Contrato</TableHead>
-                  <TableHead className="font-bold text-[#0E0E16]">Vencimento</TableHead>
-                  <TableHead className="font-bold text-[#0E0E16]">Parcela</TableHead>
-                  <TableHead className="font-bold text-[#0E0E16]">Valor</TableHead>
-                  <TableHead className="font-bold text-[#0E0E16]">Status</TableHead>
-                  <TableHead className="text-right font-bold text-[#0E0E16] pr-6">Ações</TableHead>
+                <TableRow className="hover:bg-transparent border-[var(--line-1)]">
+                  <TableHead className="font-bold text-[var(--ink-1)] pl-6">Cliente</TableHead>
+                  <TableHead className="font-bold text-[var(--ink-1)]">Contrato</TableHead>
+                  <TableHead className="font-bold text-[var(--ink-1)]">Vencimento</TableHead>
+                  <TableHead className="font-bold text-[var(--ink-1)]">Parcela</TableHead>
+                  <TableHead className="font-bold text-[var(--ink-1)]">Valor</TableHead>
+                  <TableHead className="font-bold text-[var(--ink-1)]">Status</TableHead>
+                  <TableHead className="text-right font-bold text-[var(--ink-1)] pr-6">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredReceivables.map((r: any) => (
-                  <TableRow key={r.id} className="border-[#E4E6F0] hover:bg-[#F7F8FC]/50 group">
+                {paginatedReceivables.map((r: any) => (
+                  <TableRow key={r.id} className="border-[var(--line-1)] hover:bg-[var(--surface-2)]/50 group">
                     <TableCell className="pl-6">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-[#F7F8FC] flex items-center justify-center text-[#8A8FA3]">
+                        <div className="h-8 w-8 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-[var(--ink-3)]">
                           <Building2 className="h-4 w-4" />
                         </div>
                         <div>
-                          <div className="font-bold text-[#0E0E16] dark:text-white leading-none mb-1">{r.client?.name || r.client_name || "—"}</div>
-                          <div className="text-[10px] text-[#8A8FA3]">{r.description || r.payment_method || "--"}</div>
+                          <div className="font-bold text-[var(--ink-1)] leading-none mb-1">{r.client?.name || r.client_name || "—"}</div>
+                          <div className="text-[10px] text-[var(--ink-3)]">{r.description || r.payment_method || "--"}</div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="border-[#E4E6F0] text-[#8A8FA3] font-normal capitalize">
+                      <Badge variant="outline" className="border-[var(--line-1)] text-[var(--ink-3)] font-normal capitalize">
                         {r.contract?.type === 'recurring' ? 'Recorrente' : 'Avulso'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-[#0E0E16] dark:text-white font-medium">
+                    <TableCell className="text-[var(--ink-1)] font-medium">
                       {r.due_date ? format(new Date(r.due_date + 'T12:00:00'), "dd 'de' MMM", { locale: ptBR }) : "--"}
                     </TableCell>
-                    <TableCell className="text-[#8A8FA3] text-xs">{r.installment_number ? `${r.installment_number}ª` : "Única"}</TableCell>
-                    <TableCell className="font-bold text-[#0E0E16] dark:text-white">{formatCurrency(r.amount)}</TableCell>
-                    <TableCell><div className="flex flex-col gap-1 items-start">{getStatusBadge(r.status, r.due_date)}{r.status === 'pago' && r.paid_at ? (<span className="text-[10px] text-[#8A8FA3]">Pago em {format(new Date(r.paid_at), 'dd/MM')}</span>) : null}</div></TableCell>
+                    <TableCell className="text-[var(--ink-3)] text-xs">{r.installment_number ? `${r.installment_number}ª` : "Única"}</TableCell>
+                    <TableCell className="font-bold text-[var(--ink-1)]">{formatCurrency(r.amount)}</TableCell>
+                    <TableCell><div className="flex flex-col gap-1 items-start">{getStatusBadge(r.status, r.due_date)}{r.status === 'pago' && r.paid_at ? (<span className="text-[10px] text-[var(--ink-3)]">Pago em {format(new Date(r.paid_at), 'dd/MM')}</span>) : null}</div></TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex items-center justify-end gap-2">
                         {r.status === 'pendente' && (
-                          <Button size="sm" className="h-8 bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full px-4 text-[10px] font-bold" onClick={() => openLiquidateModal(r)}>
+                          <Button size="sm" className="h-8 bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90 rounded-full px-4 text-[10px] font-bold" onClick={() => openLiquidateModal(r)}>
                             Liquidar
                           </Button>
                         )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-[#8A8FA3]">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--ink-3)]">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48 border-[#E4E6F0] rounded-xl">
-                            <DropdownMenuLabel className="text-[10px] font-bold text-[#8A8FA3] uppercase">Opções</DropdownMenuLabel>
+                          <DropdownMenuContent align="end" className="w-48 border-[var(--line-1)] rounded-xl">
+                            <DropdownMenuLabel className="text-[10px] font-bold text-[var(--ink-3)] uppercase">Opções</DropdownMenuLabel>
                             <DropdownMenuItem className="gap-2 cursor-pointer" onSelect={() => openDueDateModal(r)}>
-                              <Calendar className="h-4 w-4 text-[#8A8FA3]" /> Alterar vencimento
+                              <Calendar className="h-4 w-4 text-[var(--ink-3)]" /> Alterar vencimento
                             </DropdownMenuItem>
                             <DropdownMenuItem className="gap-2 cursor-pointer" onSelect={() => openAmountModal(r)}>
-                              <DollarSign className="h-4 w-4 text-[#8A8FA3]" /> Editar valor
+                              <DollarSign className="h-4 w-4 text-[var(--ink-3)]" /> Editar valor
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="gap-2 cursor-pointer text-red-500 focus:text-red-500" onClick={() => handleDelete(r.id)}>
+                            <DropdownMenuItem className="gap-2 cursor-pointer text-[var(--danger)] focus:text-[var(--danger)]" onClick={() => setReceivableToDelete(r.id)}>
                               <Trash2 className="h-4 w-4" /> Excluir
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -618,31 +713,47 @@ function RecebimentosPage() {
             </Table>
           ) : (
             <div className="p-20 text-center flex flex-col items-center justify-center space-y-4">
-              <div className="h-16 w-16 rounded-full bg-[#F7F8FC] flex items-center justify-center text-[#8A8FA3]">
+              <div className="h-16 w-16 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-[var(--ink-3)]">
                 <DollarSign className="h-8 w-8 opacity-20" />
               </div>
               <div>
-                <h3 className="text-lg font-title font-bold text-[#0E0E16]">Nenhum recebível</h3>
-                <p className="text-sm text-[#8A8FA3]">Os recebíveis aparecem aqui conforme os contratos são criados.</p>
+                <h3 className="text-lg font-title font-bold text-[var(--ink-1)]">Nenhum recebível</h3>
+                <p className="text-sm text-[var(--ink-3)]">Os recebíveis aparecem aqui conforme os contratos são criados.</p>
+              </div>
+            </div>
+          )}
+          {filteredReceivables && filteredReceivables.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between border-t border-[var(--line-1)] px-6 py-4">
+              <p className="text-xs text-[var(--ink-3)]">
+                Mostrando {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredReceivables.length)} de {filteredReceivables.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-[var(--line-1)]" disabled={currentPage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs font-bold text-[var(--ink-1)] px-2">Página {currentPage} de {totalPages}</span>
+                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-[var(--line-1)]" disabled={currentPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
-      <Card className="border-[#E4E6F0] shadow-sm">
-        <CardHeader className="border-b border-[#E4E6F0] bg-[#F7F8FC]/50 p-6">
+      <Card className="border-[var(--line-1)] shadow-sm">
+        <CardHeader className="border-b border-[var(--line-1)] bg-[var(--surface-2)]/50 p-6">
           <div className="flex flex-col gap-4">
             <div>
-              <CardTitle className="font-title font-bold text-[#0E0E16] dark:text-white">Clientes Recorrentes</CardTitle>
-              <p className="text-xs text-[#8A8FA3] mt-1">Um registro por cliente com contrato recorrente ativo</p>
+              <CardTitle className="font-title font-bold text-[var(--ink-1)]">Clientes Recorrentes</CardTitle>
+              <p className="text-xs text-[var(--ink-3)] mt-1">Um registro por cliente com contrato recorrente ativo</p>
             </div>
             <div className="flex flex-col md:flex-row md:items-center gap-3">
               <div className="relative w-full md:w-80">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A8FA3]" />
-                <Input placeholder="Buscar cliente..." className="pl-10 border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" value={recurringSearch} onChange={(e) => setRecurringSearch(e.target.value)} />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-3)]" />
+                <Input placeholder="Buscar cliente..." className="pl-10 border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-full" value={recurringSearch} onChange={(e) => setRecurringSearch(e.target.value)} />
               </div>
               <Select value={recurringPaymentFilter} onValueChange={setRecurringPaymentFilter}>
-                <SelectTrigger className="w-[160px] border-[#E4E6F0] rounded-full text-xs">
+                <SelectTrigger className="w-[160px] border-[var(--line-1)] rounded-full text-xs">
                   <SelectValue placeholder="Status Pagamento" />
                 </SelectTrigger>
                 <SelectContent>
@@ -656,11 +767,11 @@ function RecebimentosPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loadingRecurring ? (
-            <div className="p-12 text-center text-sm text-[#8A8FA3]">Carregando clientes...</div>
+            <div className="p-12 text-center text-sm text-[var(--ink-3)]">Carregando clientes...</div>
           ) : filteredRecurringClients.length > 0 ? (
             <Table>
               <TableHeader>
-                <TableRow className="bg-[#F7F8FC]/50">
+                <TableRow className="bg-[var(--surface-2)]/50">
                   <TableHead className="pl-6">Cliente</TableHead>
                   <TableHead>Localização</TableHead>
                   <TableHead>Mensalidade</TableHead>
@@ -672,15 +783,15 @@ function RecebimentosPage() {
               </TableHeader>
               <TableBody>
                 {filteredRecurringClients.map((c: any) => (
-                  <TableRow key={c.client_id} className="border-[#E4E6F0] hover:bg-[#F7F8FC]/50">
-                    <TableCell className="pl-6 font-medium text-[#0E0E16]">{c.client_name}</TableCell>
-                    <TableCell className="text-[#8A8FA3] text-sm">{[c.city, c.state].filter(Boolean).join(" / ") || "—"}</TableCell>
-                    <TableCell className="text-[#0E0E16]">{c.monthly_value != null ? formatCurrency(c.monthly_value) : "—"}</TableCell>
-                    <TableCell className="font-bold text-[#0E0E16]">{formatCurrency(c.ltv)}</TableCell>
-                    <TableCell className="text-[#8A8FA3] text-sm">{c.remaining_months != null ? `${c.remaining_months} de ${c.mrr_months}` : "—"}</TableCell>
-                    <TableCell className="text-[#0E0E16]">{c.health_score ?? "—"}</TableCell>
+                  <TableRow key={c.client_id} className="border-[var(--line-1)] hover:bg-[var(--surface-2)]/50">
+                    <TableCell className="pl-6 font-medium text-[var(--ink-1)]">{c.client_name}</TableCell>
+                    <TableCell className="text-[var(--ink-3)] text-sm">{[c.city, c.state].filter(Boolean).join(" / ") || "—"}</TableCell>
+                    <TableCell className="text-[var(--ink-1)]">{c.monthly_value != null ? formatCurrency(c.monthly_value) : "—"}</TableCell>
+                    <TableCell className="font-bold text-[var(--ink-1)]">{formatCurrency(c.ltv)}</TableCell>
+                    <TableCell className="text-[var(--ink-3)] text-sm">{c.remaining_months != null ? `${c.remaining_months} de ${c.mrr_months}` : "—"}</TableCell>
+                    <TableCell className="text-[var(--ink-1)]">{c.health_score ?? "—"}</TableCell>
                     <TableCell className="pr-6">
-                      <Badge className={cn("rounded-full border-0 px-3 py-1 text-xs font-semibold", c.payment_status === "atrasado" ? "bg-[#EF4444]/10 text-[#EF4444]" : "bg-[#22C55E]/10 text-[#22C55E]")}>
+                      <Badge className={cn("rounded-full border-0 px-3 py-1 text-xs font-semibold", c.payment_status === "atrasado" ? "bg-[var(--danger)]/10 text-[var(--danger)]" : "bg-[var(--success)]/10 text-[var(--success)]")}>
                         {c.payment_status === "atrasado" ? "Atrasado" : "Em dia"}
                       </Badge>
                     </TableCell>
@@ -690,64 +801,64 @@ function RecebimentosPage() {
             </Table>
           ) : (
             <div className="p-20 text-center flex flex-col items-center justify-center space-y-4">
-              <div className="h-16 w-16 rounded-full bg-[#F7F8FC] flex items-center justify-center text-[#8A8FA3]">
+              <div className="h-16 w-16 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-[var(--ink-3)]">
                 <DollarSign className="h-8 w-8 opacity-20" />
               </div>
               <div>
-                <h3 className="text-lg font-title font-bold text-[#0E0E16]">Nenhum cliente recorrente</h3>
-                <p className="text-sm text-[#8A8FA3]">Contratos recorrentes ativos aparecem aqui.</p>
+                <h3 className="text-lg font-title font-bold text-[var(--ink-1)]">Nenhum cliente recorrente</h3>
+                <p className="text-sm text-[var(--ink-3)]">Contratos recorrentes ativos aparecem aqui.</p>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
       <Dialog open={!!editingDueDate} onOpenChange={(open) => { if (!open) setEditingDueDate(null); }}>
-        <DialogContent className="sm:max-w-md rounded-2xl border-[#E4E6F0]">
+        <DialogContent className="sm:max-w-md rounded-2xl border-[var(--line-1)]">
           <DialogHeader>
-            <DialogTitle className="font-title font-bold text-[#0E0E16]">Alterar vencimento</DialogTitle>
+            <DialogTitle className="font-title font-bold text-[var(--ink-1)]">Alterar vencimento</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <p className="text-xs text-[#8A8FA3]">
+            <p className="text-xs text-[var(--ink-3)]">
               {editingDueDate?.client?.name ? `${editingDueDate.client.name} • ` : ""}{editingDueDate?.installment_number ? `${editingDueDate.installment_number}ª parcela` : "Parcela única"}
             </p>
-            <Input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+            <Input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} className="border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-full" />
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]" onClick={() => setEditingDueDate(null)} disabled={savingEdit}>Cancelar</Button>
-            <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90" onClick={handleSaveDueDate} disabled={savingEdit}>{savingEdit ? "Salvando..." : "Salvar"}</Button>
+            <Button variant="outline" className="rounded-full border-[var(--line-1)] text-[var(--ink-3)]" onClick={() => setEditingDueDate(null)} disabled={savingEdit}>Cancelar</Button>
+            <Button className="rounded-full bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90" onClick={handleSaveDueDate} disabled={savingEdit}>{savingEdit ? "Salvando..." : "Salvar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       <Dialog open={!!editingAmount} onOpenChange={(open) => { if (!open) setEditingAmount(null); }}>
-        <DialogContent className="sm:max-w-md rounded-2xl border-[#E4E6F0]">
+        <DialogContent className="sm:max-w-md rounded-2xl border-[var(--line-1)]">
           <DialogHeader>
-            <DialogTitle className="font-title font-bold text-[#0E0E16]">Editar valor</DialogTitle>
+            <DialogTitle className="font-title font-bold text-[var(--ink-1)]">Editar valor</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <p className="text-xs text-[#8A8FA3]">
+            <p className="text-xs text-[var(--ink-3)]">
               {editingAmount?.client?.name ? `${editingAmount.client.name} • ` : ""}{editingAmount?.installment_number ? `${editingAmount.installment_number}ª parcela` : "Parcela única"}
             </p>
-            <Input type="number" min="0.01" step="0.01" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+            <Input type="number" min="0.01" step="0.01" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} className="border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-full" />
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]" onClick={() => setEditingAmount(null)} disabled={savingEdit}>Cancelar</Button>
-            <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90" onClick={handleSaveAmount} disabled={savingEdit}>{savingEdit ? "Salvando..." : "Salvar"}</Button>
+            <Button variant="outline" className="rounded-full border-[var(--line-1)] text-[var(--ink-3)]" onClick={() => setEditingAmount(null)} disabled={savingEdit}>Cancelar</Button>
+            <Button className="rounded-full bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90" onClick={handleSaveAmount} disabled={savingEdit}>{savingEdit ? "Salvando..." : "Salvar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       <Dialog open={adjustOpen} onOpenChange={(open) => { if (!open) setAdjustOpen(false); }}>
-        <DialogContent className="sm:max-w-md rounded-2xl border-[#E4E6F0]">
+        <DialogContent className="sm:max-w-md rounded-2xl border-[var(--line-1)]">
           <DialogHeader>
-            <DialogTitle className="font-title font-bold text-[#0E0E16]">Ajustar valor recorrente</DialogTitle>
-            <DialogDescription className="text-xs text-[#8A8FA3]">
+            <DialogTitle className="font-title font-bold text-[var(--ink-1)]">Ajustar valor recorrente</DialogTitle>
+            <DialogDescription className="text-xs text-[var(--ink-3)]">
               As alterações afetarão apenas recebimentos pendentes a partir da data efetiva
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Cliente Recorrente</Label>
+              <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Cliente Recorrente</Label>
               <Select value={adjustContractId} onValueChange={(v) => setAdjustContractId(v)}>
-                <SelectTrigger className="border-[#E4E6F0] rounded-full">
+                <SelectTrigger className="border-[var(--line-1)] rounded-full">
                   <SelectValue placeholder={loadingAdjustContracts ? "Carregando..." : "Selecione o cliente"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -760,60 +871,60 @@ function RecebimentosPage() {
               </Select>
             </div>
             {selectedAdjustContract ? (
-              <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#F7F8FC] border border-[#E4E6F0] p-3">
+              <div className="grid grid-cols-2 gap-3 rounded-xl bg-[var(--surface-2)] border border-[var(--line-1)] p-3">
                 <div>
-                  <p className="text-[10px] font-bold text-[#8A8FA3] uppercase">Valor Atual</p>
-                  <p className="text-sm font-bold text-[#0E0E16]">
+                  <p className="text-[10px] font-bold text-[var(--ink-3)] uppercase">Valor Atual</p>
+                  <p className="text-sm font-bold text-[var(--ink-1)]">
                     {selectedAdjustContract.monthly_value != null ? formatCurrency(Number(selectedAdjustContract.monthly_value)) : "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-[#8A8FA3] uppercase">Tipo de Contrato</p>
-                  <p className="text-sm font-bold text-[#0E0E16]">
+                  <p className="text-[10px] font-bold text-[var(--ink-3)] uppercase">Tipo de Contrato</p>
+                  <p className="text-sm font-bold text-[var(--ink-1)]">
                     {selectedAdjustContract.type === "recurring" ? "Recorrente" : String(selectedAdjustContract.type || "—")}
                   </p>
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-[#8A8FA3]">Selecione um cliente para ver o valor atual e o tipo de contrato.</p>
+              <p className="text-xs text-[var(--ink-3)]">Selecione um cliente para ver o valor atual e o tipo de contrato.</p>
             )}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Novo valor mensal</Label>
-              <Input type="number" min="0.01" step="0.01" value={newMonthlyValue} onChange={(e) => setNewMonthlyValue(e.target.value)} className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+              <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Novo valor mensal</Label>
+              <Input type="number" min="0.01" step="0.01" value={newMonthlyValue} onChange={(e) => setNewMonthlyValue(e.target.value)} className="border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-full" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Data Efetiva</Label>
-              <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+              <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Data Efetiva</Label>
+              <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-full" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Observações</Label>
-              <Textarea value={adjustNotes} onChange={(e) => setAdjustNotes(e.target.value)} placeholder="Motivo do ajuste (opcional)" className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-xl min-h-[80px]" />
+              <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Observações</Label>
+              <Textarea value={adjustNotes} onChange={(e) => setAdjustNotes(e.target.value)} placeholder="Motivo do ajuste (opcional)" className="border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-xl min-h-[80px]" />
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]" onClick={() => setAdjustOpen(false)} disabled={savingAdjust}>Cancelar</Button>
-            <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90" onClick={handleSaveAdjust} disabled={savingAdjust}>{savingAdjust ? "Salvando..." : "Salvar"}</Button>
+            <Button variant="outline" className="rounded-full border-[var(--line-1)] text-[var(--ink-3)]" onClick={() => setAdjustOpen(false)} disabled={savingAdjust}>Cancelar</Button>
+            <Button className="rounded-full bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90" onClick={handleSaveAdjust} disabled={savingAdjust}>{savingAdjust ? "Salvando..." : "Salvar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       <Dialog open={oneOffOpen} onOpenChange={(open) => { if (!open) setOneOffOpen(false); }}>
-        <DialogContent className="sm:max-w-md rounded-2xl border-[#E4E6F0]">
+        <DialogContent className="sm:max-w-md rounded-2xl border-[var(--line-1)]">
           <DialogHeader>
-            <DialogTitle className="font-title font-bold text-[#0E0E16]">Adicionar recebimento pontual</DialogTitle>
-            <DialogDescription className="text-xs text-[#8A8FA3]">
+            <DialogTitle className="font-title font-bold text-[var(--ink-1)]">Adicionar recebimento pontual</DialogTitle>
+            <DialogDescription className="text-xs text-[var(--ink-3)]">
               Preencha os dados do recebimento avulso
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Cliente</Label>
+              <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Cliente</Label>
               <div className="flex gap-2">
-                <Button type="button" variant={oneOffClientMode === "registered" ? "default" : "outline"} className={oneOffClientMode === "registered" ? "rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-xs" : "rounded-full border-[#E4E6F0] text-[#8A8FA3] text-xs"} onClick={() => setOneOffClientMode("registered")}>Cliente cadastrado</Button>
-                <Button type="button" variant={oneOffClientMode === "simple" ? "default" : "outline"} className={oneOffClientMode === "simple" ? "rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-xs" : "rounded-full border-[#E4E6F0] text-[#8A8FA3] text-xs"} onClick={() => setOneOffClientMode("simple")}>Cliente simplificado</Button>
+                <Button type="button" variant={oneOffClientMode === "registered" ? "default" : "outline"} className={oneOffClientMode === "registered" ? "rounded-full bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90 text-xs" : "rounded-full border-[var(--line-1)] text-[var(--ink-3)] text-xs"} onClick={() => setOneOffClientMode("registered")}>Cliente cadastrado</Button>
+                <Button type="button" variant={oneOffClientMode === "simple" ? "default" : "outline"} className={oneOffClientMode === "simple" ? "rounded-full bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90 text-xs" : "rounded-full border-[var(--line-1)] text-[var(--ink-3)] text-xs"} onClick={() => setOneOffClientMode("simple")}>Cliente simplificado</Button>
               </div>
               {oneOffClientMode === "registered" ? (
                 <Select value={oneOffClientId} onValueChange={(v) => setOneOffClientId(v)}>
-                  <SelectTrigger className="border-[#E4E6F0] rounded-full">
+                  <SelectTrigger className="border-[var(--line-1)] rounded-full">
                     <SelectValue placeholder="Selecione o cliente" />
                   </SelectTrigger>
                   <SelectContent>
@@ -823,29 +934,29 @@ function RecebimentosPage() {
                   </SelectContent>
                 </Select>
               ) : (
-                <Input value={oneOffClientName} onChange={(e) => setOneOffClientName(e.target.value)} placeholder="Nome do cliente" className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+                <Input value={oneOffClientName} onChange={(e) => setOneOffClientName(e.target.value)} placeholder="Nome do cliente" className="border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-full" />
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Descrição do serviço</Label>
-              <Input value={oneOffDescription} onChange={(e) => setOneOffDescription(e.target.value)} placeholder="Ex.: Consultoria de janeiro" className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+              <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Descrição do serviço</Label>
+              <Input value={oneOffDescription} onChange={(e) => setOneOffDescription(e.target.value)} placeholder="Ex.: Consultoria de janeiro" className="border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-full" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Categoria</Label>
+              <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Categoria</Label>
               <Popover open={oneOffCatOpen} onOpenChange={setOneOffCatOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" role="combobox" aria-expanded={oneOffCatOpen} className="w-full justify-between border-[#E4E6F0] rounded-full font-normal">
+                  <Button variant="outline" role="combobox" aria-expanded={oneOffCatOpen} className="w-full justify-between border-[var(--line-1)] rounded-full font-normal">
                     {selectedOneOffCategory ? selectedOneOffCategory.name : "Selecione a categoria"}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="p-0 border-[#E4E6F0] rounded-xl overflow-hidden" align="start">
+                <PopoverContent className="p-0 border-[var(--line-1)] rounded-xl overflow-hidden" align="start">
                   <Command>
                     <CommandInput placeholder="Buscar ou criar categoria..." value={oneOffCatSearch} onValueChange={setOneOffCatSearch} className="h-9" />
                     <CommandList>
                       <CommandEmpty>
                         {canCreateOneOffCat ? (
-                          <button type="button" onClick={handleCreateOneOffCategory} className="w-full text-xs font-bold text-[#3D4FE8] py-2">
+                          <button type="button" onClick={handleCreateOneOffCategory} className="w-full text-xs font-bold text-[var(--violet-500)] py-2">
                             Criar &quot;{oneOffCatSearch.trim()}&quot;
                           </button>
                         ) : "Nenhuma categoria encontrada."}
@@ -858,7 +969,7 @@ function RecebimentosPage() {
                           </CommandItem>
                         ))}
                         {canCreateOneOffCat && (
-                          <CommandItem value={oneOffCatSearch} onSelect={handleCreateOneOffCategory} className="text-xs cursor-pointer font-bold text-[#3D4FE8]">
+                          <CommandItem value={oneOffCatSearch} onSelect={handleCreateOneOffCategory} className="text-xs cursor-pointer font-bold text-[var(--violet-500)]">
                             <Plus className="mr-2 h-4 w-4" />
                             Criar &quot;{oneOffCatSearch.trim()}&quot;
                           </CommandItem>
@@ -870,27 +981,27 @@ function RecebimentosPage() {
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Valor total</Label>
-              <Input type="number" min="0.01" step="0.01" value={oneOffTotal} onChange={(e) => setOneOffTotal(e.target.value)} placeholder="0,00" className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+              <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Valor total</Label>
+              <Input type="number" min="0.01" step="0.01" value={oneOffTotal} onChange={(e) => setOneOffTotal(e.target.value)} placeholder="0,00" className="border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-full" />
             </div>
-            <div className="flex items-center justify-between rounded-xl bg-[#F7F8FC] border border-[#E4E6F0] p-3">
-              <Label className="text-xs font-bold text-[#0E0E16]">Parcelar este recebimento</Label>
+            <div className="flex items-center justify-between rounded-xl bg-[var(--surface-2)] border border-[var(--line-1)] p-3">
+              <Label className="text-xs font-bold text-[var(--ink-1)]">Parcelar este recebimento</Label>
               <Switch checked={oneOffParcelled} onCheckedChange={setOneOffParcelled} />
             </div>
             {oneOffParcelled && (
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Número de parcelas</Label>
-                <Input type="number" min="2" max="120" step="1" value={oneOffInstallments} onChange={(e) => setOneOffInstallments(e.target.value)} className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+                <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Número de parcelas</Label>
+                <Input type="number" min="2" max="120" step="1" value={oneOffInstallments} onChange={(e) => setOneOffInstallments(e.target.value)} className="border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-full" />
               </div>
             )}
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Data de vencimento</Label>
-              <Input type="date" value={oneOffDueDate} onChange={(e) => setOneOffDueDate(e.target.value)} className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+              <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Data de vencimento</Label>
+              <Input type="date" value={oneOffDueDate} onChange={(e) => setOneOffDueDate(e.target.value)} className="border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-full" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Forma de pagamento</Label>
+              <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Forma de pagamento</Label>
               <Select value={oneOffPaymentMethod} onValueChange={(v) => setOneOffPaymentMethod(v)}>
-                <SelectTrigger className="border-[#E4E6F0] rounded-full">
+                <SelectTrigger className="border-[var(--line-1)] rounded-full">
                   <SelectValue placeholder="Selecione a forma de pagamento" />
                 </SelectTrigger>
                 <SelectContent>
@@ -902,34 +1013,51 @@ function RecebimentosPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Observações</Label>
-              <Textarea value={oneOffNotes} onChange={(e) => setOneOffNotes(e.target.value)} placeholder="Informações adicionais (opcional)" className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-xl min-h-[80px]" />
+              <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Observações</Label>
+              <Textarea value={oneOffNotes} onChange={(e) => setOneOffNotes(e.target.value)} placeholder="Informações adicionais (opcional)" className="border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-xl min-h-[80px]" />
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]" onClick={() => setOneOffOpen(false)} disabled={savingOneOff}>Cancelar</Button>
-            <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90" onClick={handleSaveOneOff} disabled={savingOneOff}>{savingOneOff ? "Salvando..." : "Criar recebimento"}</Button>
+            <Button variant="outline" className="rounded-full border-[var(--line-1)] text-[var(--ink-3)]" onClick={() => setOneOffOpen(false)} disabled={savingOneOff}>Cancelar</Button>
+            <Button className="rounded-full bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90" onClick={handleSaveOneOff} disabled={savingOneOff}>{savingOneOff ? "Salvando..." : "Criar recebimento"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       <Dialog open={!!liquidatingReceivable} onOpenChange={(open) => { if (!open) setLiquidatingReceivable(null); }}>
-        <DialogContent className="sm:max-w-md rounded-2xl border-[#E4E6F0]">
+        <DialogContent className="sm:max-w-md rounded-2xl border-[var(--line-1)]">
           <DialogHeader>
-            <DialogTitle className="font-title font-bold text-[#0E0E16]">Liquidar recebimento</DialogTitle>
-            <DialogDescription className="text-xs text-[#8A8FA3]">
+            <DialogTitle className="font-title font-bold text-[var(--ink-1)]">Liquidar recebimento</DialogTitle>
+            <DialogDescription className="text-xs text-[var(--ink-3)]">
               Escolha a data de pagamento
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <Label className="text-xs font-bold text-[#8A8FA3] uppercase">Data de pagamento</Label>
-            <Input type="date" value={liquidateDate} onChange={(e) => setLiquidateDate(e.target.value)} className="border-[#E4E6F0] focus-visible:ring-[#3D4FE8] rounded-full" />
+            <Label className="text-xs font-bold text-[var(--ink-3)] uppercase">Data de pagamento</Label>
+            <Input type="date" value={liquidateDate} onChange={(e) => setLiquidateDate(e.target.value)} className="border-[var(--line-1)] focus-visible:ring-[var(--violet-500)] rounded-full" />
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3]" onClick={() => setLiquidatingReceivable(null)} disabled={savingLiquidate}>Cancelar</Button>
-            <Button className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90" onClick={handleConfirmLiquidate} disabled={savingLiquidate}>{savingLiquidate ? "Salvando..." : "Confirmar"}</Button>
+            <Button variant="outline" className="rounded-full border-[var(--line-1)] text-[var(--ink-3)]" onClick={() => setLiquidatingReceivable(null)} disabled={savingLiquidate}>Cancelar</Button>
+            <Button className="rounded-full bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90" onClick={handleConfirmLiquidate} disabled={savingLiquidate}>{savingLiquidate ? "Salvando..." : "Confirmar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!receivableToDelete} onOpenChange={(open) => !open && setReceivableToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir recebível</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este recebível? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteReceivable} className="bg-[var(--danger)] hover:bg-[var(--danger)]/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

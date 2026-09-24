@@ -64,7 +64,7 @@ export const getLeadStats = createServerFn({ method: "GET" })
     const supabase = context.supabase;
     let query = supabase
       .from('leads')
-      .select('recurring_revenue, funnel_stage, created_at, responsible_id, funnel_type_id');
+      .select('recurring_revenue, one_time_revenue, funnel_stage, created_at, responsible_id, funnel_type_id');
 
     if (data?.responsible_id && data.responsible_id !== 'all') {
       query = query.eq('responsible_id', data.responsible_id);
@@ -90,16 +90,152 @@ export const getLeadStats = createServerFn({ method: "GET" })
 
     if (error) throw error;
 
+    const openLeads = leads?.filter(l => l.funnel_stage && !['vendas_feitas', 'vendas_perdidas'].includes(l.funnel_stage)) || [];
     const stats = {
       total: leads?.length || 0,
       proposals: leads?.filter(l => l.funnel_stage === 'proposta_enviada').length || 0,
-      pipeline: leads?.filter(l => l.funnel_stage && !['vendas_feitas', 'vendas_perdidas'].includes(l.funnel_stage))
-        .reduce((acc, l) => acc + (Number(l.recurring_revenue) || 0), 0) || 0,
+      // "Previsto": valor mensal puro do pipeline em aberto (sem multiplicar pelos meses de
+      // recorrência) — mesma convenção usada no dashboard Comercial (número principal do card).
+      pipeline: openLeads.reduce((acc, l) => acc + (Number(l.recurring_revenue) || 0) + (Number(l.one_time_revenue) || 0), 0),
+      // Projeção de MRR (valor mensal x meses de recorrência) — dado complementar, mesma fórmula
+      // usada em toda a área Comercial.
+      pipelineMrr: openLeads.reduce((acc, l) => acc + (Number(l.recurring_revenue) || 0) * (Number(l.mrr_months) || 1), 0),
       sales: leads?.filter(l => l.funnel_stage === 'vendas_feitas').length || 0,
       lost: leads?.filter(l => l.funnel_stage === 'vendas_perdidas').length || 0,
     };
 
     return stats;
+  });
+
+const trendsSchema = z.object({
+  responsible_id: z.string().nullable().optional(),
+  funnel_type_id: z.string().nullable().optional(),
+  granularity: z.enum(["day", "week", "month"]).default("month"),
+});
+
+export const getLeadStatsTrends = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { responsible_id?: string | null; funnel_type_id?: string | null; granularity?: "day" | "week" | "month" }) => trendsSchema.parse(data))
+  .handler(async ({ context, data }) => {
+    const supabase = context.supabase;
+    const now = new Date();
+    const n = data.granularity === "day" ? 7 : 6;
+    const buckets: { key: string; label: string; start: Date; end: Date }[] = [];
+    const weekdayFmt = new Intl.DateTimeFormat("pt-BR", { weekday: "short" });
+    const monthFmt = new Intl.DateTimeFormat("pt-BR", { month: "short" });
+
+    if (data.granularity === "day") {
+      for (let i = n - 1; i >= 0; i--) {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 23, 59, 59, 999);
+        buckets.push({ key: start.toISOString().split("T")[0] as string, label: weekdayFmt.format(start).replace(".", ""), start, end });
+      }
+    } else if (data.granularity === "week") {
+      const day = now.getDay();
+      const diffToMonday = day === 0 ? -6 : 1 - day;
+      const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, 0, 0, 0, 0);
+      for (let i = n - 1; i >= 0; i--) {
+        const start = new Date(thisMonday); start.setDate(thisMonday.getDate() - i * 7);
+        const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23, 59, 59, 999);
+        buckets.push({ key: start.toISOString().split("T")[0] as string, label: `${String(start.getDate()).padStart(2, "0")}/${String(start.getMonth() + 1).padStart(2, "0")}`, start, end });
+      }
+    } else {
+      for (let i = n - 1; i >= 0; i--) {
+        const start = new Date(now.getFullYear(), now.getMonth() - i, 1, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+        buckets.push({ key: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`, label: monthFmt.format(start).replace(".", ""), start, end });
+      }
+    }
+
+    const windowStart = buckets[0]!.start;
+    const windowEnd = buckets[buckets.length - 1]!.end;
+
+    const applyFilters = (q: any) => {
+      if (data.responsible_id && data.responsible_id !== "all") q = q.eq("responsible_id", data.responsible_id);
+      if (data.funnel_type_id && data.funnel_type_id !== "all") q = q.eq("funnel_type_id", data.funnel_type_id);
+      return q;
+    };
+
+    const bucketOf = (iso: string | null) => {
+      if (!iso) return null;
+      const t = new Date(iso).getTime();
+      for (const b of buckets) if (t >= b.start.getTime() && t <= b.end.getTime()) return b.key;
+      return null;
+    };
+
+    const { data: createdLeads } = await applyFilters(
+      supabase.from("leads").select("id, created_at, funnel_stage, recurring_revenue, one_time_revenue, mrr_months, responsible_id, funnel_type_id").gte("created_at", windowStart.toISOString()).lte("created_at", windowEnd.toISOString())
+    );
+    const { data: convertedLeads } = await applyFilters(
+      supabase.from("leads").select("id, converted_at, responsible_id, funnel_type_id").gte("converted_at", windowStart.toISOString()).lte("converted_at", windowEnd.toISOString())
+    );
+    let lostHistoryQuery = supabase
+      .from("lead_stage_history" as any)
+      .select("lead_id, entered_at, leads!inner(responsible_id, funnel_type_id)")
+      .eq("stage", "vendas_perdidas")
+      .gte("entered_at", windowStart.toISOString())
+      .lte("entered_at", windowEnd.toISOString());
+    if (data.responsible_id && data.responsible_id !== "all") lostHistoryQuery = lostHistoryQuery.eq("leads.responsible_id", data.responsible_id);
+    if (data.funnel_type_id && data.funnel_type_id !== "all") lostHistoryQuery = lostHistoryQuery.eq("leads.funnel_type_id", data.funnel_type_id);
+    const { data: lostHistory } = await lostHistoryQuery;
+
+    const leadsList = (createdLeads as any[]) || [];
+    const convertedList = (convertedLeads as any[]) || [];
+    const lostList = (lostHistory as any[]) || [];
+
+    const zero = () => buckets.map((b) => ({ key: b.key, label: b.label, total: 0 }));
+    const leadsSeries = zero();
+    const proposalsSeries = zero();
+    const previstoSeries = zero();
+    const salesSeries = zero();
+    const lostSeries = zero();
+
+    const byKey = new Map(buckets.map((b) => [b.key, b]));
+    const idxOf = (key: string | null) => (key ? buckets.findIndex((b) => b.key === key) : -1);
+
+    for (const l of leadsList) {
+      const idx = idxOf(bucketOf(l.created_at));
+      if (idx < 0) continue;
+      leadsSeries[idx]!.total += 1;
+      if (l.funnel_stage === "proposta_enviada") proposalsSeries[idx]!.total += 1;
+      if (l.funnel_stage && !["vendas_feitas", "vendas_perdidas"].includes(l.funnel_stage)) {
+        previstoSeries[idx]!.total += (Number(l.recurring_revenue) || 0) + (Number(l.one_time_revenue) || 0);
+      }
+    }
+    for (const l of convertedList) {
+      const idx = idxOf(bucketOf(l.converted_at));
+      if (idx < 0) continue;
+      salesSeries[idx]!.total += 1;
+    }
+    for (const h of lostList) {
+      const idx = idxOf(bucketOf(h.entered_at));
+      if (idx < 0) continue;
+      lostSeries[idx]!.total += 1;
+    }
+
+    const delta = (series: { total: number }[]) => {
+      const c = series[series.length - 1]?.total || 0;
+      const p = series[series.length - 2]?.total || 0;
+      if (p === 0) return c > 0 ? 100 : 0;
+      return Math.round(((c - p) / p) * 100);
+    };
+
+    return {
+      trends: {
+        leads: leadsSeries.map((d) => d.total),
+        propostas: proposalsSeries.map((d) => d.total),
+        previsto: previstoSeries.map((d) => d.total),
+        vendas: salesSeries.map((d) => d.total),
+        perdidas: lostSeries.map((d) => d.total),
+      },
+      deltas: {
+        leads: delta(leadsSeries),
+        propostas: delta(proposalsSeries),
+        previsto: delta(previstoSeries),
+        vendas: delta(salesSeries),
+        perdidas: delta(lostSeries),
+      },
+    };
   });
 
 export const getFunnelTypes = createServerFn({ method: "GET" })
@@ -302,9 +438,16 @@ export const updateLeadPosition = createServerFn({ method: "POST" })
   .validator((data: { id: string, funnel_stage: string, position: number }) => data)
   .handler(async ({ context, data }) => {
     const supabase = context.supabase;
+
+    const { data: oldLead } = await supabase
+      .from('leads')
+      .select('funnel_stage')
+      .eq('id', data.id)
+      .single();
+
     const { error } = await supabase
       .from('leads')
-      .update({ 
+      .update({
         funnel_stage: data.funnel_stage,
         position: data.position,
         last_contact_at: new Date().toISOString()
@@ -312,5 +455,53 @@ export const updateLeadPosition = createServerFn({ method: "POST" })
       .eq('id', data.id);
 
     if (error) throw error;
+
+    // Log stage history if the stage actually changed (drag between columns,
+    // not just a reorder within the same column)
+    if (oldLead && oldLead.funnel_stage !== data.funnel_stage) {
+      await supabase
+        .from('lead_stage_history' as any)
+        .update({ exited_at: new Date().toISOString() } as any)
+        .eq('lead_id', data.id)
+        .is('exited_at', null);
+
+      await supabase
+        .from('lead_stage_history' as any)
+        .insert({
+          lead_id: data.id,
+          stage: data.funnel_stage,
+          entered_at: new Date().toISOString()
+        } as any);
+    }
+
     return { success: true };
+  });
+
+export const registerLeadContact = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { leadId: string, nextContactAt: string | null }) => data)
+  .handler(async ({ context, data }) => {
+    const supabase = context.supabase;
+
+    const { data: current, error: fetchError } = await supabase
+      .from('leads')
+      .select('contact_attempts')
+      .eq('id', data.leadId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const { data: lead, error } = await supabase
+      .from('leads')
+      .update({
+        contact_attempts: (current?.contact_attempts || 0) + 1,
+        next_contact_at: data.nextContactAt,
+        last_contact_at: new Date().toISOString(),
+      })
+      .eq('id', data.leadId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return lead;
   });

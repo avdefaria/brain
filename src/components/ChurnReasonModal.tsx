@@ -61,8 +61,8 @@ export function ChurnReasonModal({ open, onOpenChange, onConfirm, isLoading }: C
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader className="mb-4">
-          <DialogTitle className="text-xl font-bold text-[#0E0E16]">Motivo do Cancelamento</DialogTitle>
-          <DialogDescription className="text-sm text-[#8A8FA3]">
+          <DialogTitle className="text-xl font-bold text-[var(--ink-1)]">Motivo do Cancelamento</DialogTitle>
+          <DialogDescription className="text-sm text-[var(--ink-3)]">
             Por favor, selecione o motivo pelo qual o cliente está sendo desativado.
           </DialogDescription>
         </DialogHeader>
@@ -71,10 +71,10 @@ export function ChurnReasonModal({ open, onOpenChange, onConfirm, isLoading }: C
           {!isAddingNew ? (
             <div className="flex gap-2">
               <Select value={selectedReasonId} onValueChange={setSelectedReasonId}>
-                <SelectTrigger className="flex-1 border-[#E4E6F0] rounded-xl h-11">
+                <SelectTrigger className="flex-1 border-[var(--line-1)] rounded-xl h-11">
                   <SelectValue placeholder="Selecione um motivo..." />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-[#E4E6F0] shadow-lg">
+                <SelectContent className="rounded-xl border-[var(--line-1)] shadow-lg">
                   {reasons?.map((reason: any) => (
                     <SelectItem key={reason.id} value={reason.id} className="rounded-lg">
                       {reason.name}
@@ -85,24 +85,24 @@ export function ChurnReasonModal({ open, onOpenChange, onConfirm, isLoading }: C
               <Button 
                 type="button" 
                 variant="outline" 
-                className="h-11 w-11 p-0 rounded-xl border-[#E4E6F0]"
+                className="h-11 w-11 p-0 rounded-xl border-[var(--line-1)]"
                 onClick={() => setIsAddingNew(true)}
               >
-                <Plus className="h-5 w-5 text-[#8A8FA3]" />
+                <Plus className="h-5 w-5 text-[var(--ink-3)]" />
               </Button>
             </div>
           ) : (
             <div className="flex gap-2 animate-in slide-in-from-right-2 duration-300">
               <Input
                 placeholder="Novo motivo..."
-                className="flex-1 border-[#E4E6F0] rounded-xl h-11"
+                className="flex-1 border-[var(--line-1)] rounded-xl h-11"
                 value={newReasonName}
                 onChange={(e) => setNewReasonName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddNew()}
               />
               <Button 
                 type="button" 
-                className="bg-[#3D4FE8] h-11 w-11 p-0 rounded-xl"
+                className="bg-[var(--violet-500)] h-11 w-11 p-0 rounded-xl"
                 onClick={handleAddNew}
               >
                 <Check className="h-5 w-5 text-white" />
@@ -110,7 +110,7 @@ export function ChurnReasonModal({ open, onOpenChange, onConfirm, isLoading }: C
               <Button 
                 type="button" 
                 variant="ghost" 
-                className="h-11 text-[#8A8FA3]"
+                className="h-11 text-[var(--ink-3)]"
                 onClick={() => setIsAddingNew(false)}
               >
                 Cancelar
@@ -123,14 +123,14 @@ export function ChurnReasonModal({ open, onOpenChange, onConfirm, isLoading }: C
           <Button 
             variant="ghost" 
             onClick={() => onOpenChange(false)}
-            className="rounded-full text-[#8A8FA3]"
+            className="rounded-full text-[var(--ink-3)]"
           >
             Voltar
           </Button>
           <Button 
             onClick={() => onConfirm(selectedReasonId)}
             disabled={!selectedReasonId || isLoading}
-            className="bg-[#EF4444] hover:bg-[#EF4444]/90 text-white rounded-full px-8"
+            className="bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white rounded-full px-8"
           >
             {isLoading ? "Processando..." : "Confirmar Cancelamento"}
           </Button>

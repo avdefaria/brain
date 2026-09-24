@@ -16,6 +16,14 @@ dist-ssr
 .nitro
 *.local
 
+# Env files — .env já estava versionado (só com a chave pública, que é segura
+# por design), mas deixar aberto é uma armadilha: bastaria alguém colar a
+# SUPABASE_SERVICE_ROLE_KEY ali por engano pra vazar de verdade. Segredo real
+# só em .env.local (coberto por *.local acima).
+.env
+.env.*
+!.env.example
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

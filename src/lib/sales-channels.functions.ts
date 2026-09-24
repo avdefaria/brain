@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { computeRiskLevel } from "@/lib/risk-level";
 
 import { z } from "zod";
 
@@ -60,8 +61,8 @@ export const getClientsWithChannels = createServerFn({ method: "GET" })
         *,
         niches:niche_id(id, name),
         squads(name),
-        contracts(id, type, monthly_value, start_date, status, created_at),
-        receivables(id, amount, status),
+        contracts(id, type, monthly_value, total_value, start_date, renewal_date, status, created_at),
+        receivables(id, amount, status, due_date),
         accounts(
           id,
           account_squads(
@@ -71,9 +72,29 @@ export const getClientsWithChannels = createServerFn({ method: "GET" })
         ),
         client_sales_channels(
           sales_channels:sales_channel_id(id, name)
-        )
+        ),
+        client_calls(id),
+        client_onboarding_items(item_key),
+        client_offboarding_items(item_key)
       `)
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return data;
+    return ((data as any[]) || []).map((c) => ({
+      ...c,
+      risk_level: computeRiskLevel(c.health_score, c.receivables),
+    }));
+  });
+
+export const getClientStatusCounts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
+    const { data, error } = await supabase.from("clients").select("status");
+    if (error) throw error;
+    const counts: Record<string, number> = { onboarding: 0, ativo: 0, em_aviso: 0, pausado: 0, inativo: 0 };
+    for (const c of (data as any[]) || []) {
+      if (c.status in counts) counts[c.status] += 1;
+    }
+    const total = ((data as any[]) || []).length;
+    return { counts, total };
   });

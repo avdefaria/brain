@@ -25,15 +25,15 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 
 const COLORS = [
-  "#3D4FE8", // Ongo Indigo
-  "#22C55E", // Green
-  "#F5A524", // Amber
-  "#EF4444", // Red
-  "#8B5CF6", // Purple
-  "#EC4899", // Pink
-  "#06B6D4", // Cyan
-  "#F97316", // Orange
-  "#64748B", // Slate
+  "var(--violet-500)", // Ongo Indigo
+  "var(--success)", // Green
+  "var(--warning)", // Amber
+  "var(--danger)", // Red
+  "var(--violet-500)", // Purple
+  "var(--chart-2)", // Pink
+  "var(--chart-4)", // Cyan
+  "var(--chart-3)", // Orange
+  "var(--ink-3)", // Slate
 ];
 
 interface SquadManagementDialogProps {
@@ -129,7 +129,7 @@ export function SquadManagementDialog({ squad, isOpen, onOpenChange }: SquadMana
                   type="button"
                   className={cn(
                     "w-8 h-8 rounded-full transition-all border-2",
-                    selectedColor === color ? "border-[#0E0E16] scale-110" : "border-transparent"
+                    selectedColor === color ? "border-[var(--ink-1)] scale-110" : "border-transparent"
                   )}
                   style={{ backgroundColor: color }}
                   onClick={() => setSelectedColor(color)}
@@ -161,7 +161,7 @@ export function SquadManagementDialog({ squad, isOpen, onOpenChange }: SquadMana
           </Button>
           <Button 
             onClick={handleSave} 
-            className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90"
+            className="rounded-full bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90"
             disabled={mutation.isPending}
           >
             {mutation.isPending ? "Salvando..." : squad ? "Salvar" : "Criar"}

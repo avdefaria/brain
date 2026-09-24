@@ -23,6 +23,7 @@ import { Route as AuthenticatedClientsClientIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedClientsChurnRouteImport } from './routes/_authenticated.clients.churn'
 import { Route as AuthenticatedClientsContractsRouteImport } from './routes/_authenticated.clients.contracts'
 import { Route as AuthenticatedClientsManageRouteImport } from './routes/_authenticated.clients.manage'
+import { Route as AuthenticatedComercialIndexRouteImport } from './routes/_authenticated.comercial.index'
 import { Route as AuthenticatedComercialCrmRouteImport } from './routes/_authenticated.comercial.crm'
 import { Route as AuthenticatedFinancasIndexRouteImport } from './routes/_authenticated.financas.index'
 import { Route as AuthenticatedFinancasContasAPagarRouteImport } from './routes/_authenticated.financas.contas-a-pagar'
@@ -31,6 +32,7 @@ import { Route as AuthenticatedFinancasRecebimentosRouteImport } from './routes/
 import { Route as AuthenticatedProjectsContentApprovalRouteImport } from './routes/_authenticated.projects.content-approval'
 import { Route as AuthenticatedProjectsDeliverablesRouteImport } from './routes/_authenticated.projects.deliverables'
 import { Route as AuthenticatedProjectsTasksRouteImport } from './routes/_authenticated.projects.tasks'
+import { Route as AuthenticatedUsersPermissoesRouteImport } from './routes/_authenticated.users.permissoes'
 import { Route as PublicApprovalTokenRouteImport } from './routes/public.approval.$token'
 
 const IndexRoute = IndexRouteImport.update({
@@ -107,6 +109,12 @@ const AuthenticatedClientsManageRoute =
     path: '/clients/manage',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedComercialIndexRoute =
+  AuthenticatedComercialIndexRouteImport.update({
+    id: '/comercial/',
+    path: '/comercial/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedComercialCrmRoute =
   AuthenticatedComercialCrmRouteImport.update({
     id: '/comercial/crm',
@@ -155,6 +163,12 @@ const AuthenticatedProjectsTasksRoute =
     path: '/tasks',
     getParentRoute: () => AuthenticatedProjectsRoute,
   } as any)
+const AuthenticatedUsersPermissoesRoute =
+  AuthenticatedUsersPermissoesRouteImport.update({
+    id: '/permissoes',
+    path: '/permissoes',
+    getParentRoute: () => AuthenticatedUsersRoute,
+  } as any)
 const PublicApprovalTokenRoute = PublicApprovalTokenRouteImport.update({
   id: '/public/approval/$token',
   path: '/public/approval/$token',
@@ -167,7 +181,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/squads': typeof AuthenticatedSquadsRoute
   '/structure': typeof AuthenticatedStructureRoute
-  '/users': typeof AuthenticatedUsersRoute
+  '/users': typeof AuthenticatedUsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/em-breve/': typeof EmBreveIndexRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
@@ -181,8 +195,10 @@ export interface FileRoutesByFullPath {
   '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
+  '/users/permissoes': typeof AuthenticatedUsersPermissoesRoute
   '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
+  '/comercial/': typeof AuthenticatedComercialIndexRoute
   '/financas/': typeof AuthenticatedFinancasIndexRoute
 }
 export interface FileRoutesByTo {
@@ -191,7 +207,7 @@ export interface FileRoutesByTo {
   '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/squads': typeof AuthenticatedSquadsRoute
   '/structure': typeof AuthenticatedStructureRoute
-  '/users': typeof AuthenticatedUsersRoute
+  '/users': typeof AuthenticatedUsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/em-breve': typeof EmBreveIndexRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
@@ -205,8 +221,10 @@ export interface FileRoutesByTo {
   '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
+  '/users/permissoes': typeof AuthenticatedUsersPermissoesRoute
   '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
+  '/comercial': typeof AuthenticatedComercialIndexRoute
   '/financas': typeof AuthenticatedFinancasIndexRoute
 }
 export interface FileRoutesById {
@@ -217,7 +235,7 @@ export interface FileRoutesById {
   '/_authenticated/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/_authenticated/squads': typeof AuthenticatedSquadsRoute
   '/_authenticated/structure': typeof AuthenticatedStructureRoute
-  '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/_authenticated/users': typeof AuthenticatedUsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/em-breve/': typeof EmBreveIndexRoute
   '/_authenticated/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
@@ -231,8 +249,10 @@ export interface FileRoutesById {
   '/_authenticated/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/_authenticated/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
   '/_authenticated/projects/tasks': typeof AuthenticatedProjectsTasksRoute
+  '/_authenticated/users/permissoes': typeof AuthenticatedUsersPermissoesRoute
   '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
+  '/_authenticated/comercial/': typeof AuthenticatedComercialIndexRoute
   '/_authenticated/financas/': typeof AuthenticatedFinancasIndexRoute
 }
 export interface FileRouteTypes {
@@ -257,8 +277,10 @@ export interface FileRouteTypes {
     | '/projects/content-approval'
     | '/projects/deliverables'
     | '/projects/tasks'
+    | '/users/permissoes'
     | '/public/approval/$token'
     | '/clients/'
+    | '/comercial/'
     | '/financas/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -281,8 +303,10 @@ export interface FileRouteTypes {
     | '/projects/content-approval'
     | '/projects/deliverables'
     | '/projects/tasks'
+    | '/users/permissoes'
     | '/public/approval/$token'
     | '/clients'
+    | '/comercial'
     | '/financas'
   id:
     | '__root__'
@@ -306,8 +330,10 @@ export interface FileRouteTypes {
     | '/_authenticated/projects/content-approval'
     | '/_authenticated/projects/deliverables'
     | '/_authenticated/projects/tasks'
+    | '/_authenticated/users/permissoes'
     | '/public/approval/$token'
     | '/_authenticated/clients/'
+    | '/_authenticated/comercial/'
     | '/_authenticated/financas/'
   fileRoutesById: FileRoutesById
 }
@@ -419,6 +445,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientsManageRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/comercial/': {
+      id: '/_authenticated/comercial/'
+      path: '/comercial'
+      fullPath: '/comercial/'
+      preLoaderRoute: typeof AuthenticatedComercialIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/comercial/crm': {
       id: '/_authenticated/comercial/crm'
       path: '/comercial/crm'
@@ -475,6 +508,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsTasksRouteImport
       parentRoute: typeof AuthenticatedProjectsRoute
     }
+    '/_authenticated/users/permissoes': {
+      id: '/_authenticated/users/permissoes'
+      path: '/permissoes'
+      fullPath: '/users/permissoes'
+      preLoaderRoute: typeof AuthenticatedUsersPermissoesRouteImport
+      parentRoute: typeof AuthenticatedUsersRoute
+    }
     '/public/approval/$token': {
       id: '/public/approval/$token'
       path: '/public/approval/$token'
@@ -504,12 +544,23 @@ const AuthenticatedProjectsRouteWithChildren =
     AuthenticatedProjectsRouteChildren,
   )
 
+interface AuthenticatedUsersRouteChildren {
+  AuthenticatedUsersPermissoesRoute: typeof AuthenticatedUsersPermissoesRoute
+}
+
+const AuthenticatedUsersRouteChildren: AuthenticatedUsersRouteChildren = {
+  AuthenticatedUsersPermissoesRoute: AuthenticatedUsersPermissoesRoute,
+}
+
+const AuthenticatedUsersRouteWithChildren =
+  AuthenticatedUsersRoute._addFileChildren(AuthenticatedUsersRouteChildren)
+
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRouteWithChildren
   AuthenticatedSquadsRoute: typeof AuthenticatedSquadsRoute
   AuthenticatedStructureRoute: typeof AuthenticatedStructureRoute
-  AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedUsersRoute: typeof AuthenticatedUsersRouteWithChildren
   AuthenticatedClientsClientIdRoute: typeof AuthenticatedClientsClientIdRoute
   AuthenticatedClientsChurnRoute: typeof AuthenticatedClientsChurnRoute
   AuthenticatedClientsContractsRoute: typeof AuthenticatedClientsContractsRoute
@@ -519,6 +570,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFinancasInadimplenciaRoute: typeof AuthenticatedFinancasInadimplenciaRoute
   AuthenticatedFinancasRecebimentosRoute: typeof AuthenticatedFinancasRecebimentosRoute
   AuthenticatedClientsIndexRoute: typeof AuthenticatedClientsIndexRoute
+  AuthenticatedComercialIndexRoute: typeof AuthenticatedComercialIndexRoute
   AuthenticatedFinancasIndexRoute: typeof AuthenticatedFinancasIndexRoute
 }
 
@@ -527,7 +579,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProjectsRoute: AuthenticatedProjectsRouteWithChildren,
   AuthenticatedSquadsRoute: AuthenticatedSquadsRoute,
   AuthenticatedStructureRoute: AuthenticatedStructureRoute,
-  AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedUsersRoute: AuthenticatedUsersRouteWithChildren,
   AuthenticatedClientsClientIdRoute: AuthenticatedClientsClientIdRoute,
   AuthenticatedClientsChurnRoute: AuthenticatedClientsChurnRoute,
   AuthenticatedClientsContractsRoute: AuthenticatedClientsContractsRoute,
@@ -540,6 +592,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFinancasRecebimentosRoute:
     AuthenticatedFinancasRecebimentosRoute,
   AuthenticatedClientsIndexRoute: AuthenticatedClientsIndexRoute,
+  AuthenticatedComercialIndexRoute: AuthenticatedComercialIndexRoute,
   AuthenticatedFinancasIndexRoute: AuthenticatedFinancasIndexRoute,
 }
 

@@ -48,23 +48,23 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
     {
       accessorKey: "name",
       header: ({ column }: any) => (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="hover:bg-transparent px-0 font-bold text-xs uppercase text-[#8A8FA3]">
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="hover:bg-transparent px-0 font-bold text-xs uppercase text-[var(--ink-3)]">
           Nome do lead
           <ArrowUpDown className="ml-2 h-3 w-3" />
         </Button>
       ),
-      cell: ({ row }: any) => <div className="font-bold text-[#0E0E16]">{row.getValue("name")}</div>,
+      cell: ({ row }: any) => <div className="font-bold text-[var(--ink-1)]">{row.getValue("name")}</div>,
     },
     {
       accessorKey: "company",
       header: "EMPRESA",
-      cell: ({ row }: any) => <div className="text-[#8A8FA3]">{row.getValue("company") || "-"}</div>,
+      cell: ({ row }: any) => <div className="text-[var(--ink-3)]">{row.getValue("company") || "-"}</div>,
     },
     {
       accessorKey: "created_at",
       header: "DATA DE CRIAÇÃO",
       cell: ({ row }: any) => (
-        <div className="text-[#8A8FA3]">
+        <div className="text-[var(--ink-3)]">
           {format(new Date(row.getValue("created_at")), "dd/MM/yyyy", { locale: ptBR })}
         </div>
       ),
@@ -80,8 +80,8 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
             <Badge className={cn(
               "text-[10px] font-bold rounded-full px-3",
               isConverted 
-                ? "bg-[#22C55E]/10 text-[#22C55E] border-[#22C55E]/20" 
-                : "bg-[#F7F8FC] text-[#3D4FE8] border-[#E4E6F0]"
+                ? "bg-[var(--success)]/10 text-[var(--success)] border-[var(--success)]/20" 
+                : "bg-[var(--surface-2)] text-[var(--violet-500)] border-[var(--line-1)]"
             )}>
               {isConverted ? "Convertido" : (stage?.label || "N/A")}
             </Badge>
@@ -92,13 +92,13 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
     {
       accessorKey: "funnel_type",
       header: "TIPO DE FUNIL",
-      cell: ({ row }: any) => <div className="text-[#8A8FA3]">{row.original.funnel_type?.name || "-"}</div>,
+      cell: ({ row }: any) => <div className="text-[var(--ink-3)]">{row.original.funnel_type?.name || "-"}</div>,
     },
     {
       accessorKey: "recurring_revenue",
       header: "VALOR MRR",
       cell: ({ row }: any) => (
-        <div className="font-bold text-[#22C55E]">
+        <div className="font-bold text-[var(--success)]">
           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(row.getValue("recurring_revenue") || 0)}
         </div>
       ),
@@ -107,7 +107,7 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
       accessorKey: "one_time_revenue",
       header: "VALOR ÚNICO",
       cell: ({ row }: any) => (
-        <div className="text-[#8A8FA3]">
+        <div className="text-[var(--ink-3)]">
           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(row.getValue("one_time_revenue") || 0)}
         </div>
       ),
@@ -117,10 +117,10 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
       header: "RESPONSÁVEL",
       cell: ({ row }: any) => (
         <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-full bg-[#3D4FE8] flex items-center justify-center text-[10px] text-white font-bold">
+          <div className="h-6 w-6 rounded-full bg-[var(--violet-500)] flex items-center justify-center text-[10px] text-white font-bold">
             {row.original.responsible?.full_name?.charAt(0) || "?"}
           </div>
-          <span className="text-xs text-[#8A8FA3]">{row.original.responsible?.full_name || "Sem resp."}</span>
+          <span className="text-xs text-[var(--ink-3)]">{row.original.responsible?.full_name || "Sem resp."}</span>
         </div>
       ),
     },
@@ -133,7 +133,7 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8 text-[#8A8FA3] hover:text-[#3D4FE8] hover:bg-[#3D4FE8]/10 rounded-full"
+              className="h-8 w-8 text-[var(--ink-3)] hover:text-[var(--violet-500)] hover:bg-[var(--violet-500)]/10 rounded-full"
               onClick={() => onConvert(row.original)}
               title="Converter em Cliente"
             >
@@ -143,7 +143,7 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8 text-[#8A8FA3] hover:text-[#3D4FE8] hover:bg-[#3D4FE8]/10 rounded-full"
+            className="h-8 w-8 text-[var(--ink-3)] hover:text-[var(--violet-500)] hover:bg-[var(--violet-500)]/10 rounded-full"
             onClick={() => onEdit(row.original)}
           >
             <Edit2 className="h-3.5 w-3.5" />
@@ -151,7 +151,7 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8 text-[#8A8FA3] hover:text-[#EF4444] hover:bg-[#EF4444]/10 rounded-full"
+            className="h-8 w-8 text-[var(--ink-3)] hover:text-[var(--danger)] hover:bg-[var(--danger)]/10 rounded-full"
             onClick={() => onDelete(row.original)}
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -186,30 +186,30 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-title font-bold text-[#0E0E16]">Todas as Negociações</h3>
-          <Badge className="bg-[#F7F8FC] text-[#8A8FA3] text-xs font-bold border-[#E4E6F0] rounded-full">
+          <h3 className="text-lg font-title font-bold text-[var(--ink-1)]">Todas as Negociações</h3>
+          <Badge className="bg-[var(--surface-2)] text-[var(--ink-3)] text-xs font-bold border-[var(--line-1)] rounded-full">
             {table.getFilteredRowModel().rows.length} negociações
           </Badge>
         </div>
         
         <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ink-3)]" />
           <Input 
             placeholder="Buscar por nome ou empresa..." 
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="pl-10 h-10 rounded-full border-[#E4E6F0] bg-white text-sm focus:ring-[#3D4FE8]"
+            className="pl-10 h-10 rounded-full border-[var(--line-1)] bg-[var(--surface-1)] text-sm focus:ring-[var(--violet-500)]"
           />
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[#E4E6F0] bg-white overflow-hidden shadow-sm">
+      <div className="rounded-2xl border border-[var(--line-1)] bg-[var(--surface-1)] overflow-hidden shadow-sm">
         <Table>
-          <TableHeader className="bg-[#F7F8FC]">
+          <TableHeader className="bg-[var(--surface-2)]">
             {table.getHeaderGroups().map((headerGroup: any) => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent border-[#E4E6F0]">
+              <TableRow key={headerGroup.id} className="hover:bg-transparent border-[var(--line-1)]">
                 {headerGroup.headers.map((header: any) => (
-                  <TableHead key={header.id} className="h-12 text-[10px] font-bold text-[#8A8FA3] uppercase tracking-wider px-6">
+                  <TableHead key={header.id} className="h-12 text-[10px] font-bold text-[var(--ink-3)] uppercase tracking-wider px-6">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -226,7 +226,7 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
               table.getRowModel().rows.map((row: any) => (
                 <TableRow
                   key={row.id}
-                  className="hover:bg-[#F7F8FC]/50 border-[#E4E6F0] transition-colors"
+                  className="hover:bg-[var(--surface-2)]/50 border-[var(--line-1)] transition-colors"
                 >
                   {row.getVisibleCells().map((cell: any) => (
                     <TableCell key={cell.id} className="px-6 py-4 text-xs">
@@ -237,7 +237,7 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-[#8A8FA3]">
+                <TableCell colSpan={columns.length} className="h-24 text-center text-[var(--ink-3)]">
                   Nenhuma negociação encontrada.
                 </TableCell>
               </TableRow>
@@ -247,14 +247,14 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
       </div>
 
       <div className="flex items-center justify-between pt-2">
-        <div className="text-xs text-[#8A8FA3]">
+        <div className="text-xs text-[var(--ink-3)]">
           Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            className="h-8 w-8 p-0 rounded-full border-[#E4E6F0] text-[#8A8FA3] hover:text-[#3D4FE8] hover:bg-[#3D4FE8]/10"
+            className="h-8 w-8 p-0 rounded-full border-[var(--line-1)] text-[var(--ink-3)] hover:text-[var(--violet-500)] hover:bg-[var(--violet-500)]/10"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
@@ -263,7 +263,7 @@ export function CRMLeadsTable({ leads, onEdit, onDelete, onConvert }: CRMLeadsTa
           <Button
             variant="outline"
             size="sm"
-            className="h-8 w-8 p-0 rounded-full border-[#E4E6F0] text-[#8A8FA3] hover:text-[#3D4FE8] hover:bg-[#3D4FE8]/10"
+            className="h-8 w-8 p-0 rounded-full border-[var(--line-1)] text-[var(--ink-3)] hover:text-[var(--violet-500)] hover:bg-[var(--violet-500)]/10"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >

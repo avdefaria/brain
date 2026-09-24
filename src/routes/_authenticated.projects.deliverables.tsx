@@ -49,6 +49,7 @@ function DeliveriesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [squadFilter, setSquadFilter] = useState("all");
+  const [scopeFilter, setScopeFilter] = useState("all");
 
   const fetchAccountDeliveries = useServerFn(getDeliveriesByAccount);
   const fetchTypeDeliveries = useServerFn(getDeliverablesProgress);
@@ -70,12 +71,13 @@ function DeliveriesPage() {
   });
 
   const filteredAccounts = useMemo(() => {
-    return accountData.filter(acc => {
-      const matchesSearch = acc.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return accountData.filter((acc: any) => {
+      const matchesSearch = acc.name.toLowerCase().includes(searchTerm.toLowerCase()) || acc.clientName?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesSquad = squadFilter === "all" || acc.squads.some((s: any) => s.id === squadFilter);
-      return matchesSearch && matchesSquad;
+      const matchesScope = scopeFilter === "all" || (scopeFilter === "internal" ? acc.isInternal : !acc.isInternal);
+      return matchesSearch && matchesSquad && matchesScope;
     });
-  }, [accountData, searchTerm, squadFilter]);
+  }, [accountData, searchTerm, squadFilter, scopeFilter]);
 
   // Visão "Por Tipo de Trabalho" filtrada por conta se necessário
   const filteredTypes = useMemo(() => {
@@ -100,22 +102,22 @@ function DeliveriesPage() {
     <div className="p-8 space-y-8 animate-in fade-in duration-500 font-body">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-title font-bold text-[#0E0E16]">Gestão de Entregas</h1>
-          <p className="text-sm text-[#8A8FA3]">Acompanhamento de progresso real por conta e tipo de trabalho</p>
+          <h1 className="text-2xl font-title font-bold text-[var(--ink-1)]">Gestão de Entregas</h1>
+          <p className="text-sm text-[var(--ink-3)]">Acompanhamento de progresso real por conta e tipo de trabalho</p>
         </div>
 
         <Tabs value={view} onValueChange={(v: any) => setView(v)} className="w-auto">
-          <TabsList className="bg-white border border-[#E4E6F0] h-10 p-1">
+          <TabsList className="bg-[var(--surface-1)] border border-[var(--line-1)] h-10 p-1">
             <TabsTrigger 
               value="account" 
-              className="data-[state=active]:bg-[#3D4FE8] data-[state=active]:text-white rounded-md text-xs font-bold"
+              className="data-[state=active]:bg-[var(--violet-500)] data-[state=active]:text-white rounded-md text-xs font-bold"
             >
               <Briefcase className="h-3.5 w-3.5 mr-2" />
               Por Conta
             </TabsTrigger>
             <TabsTrigger 
               value="type" 
-              className="data-[state=active]:bg-[#3D4FE8] data-[state=active]:text-white rounded-md text-xs font-bold"
+              className="data-[state=active]:bg-[var(--violet-500)] data-[state=active]:text-white rounded-md text-xs font-bold"
             >
               <Layers className="h-3.5 w-3.5 mr-2" />
               Por Tipo
@@ -125,20 +127,31 @@ function DeliveriesPage() {
       </div>
 
       {/* Filters Bar */}
-      <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl border border-[#E4E6F0] shadow-sm">
+      <div className="flex flex-wrap items-center gap-4 bg-[var(--surface-1)] p-4 rounded-xl border border-[var(--line-1)] shadow-sm">
         <div className="relative flex-1 min-w-[240px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ink-3)]" />
           <Input 
             placeholder="Buscar por conta ou cliente..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 border-[#E4E6F0] bg-[#F7F8FC] focus-visible:ring-[#3D4FE8]"
+            className="pl-10 border-[var(--line-1)] bg-[var(--surface-2)] focus-visible:ring-[var(--violet-500)]"
           />
         </div>
 
+        <Select value={scopeFilter} onValueChange={setScopeFilter}>
+          <SelectTrigger className="w-[160px] border-[var(--line-1)] bg-[var(--surface-2)]">
+            <SelectValue placeholder="Interno/Externo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Interno e Externo</SelectItem>
+            <SelectItem value="external">Externo</SelectItem>
+            <SelectItem value="internal">Interno</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Select value={squadFilter} onValueChange={setSquadFilter}>
-          <SelectTrigger className="w-[180px] border-[#E4E6F0] bg-[#F7F8FC]">
-            <Shield className="h-4 w-4 mr-2 text-[#8A8FA3]" />
+          <SelectTrigger className="w-[180px] border-[var(--line-1)] bg-[var(--surface-2)]">
+            <Shield className="h-4 w-4 mr-2 text-[var(--ink-3)]" />
             <SelectValue placeholder="Squad" />
           </SelectTrigger>
           <SelectContent>
@@ -150,8 +163,8 @@ function DeliveriesPage() {
         </Select>
 
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[200px] border-[#E4E6F0] bg-[#F7F8FC]">
-            <Package className="h-4 w-4 mr-2 text-[#8A8FA3]" />
+          <SelectTrigger className="w-[200px] border-[var(--line-1)] bg-[var(--surface-2)]">
+            <Package className="h-4 w-4 mr-2 text-[var(--ink-3)]" />
             <SelectValue placeholder="Tipo de Trabalho" />
           </SelectTrigger>
           <SelectContent>
@@ -167,72 +180,78 @@ function DeliveriesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loadingAccounts ? (
             <div className="col-span-full flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 text-[#3D4FE8] animate-spin" />
+              <Loader2 className="h-8 w-8 text-[var(--violet-500)] animate-spin" />
             </div>
           ) : filteredAccounts.length > 0 ? (
             filteredAccounts.map((acc) => (
-              <Card key={acc.id} className="border-[#E4E6F0] shadow-sm bg-white overflow-hidden group hover:shadow-md transition-all">
+              <Card key={acc.id} className="border-[var(--line-1)] shadow-sm bg-[var(--surface-1)] overflow-hidden group hover:shadow-md transition-all">
                 <CardContent className="p-6 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-[#3D4FE8]/10 rounded-2xl flex items-center justify-center text-[#3D4FE8]">
-                        <Briefcase className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-[#0E0E16] group-hover:text-[#3D4FE8] transition-colors">{acc.name}</h3>
-                        <div className="flex flex-wrap gap-1 mt-1">
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="min-w-0">
+                      <p className="brain-eyebrow truncate">{acc.clientName}</p>
+                      <h3 className="text-lg font-bold text-[var(--ink-1)] group-hover:text-[var(--violet-500)] transition-colors mt-0.5 truncate">{acc.name}</h3>
+                      {acc.squads.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
                           {acc.squads.map((s: any) => (
-                            <span 
-                              key={s.id} 
+                            <span
+                              key={s.id}
                               className="px-1.5 py-0.5 rounded text-[8px] font-bold text-white shadow-sm"
-                              style={{ backgroundColor: s.color || '#3D4FE8' }}
+                              style={{ backgroundColor: s.color || 'var(--violet-500)' }}
                             >
                               {s.name}
                             </span>
                           ))}
                         </div>
-                      </div>
+                      )}
                     </div>
-                    <div className={cn(
-                      "px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1",
-                      acc.healthScore >= 80 ? "bg-green-100 text-green-600" : acc.healthScore >= 50 ? "bg-amber-100 text-amber-600" : "bg-red-100 text-red-600"
-                    )}>
-                      <Activity className="h-3 w-3" />
-                      {acc.healthScore}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 py-2 border-y border-[#F7F8FC]">
-                    <div>
-                      <p className="text-[10px] font-bold text-[#8A8FA3] uppercase">Contrato</p>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <Calendar className="h-3 w-3 text-[#3D4FE8]" />
-                        <span className="text-xs font-medium text-[#0E0E16]">
-                          {acc.contract?.renewal_date 
-                            ? format(new Date(acc.contract.renewal_date), "dd/MM/yy")
-                            : "N/A"
-                          }
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-[#8A8FA3] uppercase">Status</p>
+                    {acc.isInternal ? (
+                      <span className="px-2 py-1 rounded-full text-[10px] font-bold shrink-0 bg-[var(--violet-tint-16)] text-[var(--violet-300)]">
+                        Interno
+                      </span>
+                    ) : (
                       <span className={cn(
-                        "inline-block px-2 py-0.5 rounded-full text-[9px] font-bold mt-1",
-                        acc.status === 'active' ? "bg-green-100 text-green-600" : "bg-[#F7F8FC] text-[#8A8FA3]"
+                        "px-2 py-1 rounded-full text-[10px] font-bold shrink-0",
+                        acc.status === 'active' ? "bg-[var(--success-tint)] text-[var(--success)]" : "bg-[var(--surface-2)] text-[var(--ink-3)]"
                       )}>
                         {acc.status === 'active' ? 'Ativo' : 'Inativo'}
                       </span>
-                    </div>
+                    )}
                   </div>
+
+                  {!acc.isInternal && (
+                    <div className="grid grid-cols-2 gap-4 py-2 border-y border-[var(--surface-2)]">
+                      <div>
+                        <p className="text-[10px] font-bold text-[var(--ink-3)] uppercase">Contrato</p>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <Calendar className="h-3 w-3 text-[var(--violet-500)]" />
+                          <span className="text-xs font-medium text-[var(--ink-1)]">
+                            {acc.contract?.renewal_date
+                              ? format(new Date(acc.contract.renewal_date), "dd/MM/yy")
+                              : "N/A"
+                            }
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[var(--ink-3)] uppercase">Health Score</p>
+                        <div className={cn(
+                          "flex items-center gap-1.5 mt-1",
+                          acc.healthScore >= 80 ? "text-[var(--success)]" : acc.healthScore >= 50 ? "text-[var(--warning)]" : "text-[var(--danger)]"
+                        )}>
+                          <Activity className="h-3 w-3" />
+                          <span className="text-xs font-bold">{acc.healthScore}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-end">
-                      <p className="text-[10px] font-bold text-[#8A8FA3] uppercase tracking-wider">Progresso Geral</p>
-                      <span className="text-xs font-bold text-[#0E0E16]">{Math.round(acc.progress)}%</span>
+                      <p className="text-[10px] font-bold text-[var(--ink-3)] uppercase tracking-wider">Progresso Geral</p>
+                      <span className="text-xs font-bold text-[var(--ink-1)]">{Math.round(acc.progress)}%</span>
                     </div>
-                    <Progress value={acc.progress} className="h-2 bg-[#F7F8FC]" />
-                    <div className="flex justify-between text-[10px] font-medium text-[#8A8FA3]">
+                    <Progress value={acc.progress} className="h-2 bg-[var(--surface-2)]" />
+                    <div className="flex justify-between text-[10px] font-medium text-[var(--ink-3)]">
                       <span>{acc.completedTasks} concluídas</span>
                       <span>{acc.totalTasks} totais</span>
                     </div>
@@ -241,11 +260,11 @@ function DeliveriesPage() {
               </Card>
             ))
           ) : (
-            <div className="col-span-full py-12 text-center bg-white rounded-xl border border-dashed border-[#E4E6F0]">
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#F7F8FC] mb-4">
-                <Search className="h-6 w-6 text-[#8A8FA3]" />
+            <div className="col-span-full py-12 text-center bg-[var(--surface-1)] rounded-xl border border-dashed border-[var(--line-1)]">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-2)] mb-4">
+                <Search className="h-6 w-6 text-[var(--ink-3)]" />
               </div>
-              <p className="text-[#8A8FA3] font-medium">Nenhuma conta encontrada com esses filtros</p>
+              <p className="text-[var(--ink-3)] font-medium">Nenhuma conta encontrada com esses filtros</p>
             </div>
           )}
         </div>
@@ -253,20 +272,20 @@ function DeliveriesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loadingTypes ? (
             <div className="col-span-full flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 text-[#3D4FE8] animate-spin" />
+              <Loader2 className="h-8 w-8 text-[var(--violet-500)] animate-spin" />
             </div>
           ) : (
             typeData.map((item: any) => (
-              <Card key={item.id} className="border-[#E4E6F0] shadow-sm bg-white overflow-hidden group hover:shadow-md transition-all">
+              <Card key={item.id} className="border-[var(--line-1)] shadow-sm bg-[var(--surface-1)] overflow-hidden group hover:shadow-md transition-all">
                 <CardContent className="p-6 space-y-4">
                   <div className="flex justify-between items-start">
-                    <div className="h-10 w-10 bg-[#3D4FE8]/10 rounded-2xl flex items-center justify-center text-[#3D4FE8]">
+                    <div className="h-10 w-10 bg-[var(--violet-500)]/10 rounded-2xl flex items-center justify-center text-[var(--violet-500)]">
                       <Package className="h-5 w-5" />
                     </div>
                     {item.total > 0 && (
                       <div className={cn(
                         "px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1",
-                        item.progress === 100 ? "bg-green-100 text-green-600" : "bg-[#3D4FE8]/10 text-[#3D4FE8]"
+                        item.progress === 100 ? "bg-[var(--success-tint)] text-[var(--success)]" : "bg-[var(--violet-500)]/10 text-[var(--violet-500)]"
                       )}>
                         <TrendingUp className="h-3 w-3" />
                         {Math.round(item.progress)}%
@@ -275,8 +294,8 @@ function DeliveriesPage() {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-bold text-[#0E0E16] group-hover:text-[#3D4FE8] transition-colors">{item.name}</h3>
-                    <p className="text-xs text-[#8A8FA3]">
+                    <h3 className="text-lg font-bold text-[var(--ink-1)] group-hover:text-[var(--violet-500)] transition-colors">{item.name}</h3>
+                    <p className="text-xs text-[var(--ink-3)]">
                       {item.total > 0 
                         ? `${item.completed} de ${item.total} concluídas`
                         : "Nenhuma tarefa vinculada ainda"
@@ -286,14 +305,14 @@ function DeliveriesPage() {
 
                   {item.total > 0 ? (
                     <div className="space-y-2 pt-2">
-                      <Progress value={item.progress} className="h-2 bg-[#F7F8FC]" />
-                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-[#8A8FA3]">
+                      <Progress value={item.progress} className="h-2 bg-[var(--surface-2)]" />
+                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-[var(--ink-3)]">
                         <span>Progresso</span>
                         <span>{item.completed} / {item.total}</span>
                       </div>
                     </div>
                   ) : (
-                    <div className="pt-2 flex items-center gap-2 text-[#8A8FA3]">
+                    <div className="pt-2 flex items-center gap-2 text-[var(--ink-3)]">
                       <AlertCircle className="h-4 w-4" />
                       <span className="text-[10px] font-bold uppercase tracking-wider">Aguardando tarefas</span>
                     </div>

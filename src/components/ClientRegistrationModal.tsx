@@ -49,6 +49,7 @@ import { NicheSelector } from "./NicheSelector";
 
 const clientSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
+  account_name: z.string().optional().or(z.literal("")),
   cnpj_cpf: z.string().optional().or(z.literal("")),
   address: z.string().optional().or(z.literal("")),
   country: z.string().min(1, "Obrigatório"),
@@ -77,7 +78,7 @@ type ClientFormValues = z.infer<typeof clientSchema>;
 interface ClientRegistrationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
+  onSuccess?: (result?: { clientId: string; isNewClient: boolean; fromLead: boolean }) => void;
   initialData?: any;
 }
 
@@ -88,6 +89,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
   const [availableNiches, setAvailableNiches] = useState<{id: string, name: string}[]>([]);
 
   const [availableSquads, setAvailableSquads] = useState<{id: string, name: string}[]>([]);
+  const [matchedClient, setMatchedClient] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -116,10 +118,15 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
     fetchData();
   }, [open]);
 
+  // Só faz sentido detectar "mesmo CNPJ" ao cadastrar/converter (não ao editar
+  // um cliente que já é o próprio registro).
+  const isEditingExistingClient = !!initialData?.id;
+
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
       name: initialData?.name || "",
+      account_name: initialData?.account_name || initialData?.accounts?.[0]?.account_name || "",
       cnpj_cpf: initialData?.cnpj_cpf || "",
       address: initialData?.address || "",
       country: initialData?.country || "Brasil",
@@ -144,11 +151,39 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
     }
   });
 
+  // Detecção automática de CNPJ já cadastrado (cria conta nova em vez de
+  // duplicar cliente). Só roda ao cadastrar/converter, nunca ao editar.
+  const watchedCnpj = form.watch("cnpj_cpf");
+
+  useEffect(() => {
+    if (isEditingExistingClient || !open) {
+      setMatchedClient(null);
+      return;
+    }
+    const digits = (watchedCnpj || "").replace(/\D/g, "");
+    if (digits.length < 11) {
+      setMatchedClient(null);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      const { data: found } = await supabase
+        .from('clients')
+        .select('id, name')
+        .eq('cnpj_cpf', watchedCnpj)
+        .maybeSingle();
+      setMatchedClient(found ? { id: (found as any).id, name: (found as any).name } : null);
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [watchedCnpj, isEditingExistingClient, open]);
+
   useEffect(() => {
     if (initialData && open) {
       console.log("Resetting form with initialData:", initialData);
       form.reset({
         name: initialData.name || "",
+        account_name: initialData.account_name || initialData.accounts?.[0]?.account_name || "",
         cnpj_cpf: initialData.cnpj_cpf || "",
         address: initialData.address || "",
         country: initialData.country || "Brasil",
@@ -174,6 +209,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
     } else if (!initialData && open) {
       form.reset({
         name: "",
+        account_name: "",
         cnpj_cpf: "",
         address: "",
         country: "Brasil",
@@ -259,16 +295,20 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         contact_whatsapp: data.contact_whatsapp,
         niche_id: cleanUuid(data.niche_id),
         start_date: data.start_date,
-        end_date_expected: data.end_date_expected,
+        end_date_expected: data.end_date_expected || null,
         scope_details: data.scope_details,
         extra_comments: data.extra_comments,
-        status: initialData?.id ? initialData.status : 'active',
+        status: initialData?.id ? initialData.status : 'onboarding',
         risk_level: initialData?.id ? initialData.risk_level : 'low',
         health_score: initialData?.id ? initialData.health_score : 100,
         lead_id: cleanUuid(data.lead_id || initialData?.lead_id)
       };
 
       let clientId = initialData?.id;
+      // Quando reaproveitamos um cliente já existente (mesmo lead reconvertido,
+      // ou mesmo CNPJ de outro registro), não sobrescrevemos os dados dele —
+      // só a conta nova é criada por baixo.
+      let skipClientWrite = false;
 
       const conversionLeadId = cleanUuid(data.lead_id);
       if (conversionLeadId && !initialData?.id) {
@@ -279,21 +319,26 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         }
       }
 
+      if (!clientId && !initialData?.id && matchedClient?.id) {
+        clientId = matchedClient.id;
+        skipClientWrite = true;
+      }
+
       // Se temos initialData.id (ou reaproveitamos o cliente já convertido do lead_id), é uma edição/atualização.
-      // Se não temos id, é uma criação.
-      if (clientId) {
+      // Se não temos id, é uma criação. Se reaproveitamos por CNPJ, não escrevemos no cliente.
+      if (clientId && !skipClientWrite) {
         const { error } = await supabase.from('clients').update(payload).eq('id', clientId);
         if (error) {
           console.error("Error updating client:", error);
           throw new Error(`Erro ao atualizar dados básicos do cliente: ${error.message}`);
         }
-      } else {
+      } else if (!clientId) {
         const { data: newClient, error } = await supabase.from('clients').insert([payload]).select('id').single();
         if (error) {
           console.error("Error inserting client:", error);
           throw new Error(`Erro ao criar cliente: ${error.message}`);
         }
-        
+
         if (!newClient) throw new Error("Erro ao obter ID do novo cliente");
         clientId = newClient.id;
       }
@@ -347,42 +392,65 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
           await supabase.from('client_sales_channels').delete().eq('client_id', clientId);
         }
 
+        // Resolve a conta operacional desta operação. Editando um cliente já
+        // existente, reaproveita a primeira conta encontrada (comportamento
+        // antigo). Num cadastro/conversão novo (inclusive quando reaproveitamos
+        // um cliente pelo mesmo CNPJ), sempre cria uma conta nova — cada lead
+        // fechado é uma conta distinta, mesmo quando o CNPJ já existe.
+        let accountId: string | undefined;
+        if (isEditingExistingClient) {
+          const { data: accounts, error: accountsError } = await supabase
+            .from('accounts')
+            .select('id')
+            .eq('client_id', clientId)
+            .limit(1);
+          if (accountsError) {
+            console.error("Error fetching account:", accountsError);
+            throw new Error(`Erro ao buscar conta operacional: ${accountsError.message}`);
+          }
+          if (accounts && accounts.length > 0) {
+            accountId = (accounts[0] as any).id;
+            await supabase.from('accounts').update({ account_name: data.account_name || data.name } as any).eq('id', accountId);
+          }
+        }
+        if (!accountId) {
+          const { data: newAccount, error: newAccountError } = await supabase
+            .from('accounts')
+            .insert({ client_id: clientId, account_name: data.account_name || data.name, status: 'active' } as any)
+            .select('id')
+            .single();
+          if (newAccountError) {
+            console.error("Error creating account:", newAccountError);
+            throw new Error(`Falha ao criar conta operacional: ${newAccountError.message}`);
+          }
+          accountId = (newAccount as any)?.id;
+        }
+        if (!accountId) throw new Error("Falha ao resolver conta operacional: ID não retornado.");
+
         // Handle account_squads junction table
-        // Find the primary account for this client
-        const { data: accounts, error: accountsError } = await supabase
-          .from('accounts')
-          .select('id')
-          .eq('client_id', clientId)
-          .limit(1);
-          
-        if (accountsError) {
-          console.error("Error fetching account for squad link:", accountsError);
-        } else if (accounts && accounts.length > 0) {
-          const accountId = accounts[0]?.id;
-          if (accountId) {
-            const selectedSquadIds: string[] = data.squad_ids || [];
+        {
+          const selectedSquadIds: string[] = data.squad_ids || [];
 
-            // 1. Clear existing relationships
-            await supabase
+          // 1. Clear existing relationships
+          await supabase
+            .from('account_squads')
+            .delete()
+            .eq('account_id', accountId);
+
+          // 2. Insert new relationships
+          if (selectedSquadIds.length > 0) {
+            const squadJunctionData = selectedSquadIds.map((sId: string) => ({
+              account_id: accountId,
+              squad_id: sId
+            }));
+
+            const { error: sqJunctionError } = await supabase
               .from('account_squads')
-              .delete()
-              .eq('account_id', accountId);
+              .insert(squadJunctionData);
 
-            // 2. Insert new relationships
-            if (selectedSquadIds.length > 0) {
-              const squadJunctionData = selectedSquadIds.map((sId: string) => ({
-                account_id: accountId,
-                squad_id: sId
-              }));
-
-              const { error: sqJunctionError } = await supabase
-                .from('account_squads')
-                .insert(squadJunctionData);
-
-              if (sqJunctionError) {
-                console.error("Error inserting squad relationships:", sqJunctionError);
-                throw new Error(`Erro ao vincular squads: ${sqJunctionError.message}`);
-              }
+            if (sqJunctionError) {
+              console.error("Error inserting squad relationships:", sqJunctionError);
+              throw new Error(`Erro ao vincular squads: ${sqJunctionError.message}`);
             }
           }
         }
@@ -422,30 +490,14 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
         // 4. Create or update contract record with financial data
         let financialError: string | null = null;
         try {
-        if (clientId) {
-          // Find or create account for this client
-          let accountId;
-          const { data: accounts, error: findAccountError } = await supabase.from('accounts').select('id').eq('client_id', clientId).limit(1);
-
-          if (findAccountError) {
-            console.error("Error finding account:", findAccountError);
-            throw new Error(`Falha ao buscar conta operacional: ${findAccountError.message}`);
-          } else if (accounts && accounts.length > 0) {
-            accountId = (accounts[0] as any).id;
-          } else {
-            const { data: newAccount, error: newAccountError } = await supabase.from('accounts').insert({ client_id: clientId, account_name: data.name } as any).select('id').single();
-            if (newAccountError) {
-              console.error("Error creating account:", newAccountError);
-              throw new Error(`Falha ao criar conta operacional: ${newAccountError.message}`);
-            } else {
-              accountId = newAccount?.id;
-            }
-            if (!accountId) {
-              throw new Error("Falha ao criar conta operacional: ID não retornado.");
-            }
-          }
-
-          const contractData = {
+        if (clientId && accountId) {
+          const startDateStr0 = (data.start_date || new Date().toISOString().split('T')[0]) as string;
+          const computeRenewalDate = (startStr: string, months: number) => {
+            const d = new Date(startStr + (startStr.includes('T') ? '' : 'T00:00:00'));
+            d.setMonth(d.getMonth() + (months || 1));
+            return d.toISOString().split('T')[0];
+          };
+          const contractData: any = {
               client_id: clientId,
               account_id: accountId,
               type: data.contract_type,
@@ -455,9 +507,13 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
               payment_method: data.payment_method,
               status: 'active'
             };
+            if (data.contract_type === 'recurring') {
+              contractData.renewal_date = computeRenewalDate(startDateStr0, data.mrr_months || 1);
+            }
 
-            // Check if contract exists
-            const { data: existingContracts, error: findContractError } = await supabase.from('contracts').select('id').eq('client_id', clientId).limit(1);
+            // Contrato é por conta, não por cliente — assim, duas contas do
+            // mesmo cliente (mesmo CNPJ) não disputam/sobrescrevem o mesmo contrato.
+            const { data: existingContracts, error: findContractError } = await supabase.from('contracts').select('id, renewal_date').eq('account_id', accountId).limit(1);
 
             let contractId;
             if (findContractError) {
@@ -465,10 +521,27 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
               throw new Error(`Falha ao buscar contrato: ${findContractError.message}`);
             } else if (existingContracts && existingContracts.length > 0) {
               contractId = (existingContracts[0] as any).id;
+              // Não sobrescreve renewal_date se já existe um valor — pode já ter
+              // avançado por renovação automática, não é pra "resetar" ao editar.
+              if ((existingContracts[0] as any).renewal_date) {
+                delete contractData.renewal_date;
+              }
               const { error: updateContractError } = await supabase.from('contracts').update(contractData as any).eq('id', contractId);
               if (updateContractError) {
                 console.error("Error updating contract:", updateContractError);
                 throw new Error(`Falha ao atualizar contrato: ${updateContractError.message}`);
+              }
+              // Recebíveis já gerados (parcelas ainda não pagas) precisam refletir
+              // o novo valor do contrato — senão ficam presos no valor antigo pra
+              // sempre, já que só são gerados uma vez (na criação do contrato).
+              const { error: syncReceivablesError } = await supabase
+                .from('receivables')
+                .update({ amount: contractData.monthly_value } as any)
+                .eq('contract_id', contractId)
+                .eq('status', 'pendente');
+              if (syncReceivablesError) {
+                console.error("Error syncing receivables amount:", syncReceivablesError);
+                throw new Error(`Falha ao atualizar valor dos recebíveis: ${syncReceivablesError.message}`);
               }
             } else {
               const { data: newContract, error: newContractError } = await supabase.from('contracts').insert([contractData] as any).select('id').single();
@@ -548,14 +621,23 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
           toast.error(
             `Lead convertido, mas houve um problema ao criar o contrato/recebíveis: ${financialError} Contate o suporte ou tente novamente.`
           );
+        } else if (skipClientWrite) {
+          toast.success(`Nova conta criada em ${matchedClient?.name}!`);
         } else {
-          toast.success(initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : initialData?.id ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
+          toast.success(initialData?.id ? "Cliente atualizado com sucesso!" : initialData?.lead_id ? "Lead convertido em cliente com sucesso!" : "Cliente cadastrado com sucesso!");
         }
       }
       onOpenChange(false);
       form.reset();
       setFile(null);
-      if (onSuccess) onSuccess();
+      setMatchedClient(null);
+      if (onSuccess) {
+        onSuccess({
+          clientId: clientId as string,
+          isNewClient: !initialData?.id,
+          fromLead: !initialData?.id && Boolean(initialData?.lead_id),
+        });
+      }
     } catch (error: any) {
       console.error("Detailed registration error:", error);
       // Capture literal database error if available
@@ -568,34 +650,34 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] h-[90vh] overflow-y-auto p-0 border-[#E4E6F0] dark:border-[#2A2A36] dark:bg-[#1A1A24]">
-        <div className="sticky top-0 bg-white dark:bg-[#1A1A24] z-10 px-8 py-6 border-b border-[#E4E6F0] dark:border-[#2A2A36]">
-          <DialogTitle className="text-2xl font-title font-bold text-[#0E0E16] dark:text-white">
+      <DialogContent className="sm:max-w-[800px] h-[90vh] overflow-y-auto p-0 border-[var(--line-1)]">
+        <div className="sticky top-0 bg-[var(--surface-1)] z-10 px-8 py-6 border-b border-[var(--line-1)]">
+          <DialogTitle className="text-2xl font-title font-bold text-[var(--ink-1)]">
             {initialData?.lead_id && !initialData?.id ? "Converter Lead em Cliente" : initialData?.id ? "Editar Cliente" : "Cadastrar Cliente"}
           </DialogTitle>
         </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="px-8 py-8 space-y-8">
           {initialData?._warning_both_revenues && (
-            <Alert className="bg-amber-50 border-amber-200 text-amber-800">
-              <InfoIcon className="h-4 w-4 text-amber-600" />
+            <Alert className="bg-[var(--warning-tint)] border-[var(--warning)]/30 text-[var(--warning)]">
+              <InfoIcon className="h-4 w-4 text-[var(--warning)]" />
               <AlertDescription className="text-xs font-medium">
                 Este lead possui Receita Única de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(initialData._warning_both_revenues)} que não foi mapeada automaticamente. Caso deseje, registre-a separadamente ou adicione nos detalhes do escopo abaixo.
               </AlertDescription>
             </Alert>
           )}
-          <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
+          <Card className="border-[var(--line-1)] shadow-none bg-[var(--surface-2)]/50">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
-              <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
+              <div className="h-8 w-8 rounded-lg bg-[var(--violet-500)]/10 flex items-center justify-center text-[var(--violet-500)]">
                 <Building2 className="h-5 w-5" />
               </div>
               <CardTitle className="text-lg font-title font-bold">Informações da empresa</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome da empresa <span className="text-red-500">*</span></Label>
-                <Input id="name" {...form.register("name")} placeholder="Razão social ou nome fantasia" className="bg-white dark:bg-[#1A1A24]" />
-                {form.formState.errors.name && <p className="text-xs text-red-500">{form.formState.errors.name.message}</p>}
+                <Label htmlFor="name">Nome da empresa <span className="text-[var(--danger)]">*</span></Label>
+                <Input id="name" {...form.register("name")} placeholder="Razão social ou nome fantasia" className="bg-[var(--surface-1)]" />
+                {form.formState.errors.name && <p className="text-xs text-[var(--danger)]">{form.formState.errors.name.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cnpj_cpf">CNPJ/CPF</Label>
@@ -605,24 +687,42 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                   render={({ field }) => (
                     <IMaskInput
                       mask={[{ mask: '000.000.000-00' }, { mask: '00.000.000/0000-00' }]}
-                      className="flex h-10 w-full rounded-md border border-input bg-white dark:bg-[#1A1A24] px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-input bg-[var(--surface-1)] px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       placeholder="00.000.000/0000-00"
                       value={field.value || ""}
                       onAccept={(value) => field.onChange(value)}
                     />
                   )}
                 />
-                {form.formState.errors.cnpj_cpf && <p className="text-xs text-red-500">{form.formState.errors.cnpj_cpf.message}</p>}
+                {form.formState.errors.cnpj_cpf && <p className="text-xs text-[var(--danger)]">{form.formState.errors.cnpj_cpf.message}</p>}
               </div>
+
+              {matchedClient && (
+                <div className="md:col-span-2">
+                  <Alert className="bg-[var(--info-tint)] border-[var(--info)]/30 text-[var(--info)]">
+                    <InfoIcon className="h-4 w-4 text-[var(--info)]" />
+                    <AlertDescription className="text-xs font-medium">
+                      Já existe um cliente cadastrado com esse CNPJ/CPF: <strong>{matchedClient.name}</strong>. Uma conta nova será criada dentro dele, em vez de um cliente duplicado.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="account_name">Nome da conta</Label>
+                <Input id="account_name" {...form.register("account_name")} placeholder="Ex: Unidade Norte, Marca X... (se vazio, usa o nome da empresa)" className="bg-[var(--surface-1)]" />
+                <p className="text-[10px] text-[var(--ink-3)]">Uma empresa pode ter mais de uma conta (unidades, marcas, contratos separados). Dê um nome que diferencie esta.</p>
+              </div>
+
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="address">Endereço completo</Label>
-                <Input id="address" {...form.register("address")} placeholder="Rua, número, complemento, bairro" className="bg-white dark:bg-[#1A1A24]" />
-                {form.formState.errors.address && <p className="text-xs text-red-500">{form.formState.errors.address.message}</p>}
+                <Input id="address" {...form.register("address")} placeholder="Rua, número, complemento, bairro" className="bg-[var(--surface-1)]" />
+                {form.formState.errors.address && <p className="text-xs text-[var(--danger)]">{form.formState.errors.address.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="country">País</Label>
                 <Select onValueChange={(v) => form.setValue("country", v)} value={form.watch("country")}>
-                  <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
+                  <SelectTrigger className="bg-[var(--surface-1)]">
                     <SelectValue placeholder="Selecione o país" />
                   </SelectTrigger>
                   <SelectContent>
@@ -635,24 +735,24 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="state">Estado/Província</Label>
-                  <Input id="state" {...form.register("state")} placeholder="UF" className="bg-white dark:bg-[#1A1A24]" />
+                  <Input id="state" {...form.register("state")} placeholder="UF" className="bg-[var(--surface-1)]" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="city">Cidade</Label>
-                  <Input id="city" {...form.register("city")} placeholder="Cidade" className="bg-white dark:bg-[#1A1A24]" />
+                  <Input id="city" {...form.register("city")} placeholder="Cidade" className="bg-[var(--surface-1)]" />
                 </div>
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="corporate_email">Email corporativo</Label>
-                <Input id="corporate_email" type="email" {...form.register("corporate_email")} placeholder="contato@empresa.com.br" className="bg-white dark:bg-[#1A1A24]" />
-                {form.formState.errors.corporate_email && <p className="text-xs text-red-500">{form.formState.errors.corporate_email.message}</p>}
+                <Input id="corporate_email" type="email" {...form.register("corporate_email")} placeholder="contato@empresa.com.br" className="bg-[var(--surface-1)]" />
+                {form.formState.errors.corporate_email && <p className="text-xs text-[var(--danger)]">{form.formState.errors.corporate_email.message}</p>}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
+          <Card className="border-[var(--line-1)] shadow-none bg-[var(--surface-2)]/50">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
-              <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
+              <div className="h-8 w-8 rounded-lg bg-[var(--violet-500)]/10 flex items-center justify-center text-[var(--violet-500)]">
                 <UserCircle2 className="h-5 w-5" />
               </div>
               <CardTitle className="text-lg font-title font-bold">Contato do responsável</CardTitle>
@@ -660,7 +760,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="contact_email">Email do responsável</Label>
-                <Input id="contact_email" type="email" {...form.register("contact_email")} placeholder="email@responsavel.com" className="bg-white dark:bg-[#1A1A24]" />
+                <Input id="contact_email" type="email" {...form.register("contact_email")} placeholder="email@responsavel.com" className="bg-[var(--surface-1)]" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="contact_whatsapp">WhatsApp do responsável</Label>
@@ -670,7 +770,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                   render={({ field }) => (
                     <IMaskInput
                       mask="(00) 00000-0000"
-                      className="flex h-10 w-full rounded-md border border-input bg-white dark:bg-[#1A1A24] px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-input bg-[var(--surface-1)] px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       placeholder="(11) 99999-9999"
                       value={field.value || ""}
                       onAccept={(value) => field.onChange(value)}
@@ -681,9 +781,9 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             </CardContent>
           </Card>
 
-          <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
+          <Card className="border-[var(--line-1)] shadow-none bg-[var(--surface-2)]/50">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
-              <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
+              <div className="h-8 w-8 rounded-lg bg-[var(--violet-500)]/10 flex items-center justify-center text-[var(--violet-500)]">
                 <Briefcase className="h-5 w-5" />
               </div>
               <CardTitle className="text-lg font-title font-bold">Informações comerciais</CardTitle>
@@ -705,7 +805,7 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                 />
               </div>
               <div className="space-y-2">
-                <Label>Nicho <span className="text-red-500">*</span></Label>
+                <Label>Nicho <span className="text-[var(--danger)]">*</span></Label>
                 <Controller
                   control={form.control}
                   name="niche_id"
@@ -719,12 +819,12 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                     />
                   )}
                 />
-                {form.formState.errors.niche_id && <p className="text-xs text-red-500">{form.formState.errors.niche_id.message}</p>}
+                {form.formState.errors.niche_id && <p className="text-xs text-[var(--danger)]">{form.formState.errors.niche_id.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label>Tipo de contrato <span className="text-red-500">*</span></Label>
+                <Label>Tipo de contrato <span className="text-[var(--danger)]">*</span></Label>
                 <Select onValueChange={(v) => form.setValue("contract_type", v as any)} value={form.watch("contract_type")}>
-                  <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
+                  <SelectTrigger className="bg-[var(--surface-1)]">
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
@@ -732,27 +832,27 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                     <SelectItem value="one-off">Projeto Avulso</SelectItem>
                   </SelectContent>
                 </Select>
-                {form.formState.errors.contract_type && <p className="text-xs text-red-500">{form.formState.errors.contract_type.message}</p>}
+                {form.formState.errors.contract_type && <p className="text-xs text-[var(--danger)]">{form.formState.errors.contract_type.message}</p>}
               </div>
               
               {form.watch("contract_type") === 'recurring' && (
                 <div className="space-y-2">
-                  <Label>Meses de MRR <span className="text-red-500">*</span></Label>
+                  <Label>Meses de MRR <span className="text-[var(--danger)]">*</span></Label>
                   <Input
                     type="number"
                     min="1"
                     {...form.register("mrr_months", { valueAsNumber: true })}
-                    className="bg-white dark:bg-[#1A1A24]"
+                    className="bg-[var(--surface-1)]"
                     placeholder="Ex: 12"
                   />
-                  {form.formState.errors.mrr_months && <p className="text-xs text-red-500">{form.formState.errors.mrr_months.message}</p>}
+                  {form.formState.errors.mrr_months && <p className="text-xs text-[var(--danger)]">{form.formState.errors.mrr_months.message}</p>}
                 </div>
               )}
 
               <div className="space-y-2">
                 <Label>Método de Pagamento</Label>
                 <Select onValueChange={(v) => form.setValue("payment_method", v)} value={form.watch("payment_method") || ""}>
-                  <SelectTrigger className="bg-white dark:bg-[#1A1A24]">
+                  <SelectTrigger className="bg-[var(--surface-1)]">
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -771,11 +871,11 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                   name="monthly_value"
                   render={({ field }) => (
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A8FA3] text-sm">R$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-3)] text-sm">R$</span>
                       <Input
                         type="number"
                         step="0.01"
-                        className="pl-9 bg-white dark:bg-[#1A1A24]"
+                        className="pl-9 bg-[var(--surface-1)]"
                         placeholder="0,00"
                         value={field.value || ""}
                         onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
@@ -802,9 +902,9 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             </CardContent>
           </Card>
 
-          <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
+          <Card className="border-[var(--line-1)] shadow-none bg-[var(--surface-2)]/50">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
-              <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
+              <div className="h-8 w-8 rounded-lg bg-[var(--violet-500)]/10 flex items-center justify-center text-[var(--violet-500)]">
                 <Calendar className="h-5 w-5" />
               </div>
               <CardTitle className="text-lg font-title font-bold">Cronograma do projeto</CardTitle>
@@ -812,18 +912,18 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="start_date">Data de início</Label>
-                <Input id="start_date" type="date" {...form.register("start_date")} className="bg-white dark:bg-[#1A1A24]" />
+                <Input id="start_date" type="date" {...form.register("start_date")} className="bg-[var(--surface-1)]" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="end_date_expected">Data de encerramento previsto</Label>
-                <Input id="end_date_expected" type="date" {...form.register("end_date_expected")} className="bg-white dark:bg-[#1A1A24]" />
+                <Input id="end_date_expected" type="date" {...form.register("end_date_expected")} className="bg-[var(--surface-1)]" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
+          <Card className="border-[var(--line-1)] shadow-none bg-[var(--surface-2)]/50">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
-              <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
+              <div className="h-8 w-8 rounded-lg bg-[var(--violet-500)]/10 flex items-center justify-center text-[var(--violet-500)]">
                 <FileText className="h-5 w-5" />
               </div>
               <CardTitle className="text-lg font-title font-bold">Arquivo do contrato</CardTitle>
@@ -833,34 +933,34 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                 {...getRootProps()} 
                 className={cn(
                   "border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center space-y-2 transition-colors cursor-pointer",
-                  isDragActive ? "border-[#3D4FE8] bg-[#3D4FE8]/5" : "border-[#E4E6F0] dark:border-[#2A2A36] hover:border-[#3D4FE8]/50 bg-white dark:bg-[#1A1A24]"
+                  isDragActive ? "border-[var(--violet-500)] bg-[var(--violet-500)]/5" : "border-[var(--line-1)] hover:border-[var(--violet-500)]/50 bg-[var(--surface-1)]"
                 )}
               >
                 <input {...getInputProps()} />
-                <div className="h-12 w-12 rounded-full bg-[#F7F8FC] dark:bg-[#2A2A36] flex items-center justify-center text-[#8A8FA3] shadow-sm mb-2">
+                <div className="h-12 w-12 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-[var(--ink-3)] shadow-sm mb-2">
                   <Upload className="h-6 w-6" />
                 </div>
                 {file ? (
-                  <div className="flex items-center gap-2 text-[#3D4FE8] font-medium">
+                  <div className="flex items-center gap-2 text-[var(--violet-500)] font-medium">
                     <CheckCircle className="h-4 w-4" />
                     {file.name}
-                    <button onClick={(e) => { e.stopPropagation(); setFile(null); }} className="text-[#8A8FA3] hover:text-[#EF4444]">
+                    <button onClick={(e) => { e.stopPropagation(); setFile(null); }} className="text-[var(--ink-3)] hover:text-[var(--danger)]">
                       <X className="h-4 w-4" />
                     </button>
                   </div>
                 ) : (
                   <>
-                    <p className="text-sm font-bold text-[#0E0E16] dark:text-white">Clique para upload ou arraste</p>
-                    <p className="text-xs text-[#8A8FA3]">PDF até 10MB</p>
+                    <p className="text-sm font-bold text-[var(--ink-1)]">Clique para upload ou arraste</p>
+                    <p className="text-xs text-[var(--ink-3)]">PDF até 10MB</p>
                   </>
                 )}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-[#E4E6F0] dark:border-[#2A2A36] shadow-none bg-[#F7F8FC]/50 dark:bg-[#2A2A36]/20">
+          <Card className="border-[var(--line-1)] shadow-none bg-[var(--surface-2)]/50">
             <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4">
-              <div className="h-8 w-8 rounded-lg bg-[#3D4FE8]/10 flex items-center justify-center text-[#3D4FE8]">
+              <div className="h-8 w-8 rounded-lg bg-[var(--violet-500)]/10 flex items-center justify-center text-[var(--violet-500)]">
                 <MessageSquare className="h-5 w-5" />
               </div>
               <CardTitle className="text-lg font-title font-bold">Observações do contrato</CardTitle>
@@ -872,9 +972,9 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                   id="scope_details" 
                   {...form.register("scope_details")} 
                   placeholder="Descreva o que foi contratado..."
-                  className="min-h-[100px] bg-white dark:bg-[#1A1A24]"
+                  className="min-h-[100px] bg-[var(--surface-1)]"
                 />
-                <p className="text-[10px] text-[#8A8FA3]">Descreva o que foi contratado e observações relevantes sobre o escopo.</p>
+                <p className="text-[10px] text-[var(--ink-3)]">Descreva o que foi contratado e observações relevantes sobre o escopo.</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="extra_comments">Comentários extras</Label>
@@ -882,9 +982,9 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
                   id="extra_comments" 
                   {...form.register("extra_comments")} 
                   placeholder="Informações adicionais..."
-                  className="min-h-[100px] bg-white dark:bg-[#1A1A24]"
+                  className="min-h-[100px] bg-[var(--surface-1)]"
                 />
-                <p className="text-[10px] text-[#8A8FA3]">Informações adicionais sobre o fechamento e particularidades do cliente.</p>
+                <p className="text-[10px] text-[var(--ink-3)]">Informações adicionais sobre o fechamento e particularidades do cliente.</p>
               </div>
             </CardContent>
           </Card>
@@ -894,14 +994,14 @@ export function ClientRegistrationModal({ open, onOpenChange, onSuccess, initial
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="rounded-full px-8 border-[#E4E6F0] text-[#8A8FA3]"
+              className="rounded-full px-8 border-[var(--line-1)] text-[var(--ink-3)]"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-white rounded-full px-12 font-bold"
+              className="bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90 text-white rounded-full px-12 font-bold"
             >
               {isSubmitting ? "Salvando..." : initialData ? "Salvar alterações" : "Salvar cliente"}
             </Button>

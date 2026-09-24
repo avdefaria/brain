@@ -27,8 +27,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { 
   Select, 
   SelectContent, 
@@ -40,7 +41,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, formatCalendarDatePtBr } from "@/lib/utils";
 import { 
   DragDropContext, 
   Droppable, 
@@ -50,10 +51,11 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { getLeads, getLeadStats, updateLeadPosition, getFunnelTypes, STAGES, deleteLead } from "@/lib/leads.functions";
+import { getLeads, getLeadStats, getLeadStatsTrends, updateLeadPosition, getFunnelTypes, STAGES, deleteLead } from "@/lib/leads.functions";
 import { getCollaborators } from "@/lib/squads.functions";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { LeadConversionModal } from "@/components/LeadConversionModal";
+import { ClientOnboardingModal } from "@/components/ClientOnboardingModal";
 import { CRMFunnelChart, STAGE_COLORS } from "@/components/CRMFunnelChart";
 import { CRMLeadsTable } from "@/components/CRMLeadsTable";
 import { 
@@ -71,10 +73,41 @@ export const Route = createFileRoute("/_authenticated/comercial/crm")({
   component: CRMPage,
 });
 
+function MiniKpiCard({ icon: Icon, label, value, subtitle, trend, delta, color }: { icon: any; label: string; value: string; subtitle?: string; trend?: number[]; delta?: number; color: string }) {
+  const trendData = (trend && trend.length > 0 ? trend : [0]).map((v, i) => ({ i, v }));
+  const deltaColor = delta === undefined ? "text-[var(--ink-3)]" : delta > 0 ? "text-[var(--success)]" : delta < 0 ? "text-[var(--danger)]" : "text-[var(--ink-3)]";
+  const deltaLabel = delta === undefined ? null : `${delta > 0 ? "+" : ""}${delta}%`;
+  return (
+    <Card className="border-[var(--line-1)] shadow-sm">
+      <CardContent className="p-6 flex items-center gap-4">
+        <div className={cn("h-10 w-10 bg-[var(--surface-1)] border border-[var(--line-1)] rounded-2xl flex items-center justify-center shadow-sm shrink-0", color)}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] uppercase font-bold text-[var(--ink-3)] tracking-widest">{label}</p>
+          <h3 className="text-lg font-bold text-[var(--ink-1)] font-jakarta truncate">{value}</h3>
+          {subtitle && <p className="text-[10px] text-[var(--ink-3)] truncate">{subtitle}</p>}
+        </div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <div className="w-14 h-6">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+                <Line type="monotone" dataKey="v" stroke="var(--violet-500)" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          {deltaLabel && <span className={cn("text-[10px] font-bold", deltaColor)}>{deltaLabel}</span>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function CRMPage() {
   const queryClient = useQueryClient();
   const fetchLeads = useServerFn(getLeads);
   const fetchStats = useServerFn(getLeadStats);
+  const fetchTrends = useServerFn(getLeadStatsTrends);
   const fetchCollaborators = useServerFn(getCollaborators);
   const fetchFunnelTypes = useServerFn(getFunnelTypes);
   const updatePosition = useServerFn(updateLeadPosition);
@@ -83,10 +116,19 @@ function CRMPage() {
   const [responsibleId, setResponsibleId] = useState<string>("all");
   const [funnelTypeId, setFunnelTypeId] = useState<string>("all");
   const [showConverted, setShowConverted] = useState(false);
+  const [periodPreset, setPeriodPreset] = useState<"hoje" | "semana" | "mes" | null>(null);
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
     to: undefined
   });
+  const granularity: "day" | "week" | "month" = periodPreset === "hoje" ? "day" : periodPreset === "semana" ? "week" : "month";
+  const applyPreset = (preset: "hoje" | "semana" | "mes") => {
+    setPeriodPreset(preset);
+    const now = new Date();
+    if (preset === "hoje") setDateRange({ from: startOfDay(now), to: endOfDay(now) });
+    else if (preset === "semana") setDateRange({ from: startOfWeek(now, { weekStartsOn: 1 }), to: endOfWeek(now, { weekStartsOn: 1 }) });
+    else setDateRange({ from: startOfMonth(now), to: endOfMonth(now) });
+  };
 
   const filterParams = useMemo(() => ({
     responsible_id: responsibleId === "all" ? null : responsibleId,
@@ -106,6 +148,19 @@ function CRMPage() {
     queryFn: () => fetchStats({ data: filterParams }),
   });
 
+  const trendsParams = useMemo(() => ({
+    responsible_id: responsibleId === "all" ? null : responsibleId,
+    funnel_type_id: funnelTypeId === "all" ? null : funnelTypeId,
+    granularity,
+  }), [responsibleId, funnelTypeId, granularity]);
+
+  const { data: trendsData } = useQuery({
+    queryKey: ["lead-stats-trends", trendsParams],
+    queryFn: () => fetchTrends({ data: trendsParams }),
+  });
+  const trends = trendsData?.trends;
+  const deltas = trendsData?.deltas;
+
   const { data: collaborators = [] } = useQuery({
     queryKey: ["collaborators"],
     queryFn: () => fetchCollaborators(),
@@ -120,6 +175,7 @@ function CRMPage() {
     setResponsibleId("all");
     setFunnelTypeId("all");
     setShowConverted(false);
+    setPeriodPreset(null);
     setDateRange({ from: undefined, to: undefined });
   };
 
@@ -127,6 +183,7 @@ function CRMPage() {
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [leadToDelete, setLeadToDelete] = useState<any>(null);
   const [leadToConvert, setLeadToConvert] = useState<any>(null);
+  const [onboardingClient, setOnboardingClient] = useState<{ clientId: string; clientName: string } | null>(null);
 
   const deleteLeadFn = useServerFn(deleteLead);
 
@@ -164,33 +221,42 @@ function CRMPage() {
     }
   };
 
+  const money = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
+  const shortBRL = (v: number) => {
+    const abs = Math.abs(Number(v) || 0);
+    const num = Number(v) || 0;
+    return abs >= 1000000 ? `${(num / 1000000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}M` : abs >= 1000 ? `${(num / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}K` : `${Math.round(num)}`;
+  };
   const kpiItems = [
-    { label: "Total de leads", value: stats?.total || 0, icon: User, color: "text-[#3D4FE8]" },
-    { label: "Propostas enviadas", value: stats?.proposals || 0, icon: Briefcase, color: "text-[#F5A524]" },
-    { 
-      label: "Pipeline", 
-      value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats?.pipeline || 0), 
-      icon: TrendingUp, 
-      color: "text-[#22C55E]" 
+    { label: "Total de leads", value: String(stats?.total || 0), icon: User, color: "text-[var(--violet-500)]", trend: trends?.leads, delta: deltas?.leads },
+    { label: "Propostas enviadas", value: String(stats?.proposals || 0), icon: Briefcase, color: "text-[var(--warning)]", trend: trends?.propostas, delta: deltas?.propostas },
+    {
+      label: "Previsto",
+      value: money(stats?.pipeline || 0),
+      subtitle: `Previsão MRR: R$${shortBRL(stats?.pipelineMrr || 0)}`,
+      icon: TrendingUp,
+      color: "text-[var(--success)]",
+      trend: trends?.previsto,
+      delta: deltas?.previsto,
     },
-    { label: "Vendas feitas", value: stats?.sales || 0, icon: DollarSign, color: "text-[#22C55E]" },
-    { label: "Vendas perdidas", value: stats?.lost || 0, icon: AlertCircle, color: "text-[#EF4444]" },
+    { label: "Vendas feitas", value: String(stats?.sales || 0), icon: DollarSign, color: "text-[var(--success)]", trend: trends?.vendas, delta: deltas?.vendas },
+    { label: "Vendas perdidas", value: String(stats?.lost || 0), icon: AlertCircle, color: "text-[var(--danger)]", trend: trends?.perdidas, delta: deltas?.perdidas },
   ];
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="sticky top-16 z-20 flex flex-col gap-4 border-b border-[var(--line-1)] bg-[var(--surface-2)] px-8 pb-4 pt-8 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-title font-bold text-[#0E0E16]">CRM</h1>
-          <p className="text-sm text-[#8A8FA3]">Gestão do funil de vendas e novos negócios</p>
+          <h1 className="text-2xl font-title font-bold text-[var(--ink-1)]">CRM</h1>
+          <p className="text-sm text-[var(--ink-3)]">Gestão do funil de vendas e novos negócios</p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-3">
           {/* Responsible Filter */}
           <Select value={responsibleId} onValueChange={setResponsibleId}>
-            <SelectTrigger className="w-[200px] h-10 rounded-full border-[#E4E6F0] bg-white text-xs font-medium">
+            <SelectTrigger className="w-[200px] h-10 rounded-full border-[var(--line-1)] bg-[var(--surface-1)] text-xs font-medium">
               <div className="flex items-center gap-2">
-                <User className="h-3.5 w-3.5 text-[#8A8FA3]" />
+                <User className="h-3.5 w-3.5 text-[var(--ink-3)]" />
                 <SelectValue placeholder="Responsável" />
               </div>
             </SelectTrigger>
@@ -204,9 +270,9 @@ function CRMPage() {
 
           {/* Funnel Filter */}
           <Select value={funnelTypeId} onValueChange={setFunnelTypeId}>
-            <SelectTrigger className="w-[180px] h-10 rounded-full border-[#E4E6F0] bg-white text-xs font-medium">
+            <SelectTrigger className="w-[180px] h-10 rounded-full border-[var(--line-1)] bg-[var(--surface-1)] text-xs font-medium">
               <div className="flex items-center gap-2">
-                <Filter className="h-3.5 w-3.5 text-[#8A8FA3]" />
+                <Filter className="h-3.5 w-3.5 text-[var(--ink-3)]" />
                 <SelectValue placeholder="Funil" />
               </div>
             </SelectTrigger>
@@ -218,14 +284,31 @@ function CRMPage() {
             </SelectContent>
           </Select>
 
+          {/* Period Presets */}
+          <div className="flex items-center gap-1 bg-[var(--surface-1)] p-1 rounded-full border border-[var(--line-1)]">
+            {([["hoje", "Hoje"], ["semana", "Semana"], ["mes", "Mês"]] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => applyPreset(key)}
+                className={cn(
+                  "h-8 px-3 rounded-full text-xs font-bold transition-colors",
+                  periodPreset === key ? "bg-[var(--violet-500)] text-white" : "text-[var(--ink-3)] hover:bg-[var(--surface-2)]"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           {/* Period Filter */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="h-10 px-4 rounded-full border-[#E4E6F0] bg-white text-xs font-medium gap-2 hover:bg-[#F7F8FC]"
+              <Button
+                variant="outline"
+                className="h-10 px-4 rounded-full border-[var(--line-1)] bg-[var(--surface-1)] text-xs font-medium gap-2 hover:bg-[var(--surface-2)]"
               >
-                <CalendarIcon className="h-3.5 w-3.5 text-[#8A8FA3]" />
+                <CalendarIcon className="h-3.5 w-3.5 text-[var(--ink-3)]" />
                 {dateRange.from ? (
                   dateRange.to ? (
                     <>
@@ -248,7 +331,7 @@ function CRMPage() {
                   from: dateRange?.from || undefined,
                   to: dateRange?.to || undefined,
                 }}
-                onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
+                onSelect={(range: any) => { setPeriodPreset(null); setDateRange(range || { from: undefined, to: undefined }); }}
                 numberOfMonths={2}
                 locale={ptBR}
               />
@@ -256,13 +339,13 @@ function CRMPage() {
           </Popover>
 
           {/* Toggle Converted */}
-          <div className="flex items-center gap-2 bg-white px-4 h-10 rounded-full border border-[#E4E6F0]">
-            <span className="text-xs font-medium text-[#8A8FA3]">Mostrar convertidos</span>
+          <div className="flex items-center gap-2 bg-[var(--surface-1)] px-4 h-10 rounded-full border border-[var(--line-1)]">
+            <span className="text-xs font-medium text-[var(--ink-3)]">Mostrar convertidos</span>
             <input 
               type="checkbox" 
               checked={showConverted}
               onChange={(e) => setShowConverted(e.target.checked)}
-              className="w-4 h-4 rounded border-[#E4E6F0] text-[#3D4FE8] focus:ring-[#3D4FE8]"
+              className="w-4 h-4 rounded border-[var(--line-1)] text-[var(--violet-500)] focus:ring-[var(--violet-500)]"
             />
           </div>
 
@@ -271,7 +354,7 @@ function CRMPage() {
             <Button 
               variant="ghost" 
               size="icon"
-              className="h-10 w-10 rounded-full text-[#EF4444] hover:bg-red-50 hover:text-[#EF4444]"
+              className="h-10 w-10 rounded-full text-[var(--danger)] hover:bg-[var(--danger-tint)] hover:text-[var(--danger)]"
               onClick={resetFilters}
               title="Limpar filtros"
             >
@@ -280,7 +363,7 @@ function CRMPage() {
           )}
 
           <Button 
-            className="rounded-full bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 gap-2 font-bold h-10"
+            className="rounded-full bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90 gap-2 font-bold h-10"
             onClick={() => setIsCreateModalOpen(true)}
           >
             <Plus className="h-4 w-4" /> Novo Lead
@@ -288,25 +371,16 @@ function CRMPage() {
         </div>
       </div>
 
+      <div className="px-8 pb-8 space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {kpiItems.map((kpi) => (
-          <Card key={kpi.label} className="border-[#E4E6F0] shadow-sm">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className={cn("h-10 w-10 bg-white border border-[#E4E6F0] rounded-2xl flex items-center justify-center shadow-sm", kpi.color)}>
-                <kpi.icon className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-[10px] uppercase font-bold text-[#8A8FA3] tracking-widest">{kpi.label}</p>
-                <h3 className="text-lg font-bold text-[#0E0E16] font-jakarta">{kpi.value}</h3>
-              </div>
-            </CardContent>
-          </Card>
+          <MiniKpiCard key={kpi.label} icon={kpi.icon} label={kpi.label} value={kpi.value} subtitle={(kpi as any).subtitle} trend={kpi.trend} delta={kpi.delta} color={kpi.color} />
         ))}
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 text-[#3D4FE8] animate-spin" />
+          <Loader2 className="h-8 w-8 text-[var(--violet-500)] animate-spin" />
         </div>
       ) : (
         <DragDropContext onDragEnd={onDragEnd}>
@@ -317,10 +391,10 @@ function CRMPage() {
                   <div className="flex items-center gap-2">
                     <div 
                       className="w-2.5 h-2.5 rounded-full shrink-0" 
-                      style={{ backgroundColor: STAGE_COLORS[stage.id] || "#8A8FA3" }}
+                      style={{ backgroundColor: STAGE_COLORS[stage.id] || "var(--ink-3)" }}
                     />
-                    <h3 className="font-title font-bold text-[#0E0E16] text-sm whitespace-nowrap">{stage.label}</h3>
-                    <span className="text-xs font-bold text-[#8A8FA3] bg-[#F7F8FC] px-2 py-0.5 rounded-full border border-[#E4E6F0]">
+                    <h3 className="font-title font-bold text-[var(--ink-1)] text-sm whitespace-nowrap">{stage.label}</h3>
+                    <span className="text-xs font-bold text-[var(--ink-3)] bg-[var(--surface-2)] px-2 py-0.5 rounded-full border border-[var(--line-1)]">
                       {leads.filter((l: any) => l.funnel_stage === stage.id).length}
                     </span>
                   </div>
@@ -331,7 +405,7 @@ function CRMPage() {
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className="space-y-4 min-h-[500px] bg-[#F7F8FC]/50 p-2 rounded-xl border border-dashed border-[#E4E6F0]"
+                      className="space-y-4 min-h-[500px] bg-[var(--surface-2)]/50 p-2 rounded-xl border border-dashed border-[var(--line-1)]"
                     >
                       {leads
                         .filter((l: any) => l.funnel_stage === stage.id)
@@ -344,29 +418,29 @@ function CRMPage() {
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
                                 className={cn(
-                                  "border-[#E4E6F0] shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group bg-white",
+                                  "border-[var(--line-1)] shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group bg-[var(--surface-1)]",
                                   lead.converted_at && "opacity-60 grayscale-[0.5]"
                                 )}
                                 onClick={() => setSelectedLead(lead)}
                               >
                                 <CardContent className="p-4 space-y-3">
                                   {lead.converted_at && (
-                                    <Badge className="bg-[#22C55E]/10 text-[#22C55E] text-[8px] font-bold border-[#22C55E]/20 rounded-full px-2 mb-1">
+                                    <Badge className="bg-[var(--success)]/10 text-[var(--success)] text-[8px] font-bold border-[var(--success)]/20 rounded-full px-2 mb-1">
                                       CONVERTIDO
                                     </Badge>
                                   )}
                                   <div className="flex justify-between items-start">
-                                    <h4 className="text-sm font-bold text-[#0E0E16] leading-tight">{lead.name}</h4>
-                                    <Badge className="bg-[#F7F8FC] text-[#3D4FE8] text-[8px] uppercase font-bold border-none rounded-full px-2 py-0">
+                                    <h4 className="text-sm font-bold text-[var(--ink-1)] leading-tight">{lead.name}</h4>
+                                    <Badge className="bg-[var(--surface-2)] text-[var(--violet-500)] text-[8px] uppercase font-bold border-none rounded-full px-2 py-0">
                                       {lead.origin || 'Direto'}
                                     </Badge>
                                   </div>
                                   
                                   <div className="space-y-1">
-                                    <p className="text-[10px] text-[#8A8FA3] flex items-center gap-1 font-medium">
+                                    <p className="text-[10px] text-[var(--ink-3)] flex items-center gap-1 font-medium">
                                       <Briefcase className="h-3 w-3" /> {lead.company || 'Empresa não informada'}
                                     </p>
-                                    <p className="text-[11px] font-bold text-[#3D4FE8]">
+                                    <p className="text-[11px] font-bold text-[var(--violet-500)]">
                                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.recurring_revenue || 0)}
                                     </p>
                                   </div>
@@ -408,21 +482,50 @@ function CRMPage() {
 
                                     const daysSinceContact = lead.last_contact_at ? getDaysDiff(lead.last_contact_at) : null;
 
+                                    const nextContactDate = lead.next_contact_at ? new Date(lead.next_contact_at) : null;
+                                    const isContactOverdue = nextContactDate ? nextContactDate.getTime() < Date.now() : false;
+                                    const contactAttempts = Number(lead.contact_attempts) || 0;
+
                                     return (
                                       <div className="flex flex-wrap gap-2 pt-1">
-                                        <Badge 
-                                          variant="outline" 
+                                        <Badge
+                                          variant="outline"
                                           className={cn(
-                                            "h-5 text-[9px] font-bold gap-1 px-2 border-[#E4E6F0] rounded-full",
-                                            isAlert ? "text-[#F5A524] border-[#F5A524]/30 bg-[#F5A524]/5" : "text-[#8A8FA3] bg-[#F7F8FC]"
+                                            "h-5 text-[9px] font-bold gap-1 px-2 border-[var(--line-1)] rounded-full",
+                                            isAlert ? "text-[var(--warning)] border-[var(--warning)]/30 bg-[var(--warning)]/5" : "text-[var(--ink-3)] bg-[var(--surface-2)]"
                                           )}
                                         >
                                           <Clock className="h-3 w-3" />
                                           {daysInStage} {daysInStage === 1 ? 'dia' : 'dias'}
                                         </Badge>
 
+                                        {contactAttempts > 0 && (
+                                          <Badge
+                                            variant="outline"
+                                            className={cn(
+                                              "h-5 text-[9px] font-bold gap-1 px-2 rounded-full",
+                                              contactAttempts >= 3 ? "text-[var(--danger)] border-[var(--danger)]/40 bg-[var(--danger-tint)]" : "text-[var(--ink-3)] border-[var(--line-1)] bg-[var(--surface-2)]"
+                                            )}
+                                          >
+                                            {contactAttempts}/3 tentativas
+                                          </Badge>
+                                        )}
+
+                                        {nextContactDate && (
+                                          <Badge
+                                            variant="outline"
+                                            className={cn(
+                                              "h-5 text-[9px] font-bold gap-1 px-2 rounded-full",
+                                              isContactOverdue ? "text-[var(--danger)] border-[var(--danger)]/40 bg-[var(--danger-tint)]" : "text-[var(--violet-500)] border-[var(--violet-500)]/30 bg-[var(--violet-500)]/5"
+                                            )}
+                                          >
+                                            <CalendarIcon className="h-3 w-3" />
+                                            {isContactOverdue ? "Atrasado" : "Próximo"}: {formatCalendarDatePtBr(lead.next_contact_at)}
+                                          </Badge>
+                                        )}
+
                                         {daysSinceContact !== null && (
-                                          <div className="text-[9px] text-[#8A8FA3] flex items-center gap-1 font-medium italic">
+                                          <div className="text-[9px] text-[var(--ink-3)] flex items-center gap-1 font-medium italic">
                                             <MessageCircle className="h-2.5 w-2.5" />
                                             Último contato: {daysSinceContact === 0 ? 'hoje' : `há ${daysSinceContact} ${daysSinceContact === 1 ? 'dia' : 'dias'}`}
                                           </div>
@@ -431,17 +534,17 @@ function CRMPage() {
                                     );
                                   })()}
 
-                                  <div className="flex items-center justify-between pt-3 border-t border-[#F7F8FC]">
+                                  <div className="flex items-center justify-between pt-3 border-t border-[var(--surface-2)]">
                                     <div className="flex items-center gap-1.5">
-                                      <div className="h-5 w-5 rounded-full bg-[#3D4FE8] flex items-center justify-center text-[8px] text-white font-bold">
+                                      <div className="h-5 w-5 rounded-full bg-[var(--violet-500)] flex items-center justify-center text-[8px] text-white font-bold">
                                         {lead.responsible?.full_name?.charAt(0) || '?'}
                                       </div>
-                                      <span className="text-[10px] text-[#8A8FA3]">{lead.responsible?.full_name?.split(' ')[0] || 'Sem resp.'}</span>
+                                      <span className="text-[10px] text-[var(--ink-3)]">{lead.responsible?.full_name?.split(' ')[0] || 'Sem resp.'}</span>
                                     </div>
                                     <Button 
                                       size="sm" 
                                       variant="ghost" 
-                                      className="h-7 px-2 text-[10px] font-bold text-[#3D4FE8] hover:bg-[#3D4FE8]/10 rounded-full gap-1"
+                                      className="h-7 px-2 text-[10px] font-bold text-[var(--violet-500)] hover:bg-[var(--violet-500)]/10 rounded-full gap-1"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setLeadToConvert(lead);
@@ -476,8 +579,9 @@ function CRMPage() {
           />
         </>
       )}
+      </div>
 
-      <LeadFormModal 
+      <LeadFormModal
         isOpen={isCreateModalOpen || !!selectedLead} 
         onOpenChange={(open: boolean) => {
           if (!open) {
@@ -488,11 +592,21 @@ function CRMPage() {
         lead={selectedLead}
       />
 
-      <LeadConversionModal 
+      <LeadConversionModal
         lead={leadToConvert}
         isOpen={!!leadToConvert}
         onOpenChange={(open: boolean) => !open && setLeadToConvert(null)}
+        onConverted={setOnboardingClient}
       />
+
+      {onboardingClient && (
+        <ClientOnboardingModal
+          clientId={onboardingClient.clientId}
+          clientName={onboardingClient.clientName}
+          open={Boolean(onboardingClient)}
+          onOpenChange={(open) => !open && setOnboardingClient(null)}
+        />
+      )}
 
       <AlertDialog open={!!leadToDelete} onOpenChange={(open) => !open && setLeadToDelete(null)}>
         <AlertDialogContent>
@@ -506,7 +620,7 @@ function CRMPage() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteLead}
-              className="bg-[#EF4444] hover:bg-[#EF4444]/90"
+              className="bg-[var(--danger)] hover:bg-[var(--danger)]/90"
             >
               Excluir
             </AlertDialogAction>

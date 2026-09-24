@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogFooter 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -15,9 +15,10 @@ interface LeadConversionModalProps {
   lead: any;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onConverted?: (result: { clientId: string; clientName: string }) => void;
 }
 
-export function LeadConversionModal({ lead, isOpen, onOpenChange }: LeadConversionModalProps) {
+export function LeadConversionModal({ lead, isOpen, onOpenChange, onConverted }: LeadConversionModalProps) {
   const queryClient = useQueryClient();
   const [showFullModal, setShowFullModal] = useState(false);
 
@@ -30,10 +31,13 @@ export function LeadConversionModal({ lead, isOpen, onOpenChange }: LeadConversi
 
   if (!lead) return null;
 
-  const handleSuccess = () => {
+  const handleSuccess = (result?: { clientId: string; isNewClient: boolean; fromLead: boolean }) => {
     toast.success("Lead convertido em cliente com sucesso!");
     queryClient.invalidateQueries({ queryKey: ["leads"] });
     onOpenChange(false);
+    if (result?.clientId && onConverted) {
+      onConverted({ clientId: result.clientId, clientName: lead.company || lead.name });
+    }
   };
 
   const recurring = Number(lead.recurring_revenue) || 0;
@@ -47,6 +51,7 @@ export function LeadConversionModal({ lead, isOpen, onOpenChange }: LeadConversi
   
   const initialClientData = {
     name: lead.company || lead.name,
+    account_name: lead.account_name || lead.company || lead.name,
     corporate_email: lead.email || "",
     contact_email: lead.email || "",
     contact_whatsapp: lead.phone || "",

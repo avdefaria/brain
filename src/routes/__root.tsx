@@ -14,17 +14,17 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F7F8FC] px-4 font-body">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--surface-2)] px-4 font-body">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-[#0E0E16] font-title">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-[#0E0E16] font-title">Página não encontrada</h2>
-        <p className="mt-2 text-sm text-[#8A8FA3]">
+        <h1 className="text-7xl font-bold text-[var(--ink-1)] font-title">404</h1>
+        <h2 className="mt-4 text-xl font-semibold text-[var(--ink-1)] font-title">Página não encontrada</h2>
+        <p className="mt-2 text-sm text-[var(--ink-3)]">
           A página que você está procurando não existe ou foi movida.
         </p>
         <div className="mt-6">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-full bg-[#3D4FE8] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3D4FE8]/90"
+            className="inline-flex items-center justify-center rounded-full bg-[var(--violet-500)] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--violet-500)]/90"
           >
             Voltar ao Início
           </Link>
@@ -42,12 +42,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F7F8FC] px-4 font-body">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--surface-2)] px-4 font-body">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-[#0E0E16] font-title">
+        <h1 className="text-xl font-semibold tracking-tight text-[var(--ink-1)] font-title">
           Algo deu errado
         </h1>
-        <p className="mt-2 text-sm text-[#8A8FA3]">
+        <p className="mt-2 text-sm text-[var(--ink-3)]">
           Não foi possível carregar a página. Tente atualizar ou voltar ao início.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -56,13 +56,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-full bg-[#3D4FE8] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3D4FE8]/90"
+            className="inline-flex items-center justify-center rounded-full bg-[var(--violet-500)] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--violet-500)]/90"
           >
             Tentar novamente
           </button>
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-full border border-[#E4E6F0] bg-white px-6 py-2 text-sm font-medium text-[#0E0E16] transition-colors hover:bg-[#F7F8FC]"
+            className="inline-flex items-center justify-center rounded-full border border-[var(--line-1)] bg-[var(--surface-1)] px-6 py-2 text-sm font-medium text-[var(--ink-1)] transition-colors hover:bg-[var(--surface-2)]"
           >
             Voltar ao Início
           </Link>

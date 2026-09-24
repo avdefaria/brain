@@ -6,6 +6,20 @@ const ALLOWED_DOMAINS = ["@ongoo.com.br", "@ongoagency.com.br"];
 const DOMAIN_ERROR =
   "Apenas e-mails corporativos (@ongoo.com.br ou @ongoagency.com.br) podem ser cadastrados.";
 
+// Gate de segurança pras operações privilegiadas deste arquivo (criar
+// colaborador, mudar role, resetar senha de qualquer um) — sem isso, qualquer
+// usuário autenticado conseguia chamar essas funções e se promover a admin.
+async function requireAdmin(context: { userId: string; supabase: any }): Promise<void> {
+  const { data: roleRow } = await context.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId)
+    .maybeSingle();
+  if ((roleRow as any)?.role !== "admin") {
+    throw new Error("Apenas administradores podem executar esta ação.");
+  }
+}
+
 const userFunctionEnum = z.enum([
   "Designer",
   "Copywriter",
@@ -19,8 +33,6 @@ const employmentTypeEnum = z.enum(["CLT", "PJ", "Estágio"]);
 
 const appRoleEnum = z.enum(["admin", "leader", "collaborator"]);
 
-const commercialRoleEnum = z.enum(["SDR", "Closer", "Dono", "Gestor"]);
-
 const LEGACY_FUNCTIONS = [
   "Designer",
   "Copywriter",
@@ -33,7 +45,41 @@ const LEGACY_FUNCTIONS = [
 export type JobFunction = {
   id: string;
   name: string;
+  department_id: string | null;
 };
+
+export type Department = {
+  id: string;
+  name: string;
+};
+
+export const getDepartments = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await (context.supabase as any)
+      .from("departments")
+      .select("id, name")
+      .order("name");
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as unknown) as Department[];
+  });
+
+export const createDepartment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((name: string) => z.string().trim().min(1, "Informe o nome do departamento").max(80).parse(name))
+  .handler(async ({ context, data: rawName }) => {
+    const supabase = context.supabase as any;
+    const name = rawName.trim();
+    const { data: existing } = await supabase.from("departments").select("id").ilike("name", name).maybeSingle();
+    if (existing) throw new Error("Este departamento já existe.");
+    const { data, error } = await supabase.from("departments").insert({ name }).select("id, name").single();
+    if (error) {
+      const msg = (error.message ?? "").toLowerCase();
+      if (msg.includes("duplicate") || msg.includes("unique")) throw new Error("Este departamento já existe.");
+      throw new Error(error.message);
+    }
+    return (data as unknown) as Department;
+  });
 
 export const getJobFunctions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -43,7 +89,7 @@ export const getJobFunctions = createServerFn({ method: "GET" })
     };
     const { data, error } = await supabase
       .from("job_functions")
-      .select("id, name")
+      .select("id, name, department_id")
       .order("name");
     if (error) {
       throw new Error(error.message);
@@ -54,52 +100,64 @@ export const getJobFunctions = createServerFn({ method: "GET" })
 
 export const createJobFunction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((name: string) => z.string().trim().min(1, "Informe o nome do cargo").max(80).parse(name))
-  .handler(async ({ context, data: rawName }) => {
+  .validator((data: { name: string; departmentId: string }) => z.object({
+    name: z.string().trim().min(1, "Informe o nome do cargo").max(80),
+    departmentId: z.string().uuid("Selecione um departamento"),
+  }).parse(data))
+  .handler(async ({ context, data }) => {
     const supabase = context.supabase as unknown as {
       from: (table: string) => any;
     };
-    const name = rawName.trim();
-    if (name.length === 0) {
-      throw new Error("Informe o nome do cargo");
+    const name = data.name.trim();
+    const { data: existing } = await supabase
+      .from("job_functions")
+      .select("id")
+      .ilike("name", name)
+      .maybeSingle();
+    if (existing) {
+      throw new Error("Este cargo já existe.");
     } else {
-      const { data: existing } = await supabase
+      const { data: created, error } = await supabase
         .from("job_functions")
-        .select("id")
-        .ilike("name", name)
-        .maybeSingle();
-      if (existing) {
-        throw new Error("Este cargo já existe.");
-      } else {
-        const { data, error } = await supabase
-          .from("job_functions")
-          .insert({ name })
-          .select("id, name")
-          .single();
-        if (error) {
-          const msg = (error.message ?? "").toLowerCase();
-          if (msg.includes("duplicate") || msg.includes("unique") || msg.includes("already")) {
-            throw new Error("Este cargo já existe.");
-          } else {
-            throw new Error(error.message);
-          }
+        .insert({ name, department_id: data.departmentId })
+        .select("id, name, department_id")
+        .single();
+      if (error) {
+        const msg = (error.message ?? "").toLowerCase();
+        if (msg.includes("duplicate") || msg.includes("unique") || msg.includes("already")) {
+          throw new Error("Este cargo já existe.");
         } else {
-          return (data as unknown) as JobFunction;
+          throw new Error(error.message);
         }
+      } else {
+        return (created as unknown) as JobFunction;
       }
     }
   });
+
+const addressSchema = z.object({
+  zip: z.string().trim().optional().nullable(),
+  street: z.string().trim().optional().nullable(),
+  number: z.string().trim().optional().nullable(),
+  complement: z.string().trim().optional().nullable(),
+  neighborhood: z.string().trim().optional().nullable(),
+  city: z.string().trim().optional().nullable(),
+  state: z.string().trim().optional().nullable(),
+}).optional();
 
 const createCollaboratorSchema = z.object({
   fullName: z.string().trim().min(2, "Nome completo é obrigatório"),
   email: z.string().trim().email("E-mail inválido"),
   function: userFunctionEnum.optional(),
-  jobFunctionId: z.string().uuid("Cargo inválido").nullable().optional(),
-  commercialRoles: z.array(commercialRoleEnum).optional().default([]),
-  squadId: z.string().uuid("Squad inválido").nullable().optional(),
+  jobFunctionIds: z.array(z.string().uuid()).min(1, "Selecione ao menos um cargo"),
+  squadIds: z.array(z.string().uuid()).optional().default([]),
   employmentType: employmentTypeEnum,
   role: appRoleEnum,
   avatarUrl: z.string().trim().url("Avatar inválido").nullable().optional(),
+  cpf: z.string().trim().optional().nullable(),
+  phone: z.string().trim().optional().nullable(),
+  birthDate: z.string().trim().optional().nullable(),
+  address: addressSchema,
 });
 
 type CreateCollaboratorInput = z.infer<typeof createCollaboratorSchema>;
@@ -134,7 +192,8 @@ function generateTemporaryPassword(length = 12): string {
 export const createCollaborator = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: CreateCollaboratorInput) => createCollaboratorSchema.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const normalizedEmail = data.email.trim().toLowerCase();
@@ -147,62 +206,55 @@ export const createCollaborator = createServerFn({ method: "POST" })
     }
 
     const temporaryPassword = generateTemporaryPassword(12);
-    const commercialRolesForPayload =
-      data.commercialRoles && data.commercialRoles.length > 0 ? data.commercialRoles : null;
 
-    let resolvedJobFunctionId: string | null = data.jobFunctionId ?? null;
-    let resolvedLegacyFunction: string = data.function ?? "Designer";
-
-    if (resolvedJobFunctionId) {
-      const { data: jobRow } = await (supabaseAdmin as any)
-        .from("job_functions")
-        .select("id, name")
-        .eq("id", resolvedJobFunctionId)
-        .maybeSingle();
-      const jobName = ((jobRow ?? {}) as { name?: unknown }).name;
-      if (typeof jobName === "string" && jobName.length > 0) {
-        if ((LEGACY_FUNCTIONS as readonly string[]).includes(jobName)) {
-          resolvedLegacyFunction = jobName;
-        } else {
-          if (data.function) {
-            resolvedLegacyFunction = data.function;
-          } else {
-            resolvedLegacyFunction = "Designer";
-          }
-        }
-      } else {
-        resolvedJobFunctionId = null;
-      }
-    } else {
-      if (data.function) {
-        const { data: jobByName } = await (supabaseAdmin as any)
-          .from("job_functions")
-          .select("id")
-          .ilike("name", data.function)
-          .maybeSingle();
-        const foundId = ((jobByName ?? {}) as { id?: unknown }).id;
-        if (typeof foundId === "string" && foundId.length > 0) {
-          resolvedJobFunctionId = foundId;
-        } else {
-          resolvedJobFunctionId = null;
-        }
-        resolvedLegacyFunction = data.function;
-      } else {
-        resolvedJobFunctionId = null;
-        resolvedLegacyFunction = "Designer";
-      }
-    }
+    // profiles.function é um enum legado, mantido só como fallback de exibição pra
+    // qualquer tela antiga que ainda leia esse campo em vez do join com job_functions.
+    // Derivado do primeiro cargo selecionado que bater com o enum; senão "Designer".
+    const { data: selectedJobRows } = await (supabaseAdmin as any)
+      .from("job_functions")
+      .select("id, name")
+      .in("id", data.jobFunctionIds);
+    const selectedJobNames = ((selectedJobRows as any[]) || []).map((r) => r.name as string);
+    const resolvedLegacyFunction =
+      selectedJobNames.find((n) => (LEGACY_FUNCTIONS as readonly string[]).includes(n)) ||
+      data.function ||
+      "Designer";
 
     const profilePayload = {
       full_name: data.fullName.trim(),
       function: resolvedLegacyFunction,
-      job_function_id: resolvedJobFunctionId,
       employment_type: data.employmentType,
-      squad_id: data.squadId ?? null,
-      commercial_roles: commercialRolesForPayload,
       must_change_password: true,
       active: true,
       avatar_url: data.avatarUrl ?? null,
+      cpf: data.cpf?.trim() || null,
+      phone: data.phone?.trim() || null,
+      birth_date: data.birthDate || null,
+      address_zip: data.address?.zip?.trim() || null,
+      address_street: data.address?.street?.trim() || null,
+      address_number: data.address?.number?.trim() || null,
+      address_complement: data.address?.complement?.trim() || null,
+      address_neighborhood: data.address?.neighborhood?.trim() || null,
+      address_city: data.address?.city?.trim() || null,
+      address_state: data.address?.state?.trim() || null,
+    };
+
+    const syncJobFunctions = async (userId: string) => {
+      await supabaseAdmin.from("profile_job_functions" as any).delete().eq("profile_id", userId);
+      if (data.jobFunctionIds.length > 0) {
+        await supabaseAdmin.from("profile_job_functions" as any).insert(
+          data.jobFunctionIds.map((jobFunctionId) => ({ profile_id: userId, job_function_id: jobFunctionId })) as never,
+        );
+      }
+    };
+
+    const syncSquads = async (userId: string) => {
+      await supabaseAdmin.from("profile_squads" as any).delete().eq("profile_id", userId);
+      if (data.squadIds && data.squadIds.length > 0) {
+        await supabaseAdmin.from("profile_squads" as any).insert(
+          data.squadIds.map((squadId) => ({ profile_id: userId, squad_id: squadId })) as never,
+        );
+      }
     };
 
     // listUsers não tem filtro por e-mail — varre páginas como em
@@ -277,6 +329,9 @@ export const createCollaborator = createServerFn({ method: "POST" })
           throw new Error(roleInsertError.message);
         }
       }
+
+      await syncSquads(userId);
+      await syncJobFunctions(userId);
     };
 
     const isAlreadyRegisteredError = (message: string): boolean => {
@@ -376,13 +431,16 @@ const updateCollaboratorSchema = z.object({
   userId: z.string().uuid("Usuário inválido"),
   fullName: z.string().trim().min(2, "Nome completo é obrigatório"),
   function: userFunctionEnum.optional(),
-  jobFunctionId: z.string().uuid("Cargo inválido").nullable().optional(),
-  commercialRoles: z.array(commercialRoleEnum).optional().default([]),
-  squadId: z.string().uuid("Squad inválido").nullable().optional(),
+  jobFunctionIds: z.array(z.string().uuid()).min(1, "Selecione ao menos um cargo"),
+  squadIds: z.array(z.string().uuid()).optional().default([]),
   employmentType: employmentTypeEnum,
   role: appRoleEnum,
   active: z.boolean(),
   avatarUrl: z.string().trim().url("Avatar inválido").nullable().optional(),
+  cpf: z.string().trim().optional().nullable(),
+  phone: z.string().trim().optional().nullable(),
+  birthDate: z.string().trim().optional().nullable(),
+  address: addressSchema,
 });
 
 export const updateCollaborator = createServerFn({ method: "POST" })
@@ -390,79 +448,36 @@ export const updateCollaborator = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof updateCollaboratorSchema>) =>
     updateCollaboratorSchema.parse(data),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const commercialRoles =
-      data.commercialRoles && data.commercialRoles.length > 0
-        ? data.commercialRoles
-        : null;
-
-    let resolvedJobFunctionId: string | null = data.jobFunctionId ?? null;
-    let resolvedLegacyFunction: string | null = data.function ?? null;
-
-    if (resolvedJobFunctionId) {
-      const { data: jobRow } = await (supabaseAdmin as any)
-        .from("job_functions")
-        .select("id, name")
-        .eq("id", resolvedJobFunctionId)
-        .maybeSingle();
-      const jobName = ((jobRow ?? {}) as { name?: unknown }).name;
-      if (typeof jobName !== "string" || jobName.length === 0) {
-        throw new Error("Cargo inválido");
-      } else {
-        if ((LEGACY_FUNCTIONS as readonly string[]).includes(jobName)) {
-          resolvedLegacyFunction = jobName;
-        } else {
-          if (!resolvedLegacyFunction) {
-            const { data: currentProfile } = await supabaseAdmin
-              .from("profiles")
-              .select("function")
-              .eq("id", data.userId)
-              .maybeSingle();
-            const currentFn = ((currentProfile ?? {}) as { function?: unknown }).function;
-            if (typeof currentFn === "string" && currentFn.length > 0) {
-              resolvedLegacyFunction = currentFn;
-            } else {
-              resolvedLegacyFunction = "Designer";
-            }
-          }
-        }
-      }
-    } else {
-      if (data.function) {
-        const { data: jobByName } = await (supabaseAdmin as any)
-          .from("job_functions")
-          .select("id")
-          .ilike("name", data.function)
-          .maybeSingle();
-        const foundId = ((jobByName ?? {}) as { id?: unknown }).id;
-        if (typeof foundId === "string" && foundId.length > 0) {
-          resolvedJobFunctionId = foundId;
-        } else {
-          resolvedJobFunctionId = null;
-        }
-        resolvedLegacyFunction = data.function;
-      } else {
-        throw new Error("Informe o cargo");
-      }
-    }
+    const { data: selectedJobRows } = await (supabaseAdmin as any)
+      .from("job_functions")
+      .select("id, name")
+      .in("id", data.jobFunctionIds);
+    const selectedJobNames = ((selectedJobRows as any[]) || []).map((r) => r.name as string);
+    const resolvedLegacyFunction =
+      selectedJobNames.find((n) => (LEGACY_FUNCTIONS as readonly string[]).includes(n)) ||
+      data.function ||
+      "Designer";
 
     const profileUpdate: Record<string, unknown> = {
       full_name: data.fullName.trim(),
       employment_type: data.employmentType,
-      squad_id: data.squadId ?? null,
-      commercial_roles: commercialRoles,
+      function: resolvedLegacyFunction,
       active: data.active,
+      cpf: data.cpf?.trim() || null,
+      phone: data.phone?.trim() || null,
+      birth_date: data.birthDate || null,
+      address_zip: data.address?.zip?.trim() || null,
+      address_street: data.address?.street?.trim() || null,
+      address_number: data.address?.number?.trim() || null,
+      address_complement: data.address?.complement?.trim() || null,
+      address_neighborhood: data.address?.neighborhood?.trim() || null,
+      address_city: data.address?.city?.trim() || null,
+      address_state: data.address?.state?.trim() || null,
     };
-    if (resolvedJobFunctionId) {
-      profileUpdate["job_function_id"] = resolvedJobFunctionId;
-    } else {
-      profileUpdate["job_function_id"] = null;
-    }
-    if (resolvedLegacyFunction) {
-      profileUpdate["function"] = resolvedLegacyFunction;
-    }
     if (data.avatarUrl !== undefined) {
       profileUpdate["avatar_url"] = data.avatarUrl ?? null;
     }
@@ -474,6 +489,20 @@ export const updateCollaborator = createServerFn({ method: "POST" })
 
     if (profileError) {
       throw new Error(profileError.message);
+    }
+
+    await supabaseAdmin.from("profile_squads" as any).delete().eq("profile_id", data.userId);
+    if (data.squadIds && data.squadIds.length > 0) {
+      await supabaseAdmin.from("profile_squads" as any).insert(
+        data.squadIds.map((squadId) => ({ profile_id: data.userId, squad_id: squadId })) as never,
+      );
+    }
+
+    await supabaseAdmin.from("profile_job_functions" as any).delete().eq("profile_id", data.userId);
+    if (data.jobFunctionIds.length > 0) {
+      await supabaseAdmin.from("profile_job_functions" as any).insert(
+        data.jobFunctionIds.map((jobFunctionId) => ({ profile_id: data.userId, job_function_id: jobFunctionId })) as never,
+      );
     }
 
     const { data: existingRoles } = await supabaseAdmin
@@ -515,7 +544,8 @@ export const resetCollaboratorPassword = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof resetCollaboratorPasswordSchema>) =>
     resetCollaboratorPasswordSchema.parse(data),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const temporaryPassword = generateTemporaryPassword(12);

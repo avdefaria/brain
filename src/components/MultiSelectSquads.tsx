@@ -27,11 +27,15 @@ interface MultiSelectSquadsProps {
   options: Squad[];
   onChange: (selectedIds: string[]) => void;
   placeholder?: string;
+  /** Rótulo usado no contador do botão ("N <itemLabel>(s) selecionado(s)") —
+   * o componente também serve pra outras listas multi-select (ex.: departamentos). */
+  itemLabel?: string;
 }
 
 export function MultiSelectSquads({
   selectedIds,
   options,
+  itemLabel = "squad",
   onChange,
   placeholder = "Selecionar squads...",
 }: MultiSelectSquadsProps) {
@@ -60,7 +64,7 @@ export function MultiSelectSquads({
             <Badge
               key={squad.id}
               variant="secondary"
-              className="bg-[#3D4FE8]/10 text-[#3D4FE8] hover:bg-[#3D4FE8]/20 border-none px-3 py-1 rounded-full flex items-center gap-1 transition-colors"
+              className="bg-[var(--violet-500)]/10 text-[var(--violet-500)] hover:bg-[var(--violet-500)]/20 border-none px-3 py-1 rounded-full flex items-center gap-1 transition-colors"
             >
               {squad.name}
               <button
@@ -77,12 +81,12 @@ export function MultiSelectSquads({
                 }}
                 onClick={() => handleUnselect(squad.id)}
               >
-                <X className="h-3 w-3 text-[#3D4FE8] hover:text-red-500 transition-colors" />
+                <X className="h-3 w-3 text-[var(--violet-500)] hover:text-[var(--danger)] transition-colors" />
               </button>
             </Badge>
           ))
         ) : (
-          <span className="text-sm text-[#8A8FA3]">Nenhum squad vinculado</span>
+          <span className="text-sm text-[var(--ink-3)]">Nenhum squad vinculado</span>
         )}
       </div>
 
@@ -92,18 +96,18 @@ export function MultiSelectSquads({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between bg-white dark:bg-[#1A1A24] border-[#E4E6F0] dark:border-[#2A2A36] h-10 px-3 hover:bg-white"
+            className="w-full justify-between bg-[var(--surface-1)] border-[var(--line-1)] h-10 px-3 hover:bg-[var(--surface-3)]"
           >
-            <span className="text-[#8A8FA3] font-normal">
+            <span className="text-[var(--ink-3)] font-normal">
               {selectedIds.length > 0
-                ? `${selectedIds.length} squad(s) selecionado(s)`
+                ? `${selectedIds.length} ${itemLabel}(s) selecionado(s)`
                 : placeholder}
             </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-[#E4E6F0] dark:border-[#2A2A36] rounded-xl shadow-xl">
-          <Command className="dark:bg-[#1A1A24]">
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-[var(--line-1)] rounded-xl shadow-xl">
+          <Command className="">
             <CommandInput
               placeholder="Buscar squad..."
               value={inputValue}
@@ -112,7 +116,7 @@ export function MultiSelectSquads({
             />
             <CommandList>
               <CommandEmpty className="p-2">
-                <span className="text-xs text-[#8A8FA3] px-2">Nenhum squad encontrado</span>
+                <span className="text-xs text-[var(--ink-3)] px-2">Nenhum squad encontrado</span>
               </CommandEmpty>
               <CommandGroup>
                 {options.map((option) => (
@@ -120,11 +124,11 @@ export function MultiSelectSquads({
                     key={option.id}
                     value={option.name}
                     onSelect={() => handleSelect(option.id)}
-                    className="cursor-pointer hover:bg-[#F7F8FC] dark:hover:bg-[#2A2A36] transition-colors"
+                    className="cursor-pointer hover:bg-[var(--surface-2)] transition-colors"
                   >
                     <Check
                       className={cn(
-                        "mr-2 h-4 w-4 text-[#3D4FE8]",
+                        "mr-2 h-4 w-4 text-[var(--violet-500)]",
                         selectedIds.includes(option.id)
                           ? "opacity-100"
                           : "opacity-0"

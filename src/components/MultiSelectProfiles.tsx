@@ -65,11 +65,11 @@ export function MultiSelectProfiles({
             <Badge
               key={profile.id}
               variant="secondary"
-              className="bg-[#3D4FE8]/10 text-[#3D4FE8] hover:bg-[#3D4FE8]/20 border-none px-2 py-0.5 rounded-full flex items-center gap-2 transition-colors"
+              className="bg-[var(--violet-500)]/10 text-[var(--violet-500)] hover:bg-[var(--violet-500)]/20 border-none px-2 py-0.5 rounded-full flex items-center gap-2 transition-colors"
             >
               <Avatar className="h-4 w-4">
                 <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback className="text-[6px] bg-[#3D4FE8] text-white">
+                <AvatarFallback className="text-[6px] bg-[var(--violet-500)] text-white">
                   {profile.full_name.split(' ').map(n => n[0]).join('')}
                 </AvatarFallback>
               </Avatar>
@@ -83,12 +83,12 @@ export function MultiSelectProfiles({
                   handleUnselect(profile.id);
                 }}
               >
-                <X className="h-3 w-3 text-[#3D4FE8] hover:text-red-500 transition-colors" />
+                <X className="h-3 w-3 text-[var(--violet-500)] hover:text-[var(--danger)] transition-colors" />
               </button>
             </Badge>
           ))
         ) : (
-          <span className="text-xs text-[#8A8FA3]">Nenhum responsável</span>
+          <span className="text-xs text-[var(--ink-3)]">Nenhum responsável</span>
         )}
       </div>
 
@@ -98,9 +98,9 @@ export function MultiSelectProfiles({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between bg-white border-[#E4E6F0] h-9 px-3 hover:bg-white text-xs"
+            className="w-full justify-between bg-[var(--surface-1)] border-[var(--line-1)] h-9 px-3 hover:bg-[var(--surface-3)] text-xs"
           >
-            <span className="text-[#8A8FA3] font-normal truncate">
+            <span className="text-[var(--ink-3)] font-normal truncate">
               {selectedIds.length > 0
                 ? `${selectedIds.length} selecionado(s)`
                 : placeholder}
@@ -108,7 +108,7 @@ export function MultiSelectProfiles({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-[#E4E6F0] rounded-xl shadow-xl z-[60]">
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-[var(--line-1)] rounded-xl shadow-xl z-[60]">
           <Command>
             <CommandInput
               placeholder="Buscar colaborador..."
@@ -117,7 +117,7 @@ export function MultiSelectProfiles({
               className="h-9"
             />
             <CommandList>
-              <CommandEmpty className="p-2 text-xs text-[#8A8FA3]">
+              <CommandEmpty className="p-2 text-xs text-[var(--ink-3)]">
                 Nenhum colaborador encontrado.
               </CommandEmpty>
               <CommandGroup>
@@ -126,11 +126,11 @@ export function MultiSelectProfiles({
                     key={profile.id}
                     value={profile.full_name}
                     onSelect={() => handleSelect(profile.id)}
-                    className="cursor-pointer hover:bg-[#F7F8FC] transition-colors py-2"
+                    className="cursor-pointer hover:bg-[var(--surface-2)] transition-colors py-2"
                   >
                     <Check
                       className={cn(
-                        "mr-2 h-4 w-4 text-[#3D4FE8]",
+                        "mr-2 h-4 w-4 text-[var(--violet-500)]",
                         selectedIds.includes(profile.id)
                           ? "opacity-100"
                           : "opacity-0"
@@ -138,7 +138,7 @@ export function MultiSelectProfiles({
                     />
                     <Avatar className="h-6 w-6 mr-2">
                       <AvatarImage src={profile.avatar_url || undefined} />
-                      <AvatarFallback className="text-[8px] bg-[#3D4FE8] text-white">
+                      <AvatarFallback className="text-[8px] bg-[var(--violet-500)] text-white">
                         {profile.full_name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>

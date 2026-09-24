@@ -117,17 +117,17 @@ export function ProjectCalendar({ events: externalEvents = [], birthdays = [] }:
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
       {/* Left Column - Calendar (occupies 2 cols) */}
-      <Card className="lg:col-span-2 p-8 border-[#E4E6F0] shadow-sm bg-white overflow-hidden">
+      <Card className="lg:col-span-2 p-8 border-[var(--line-1)] shadow-sm bg-[var(--surface-1)] overflow-hidden">
         <div className="flex items-center justify-between mb-8">
-          <h3 className="font-title text-xl font-bold text-[#0E0E16] capitalize">
+          <h3 className="font-title text-xl font-bold text-[var(--ink-1)] capitalize">
             {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
           </h3>
           <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={prevMonth} className="h-10 w-10 rounded-full border-[#E4E6F0]">
-              <ChevronLeft className="h-5 w-5 text-[#8A8FA3]" />
+            <Button variant="outline" size="icon" onClick={prevMonth} className="h-10 w-10 rounded-full border-[var(--line-1)]">
+              <ChevronLeft className="h-5 w-5 text-[var(--ink-3)]" />
             </Button>
-            <Button variant="outline" size="icon" onClick={nextMonth} className="h-10 w-10 rounded-full border-[#E4E6F0]">
-              <ChevronRight className="h-5 w-5 text-[#8A8FA3]" />
+            <Button variant="outline" size="icon" onClick={nextMonth} className="h-10 w-10 rounded-full border-[var(--line-1)]">
+              <ChevronRight className="h-5 w-5 text-[var(--ink-3)]" />
             </Button>
           </div>
         </div>
@@ -147,15 +147,15 @@ export function ProjectCalendar({ events: externalEvents = [], birthdays = [] }:
               nav: "hidden",
               table: "w-full border-collapse",
               head_row: "flex w-full",
-              head_cell: "text-[#8A8FA3] flex-1 font-bold text-xs uppercase text-center pb-4",
+              head_cell: "text-[var(--ink-3)] flex-1 font-bold text-xs uppercase text-center pb-4",
               row: "flex w-full mt-2",
               cell: "flex-1 text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
               day: cn(
-                "h-16 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-[#F7F8FC] rounded-xl transition-colors flex flex-col items-center justify-center gap-1"
+                "h-16 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-[var(--surface-2)] rounded-xl transition-colors flex flex-col items-center justify-center gap-1"
               ),
-              day_today: "bg-[#3D4FE8] text-white font-bold rounded-xl hover:bg-[#3D4FE8]/90",
-              day_outside: "text-[#8A8FA3] opacity-30",
-              day_disabled: "text-[#8A8FA3] opacity-30",
+              day_today: "bg-[var(--violet-500)] text-white font-bold rounded-xl hover:bg-[var(--violet-500)]/90",
+              day_outside: "text-[var(--ink-3)] opacity-30",
+              day_disabled: "text-[var(--ink-3)] opacity-30",
             }}
             modifiers={{
               hasEvent: (date) => allEvents.some(e => {
@@ -166,15 +166,15 @@ export function ProjectCalendar({ events: externalEvents = [], birthdays = [] }:
               })
             }}
             modifiersClassNames={{
-              hasEvent: "after:content-[''] after:w-1.5 after:h-1.5 after:bg-[#3D4FE8] after:rounded-full after:mt-1 day-today:after:bg-white"
+              hasEvent: "after:content-[''] after:w-1.5 after:h-1.5 after:bg-[var(--violet-500)] after:rounded-full after:mt-1 day-today:after:bg-[var(--surface-1)]"
             }}
           />
         </div>
 
         {selectedDateEvents && (
-          <div className="mt-6 p-4 bg-[#F7F8FC] rounded-xl animate-in slide-in-from-top-2 duration-300">
+          <div className="mt-6 p-4 bg-[var(--surface-2)] rounded-xl animate-in slide-in-from-top-2 duration-300">
             <div className="flex justify-between items-center mb-2">
-              <h4 className="text-xs font-bold text-[#8A8FA3] uppercase">Eventos do dia</h4>
+              <h4 className="text-xs font-bold text-[var(--ink-3)] uppercase">Eventos do dia</h4>
               <Button variant="ghost" size="sm" onClick={() => setSelectedDateEvents(null)} className="h-6 w-6 p-0 rounded-full">
                 <Star className="h-3 w-3 rotate-45" />
               </Button>
@@ -182,9 +182,9 @@ export function ProjectCalendar({ events: externalEvents = [], birthdays = [] }:
             <div className="space-y-2">
               {selectedDateEvents.map((e, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-[#3D4FE8]" />
-                  <span className="text-sm font-bold text-[#0E0E16]">{e.name}</span>
-                  <Badge variant="outline" className="text-[9px] py-0 h-4 border-[#E4E6F0] text-[#8A8FA3]">{e.category || e.type}</Badge>
+                  <div className="h-2 w-2 rounded-full bg-[var(--violet-500)]" />
+                  <span className="text-sm font-bold text-[var(--ink-1)]">{e.name}</span>
+                  <Badge variant="outline" className="text-[9px] py-0 h-4 border-[var(--line-1)] text-[var(--ink-3)]">{e.category || e.type}</Badge>
                 </div>
               ))}
             </div>
@@ -193,15 +193,15 @@ export function ProjectCalendar({ events: externalEvents = [], birthdays = [] }:
       </Card>
 
       {/* Right Column - Upcoming Dates */}
-      <Card className="p-8 border-[#E4E6F0] shadow-sm bg-white flex flex-col h-[500px]">
+      <Card className="p-8 border-[var(--line-1)] shadow-sm bg-[var(--surface-1)] flex flex-col h-[500px]">
         <div className="flex items-center justify-between mb-8">
-          <h3 className="font-title font-bold text-[#0E0E16]">Próximas datas</h3>
-          <div className="flex bg-[#F7F8FC] p-1 rounded-full">
+          <h3 className="font-title font-bold text-[var(--ink-1)]">Próximas datas</h3>
+          <div className="flex bg-[var(--surface-2)] p-1 rounded-full">
             <button
               onClick={() => setView("all")}
               className={cn(
                 "px-3 py-1.5 text-[10px] font-bold rounded-full transition-all",
-                view === "all" ? "bg-white text-[#0E0E16] shadow-sm" : "text-[#8A8FA3]"
+                view === "all" ? "bg-[var(--surface-1)] text-[var(--ink-1)] shadow-sm" : "text-[var(--ink-3)]"
               )}
             >
               Todas
@@ -210,7 +210,7 @@ export function ProjectCalendar({ events: externalEvents = [], birthdays = [] }:
               onClick={() => setView("commercial")}
               className={cn(
                 "px-3 py-1.5 text-[10px] font-bold rounded-full transition-all",
-                view === "commercial" ? "bg-white text-[#0E0E16] shadow-sm" : "text-[#8A8FA3]"
+                view === "commercial" ? "bg-[var(--surface-1)] text-[var(--ink-1)] shadow-sm" : "text-[var(--ink-3)]"
               )}
             >
               Comerciais
@@ -218,7 +218,7 @@ export function ProjectCalendar({ events: externalEvents = [], birthdays = [] }:
           </div>
         </div>
 
-        <div className="space-y-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#E4E6F0] flex-1">
+        <div className="space-y-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[var(--line-1)] flex-1">
           {filteredEvents.length > 0 ? (
             filteredEvents.slice(0, 10).map((event, idx) => {
               const eventDate = new Date(event.date);
@@ -229,15 +229,15 @@ export function ProjectCalendar({ events: externalEvents = [], birthdays = [] }:
                   <div className="flex items-center gap-4">
                     <div className={cn(
                       "h-12 w-12 rounded-2xl flex items-center justify-center transition-colors shadow-sm",
-                      event.type === 'commercial' ? "bg-amber-50 text-amber-500 group-hover:bg-amber-500 group-hover:text-white" :
-                      event.category === 'Aniversário' ? "bg-pink-50 text-pink-500 group-hover:bg-pink-500 group-hover:text-white" :
-                      "bg-[#F7F8FC] text-[#3D4FE8] group-hover:bg-[#3D4FE8] group-hover:text-white"
+                      event.type === 'commercial' ? "bg-[var(--warning-tint)] text-[var(--warning)] group-hover:bg-[var(--warning)] group-hover:text-white" :
+                      event.category === 'Aniversário' ? "bg-[var(--chart-2)]/16 text-[var(--chart-2)] group-hover:bg-[var(--chart-2)] group-hover:text-white" :
+                      "bg-[var(--surface-2)] text-[var(--violet-500)] group-hover:bg-[var(--violet-500)] group-hover:text-white"
                     )}>
                       <Star className="h-5 w-5" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-[#0E0E16] line-clamp-1">{event.name}</h4>
-                      <p className="text-[10px] text-[#8A8FA3] font-medium">
+                      <h4 className="text-sm font-bold text-[var(--ink-1)] line-clamp-1">{event.name}</h4>
+                      <p className="text-[10px] text-[var(--ink-3)] font-medium">
                         {format(eventDate, "dd 'de' MMMM", { locale: ptBR })}
                         {isNextYear && ` de ${eventDate.getFullYear()}`}
                       </p>
@@ -245,9 +245,9 @@ export function ProjectCalendar({ events: externalEvents = [], birthdays = [] }:
                   </div>
                   <Badge variant="secondary" className={cn(
                     "text-[8px] font-bold px-2 py-0.5 rounded-lg border-none",
-                    event.type === 'commercial' ? "bg-amber-100 text-amber-600" :
-                    event.category === 'Aniversário' ? "bg-pink-100 text-pink-600" :
-                    "bg-[#F7F8FC] text-[#8A8FA3]"
+                    event.type === 'commercial' ? "bg-[var(--warning-tint)] text-[var(--warning)]" :
+                    event.category === 'Aniversário' ? "bg-[var(--chart-2)]/16 text-[var(--chart-2)]" :
+                    "bg-[var(--surface-2)] text-[var(--ink-3)]"
                   )}>
                     {event.category || event.type}
                   </Badge>
@@ -256,10 +256,10 @@ export function ProjectCalendar({ events: externalEvents = [], birthdays = [] }:
             })
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center py-8">
-              <div className="h-12 w-12 rounded-full bg-[#F7F8FC] flex items-center justify-center mb-2">
-                <Calendar className="h-6 w-6 text-[#E4E6F0]" />
+              <div className="h-12 w-12 rounded-full bg-[var(--surface-2)] flex items-center justify-center mb-2">
+                <Calendar className="h-6 w-6 text-[var(--line-1)]" />
               </div>
-              <p className="text-[#8A8FA3] text-xs font-medium italic">Nenhuma data futura</p>
+              <p className="text-[var(--ink-3)] text-xs font-medium italic">Nenhuma data futura</p>
             </div>
           )}
         </div>

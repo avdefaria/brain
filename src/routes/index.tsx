@@ -21,10 +21,10 @@ function IndexComponent() {
   }, [session, loading, navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F7F8FC]">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--surface-2)]">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-8 bg-[#3D4FE8] rounded-full flex items-center justify-center animate-pulse">
-          <div className="w-4 h-4 bg-white rounded-full"></div>
+        <div className="w-12 h-8 bg-[var(--violet-500)] rounded-full flex items-center justify-center animate-pulse">
+          <div className="w-4 h-4 bg-[var(--surface-1)] rounded-full"></div>
         </div>
       </div>
     </div>

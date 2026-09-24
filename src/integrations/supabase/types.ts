@@ -135,6 +135,132 @@ export type Database = {
         }
         Relationships: []
       }
+      client_calls: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          occurred_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          occurred_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          occurred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_calls_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_calls_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_offboarding_items: {
+        Row: {
+          checked_at: string
+          checked_by: string | null
+          client_id: string
+          created_at: string
+          id: string
+          item_key: string
+        }
+        Insert: {
+          checked_at?: string
+          checked_by?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          item_key: string
+        }
+        Update: {
+          checked_at?: string
+          checked_by?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          item_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_offboarding_items_checked_by_fkey"
+            columns: ["checked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_offboarding_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_onboarding_items: {
+        Row: {
+          checked_at: string
+          checked_by: string | null
+          client_id: string
+          created_at: string
+          id: string
+          item_key: string
+        }
+        Insert: {
+          checked_at?: string
+          checked_by?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          item_key: string
+        }
+        Update: {
+          checked_at?: string
+          checked_by?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          item_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_onboarding_items_checked_by_fkey"
+            columns: ["checked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_onboarding_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_public_access: {
         Row: {
           client_id: string
@@ -210,12 +336,15 @@ export type Database = {
           country: string | null
           created_at: string
           end_date_expected: string | null
+          expected_exit_date: string | null
           extra_comments: string | null
           health_score: number | null
           id: string
           lead_id: string | null
           name: string
           niche_id: string | null
+          notice_date: string | null
+          revenue_at_risk: number | null
           risk_level: Database["public"]["Enums"]["risk_level"] | null
           sales_channels: string[] | null
           scope_details: string | null
@@ -223,7 +352,7 @@ export type Database = {
           squad_id: string | null
           start_date: string
           state: string | null
-          status: Database["public"]["Enums"]["client_status"] | null
+          status: Database["public"]["Enums"]["client_lifecycle_status"]
           updated_at: string
         }
         Insert: {
@@ -238,12 +367,15 @@ export type Database = {
           country?: string | null
           created_at?: string
           end_date_expected?: string | null
+          expected_exit_date?: string | null
           extra_comments?: string | null
           health_score?: number | null
           id?: string
           lead_id?: string | null
           name: string
           niche_id?: string | null
+          notice_date?: string | null
+          revenue_at_risk?: number | null
           risk_level?: Database["public"]["Enums"]["risk_level"] | null
           sales_channels?: string[] | null
           scope_details?: string | null
@@ -251,7 +383,7 @@ export type Database = {
           squad_id?: string | null
           start_date?: string
           state?: string | null
-          status?: Database["public"]["Enums"]["client_status"] | null
+          status?: Database["public"]["Enums"]["client_lifecycle_status"]
           updated_at?: string
         }
         Update: {
@@ -266,12 +398,15 @@ export type Database = {
           country?: string | null
           created_at?: string
           end_date_expected?: string | null
+          expected_exit_date?: string | null
           extra_comments?: string | null
           health_score?: number | null
           id?: string
           lead_id?: string | null
           name?: string
           niche_id?: string | null
+          notice_date?: string | null
+          revenue_at_risk?: number | null
           risk_level?: Database["public"]["Enums"]["risk_level"] | null
           sales_channels?: string[] | null
           scope_details?: string | null
@@ -279,7 +414,7 @@ export type Database = {
           squad_id?: string | null
           start_date?: string
           state?: string | null
-          status?: Database["public"]["Enums"]["client_status"] | null
+          status?: Database["public"]["Enums"]["client_lifecycle_status"]
           updated_at?: string
         }
         Relationships: [
@@ -312,6 +447,80 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      closer_goals: {
+        Row: {
+          created_at: string
+          id: string
+          month: number
+          profile_id: string
+          target_revenue: number | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: number
+          profile_id: string
+          target_revenue?: number | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: number
+          profile_id?: string
+          target_revenue?: number | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closer_goals_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commercial_goals: {
+        Row: {
+          created_at: string
+          deals_target: number
+          id: string
+          leads_target: number
+          month: number
+          proposals_target: number
+          revenue_target: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          deals_target?: number
+          id?: string
+          leads_target?: number
+          month: number
+          proposals_target?: number
+          revenue_target?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          deals_target?: number
+          id?: string
+          leads_target?: number
+          month?: number
+          proposals_target?: number
+          revenue_target?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
       }
       company_events: {
         Row: {
@@ -521,6 +730,53 @@ export type Database = {
         }
         Relationships: []
       }
+      department_module_access: {
+        Row: {
+          created_at: string
+          department_id: string
+          id: string
+          module_key: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          id?: string
+          module_key: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          id?: string
+          module_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_module_access_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       expense_categories: {
         Row: {
           created_at: string
@@ -559,6 +815,104 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      health_score_surveys: {
+        Row: {
+          client_id: string
+          conducted_by: string | null
+          created_at: string
+          entregas_prazo: number
+          id: string
+          relacionamento: number
+          satisfacao: number
+          score: number
+        }
+        Insert: {
+          client_id: string
+          conducted_by?: string | null
+          created_at?: string
+          entregas_prazo: number
+          id?: string
+          relacionamento: number
+          satisfacao: number
+          score: number
+        }
+        Update: {
+          client_id?: string
+          conducted_by?: string | null
+          created_at?: string
+          entregas_prazo?: number
+          id?: string
+          relacionamento?: number
+          satisfacao?: number
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_score_surveys_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_score_surveys_conducted_by_fkey"
+            columns: ["conducted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_targets: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      job_functions: {
+        Row: {
+          created_at: string
+          department_id: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_functions_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_sales_channels: {
         Row: {
@@ -624,7 +978,9 @@ export type Database = {
       }
       leads: {
         Row: {
+          account_name: string | null
           company: string | null
+          contact_attempts: number
           converted_at: string | null
           created_at: string | null
           email: string | null
@@ -636,6 +992,7 @@ export type Database = {
           monthly_revenue_range: string | null
           mrr_months: number | null
           name: string
+          next_contact_at: string | null
           niche_id: string | null
           notes: string | null
           one_time_revenue: number | null
@@ -646,7 +1003,9 @@ export type Database = {
           responsible_id: string | null
         }
         Insert: {
+          account_name?: string | null
           company?: string | null
+          contact_attempts?: number
           converted_at?: string | null
           created_at?: string | null
           email?: string | null
@@ -658,6 +1017,7 @@ export type Database = {
           monthly_revenue_range?: string | null
           mrr_months?: number | null
           name: string
+          next_contact_at?: string | null
           niche_id?: string | null
           notes?: string | null
           one_time_revenue?: number | null
@@ -668,7 +1028,9 @@ export type Database = {
           responsible_id?: string | null
         }
         Update: {
+          account_name?: string | null
           company?: string | null
+          contact_attempts?: number
           converted_at?: string | null
           created_at?: string | null
           email?: string | null
@@ -680,6 +1042,7 @@ export type Database = {
           monthly_revenue_range?: string | null
           mrr_months?: number | null
           name?: string
+          next_contact_at?: string | null
           niche_id?: string | null
           notes?: string | null
           one_time_revenue?: number | null
@@ -713,6 +1076,27 @@ export type Database = {
           },
         ]
       }
+      login_attempts: {
+        Row: {
+          created_at: string
+          id: number
+          identifier: string
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          identifier: string
+          success: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          identifier?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       niches: {
         Row: {
           created_at: string
@@ -731,6 +1115,33 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          link: string | null
+          message: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payables: {
         Row: {
           amount: number
@@ -738,6 +1149,7 @@ export type Database = {
           created_at: string
           description: string
           due_date: string
+          funnel_type_id: string | null
           id: string
           notes: string | null
           paid_at: string | null
@@ -752,6 +1164,7 @@ export type Database = {
           created_at?: string
           description: string
           due_date: string
+          funnel_type_id?: string | null
           id?: string
           notes?: string | null
           paid_at?: string | null
@@ -766,6 +1179,7 @@ export type Database = {
           created_at?: string
           description?: string
           due_date?: string
+          funnel_type_id?: string | null
           id?: string
           notes?: string | null
           paid_at?: string | null
@@ -782,51 +1196,152 @@ export type Database = {
             referencedRelation: "expense_categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "payables_funnel_type_id_fkey"
+            columns: ["funnel_type_id"]
+            isOneToOne: false
+            referencedRelation: "funnel_types"
+            referencedColumns: ["id"]
+          },
         ]
       }
-      profiles: {
+      profile_job_functions: {
         Row: {
-          avatar_url: string | null
-          birth_date: string | null
-          created_at: string | null
-          employment_type: Database["public"]["Enums"]["employment_type"]
-          full_name: string
-          function: Database["public"]["Enums"]["user_function"]
+          created_at: string
           id: string
-          squad_id: string | null
-          updated_at: string | null
+          job_function_id: string
+          profile_id: string
         }
         Insert: {
-          avatar_url?: string | null
-          birth_date?: string | null
-          created_at?: string | null
-          employment_type?: Database["public"]["Enums"]["employment_type"]
-          full_name: string
-          function?: Database["public"]["Enums"]["user_function"]
-          id: string
-          squad_id?: string | null
-          updated_at?: string | null
+          created_at?: string
+          id?: string
+          job_function_id: string
+          profile_id: string
         }
         Update: {
-          avatar_url?: string | null
-          birth_date?: string | null
-          created_at?: string | null
-          employment_type?: Database["public"]["Enums"]["employment_type"]
-          full_name?: string
-          function?: Database["public"]["Enums"]["user_function"]
+          created_at?: string
           id?: string
-          squad_id?: string | null
-          updated_at?: string | null
+          job_function_id?: string
+          profile_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "profiles_squad_id_fkey"
+            foreignKeyName: "profile_job_functions_job_function_id_fkey"
+            columns: ["job_function_id"]
+            isOneToOne: false
+            referencedRelation: "job_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_job_functions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_squads: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          squad_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          squad_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          squad_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_squads_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_squads_squad_id_fkey"
             columns: ["squad_id"]
             isOneToOne: false
             referencedRelation: "squads"
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          active: boolean | null
+          address_city: string | null
+          address_complement: string | null
+          address_neighborhood: string | null
+          address_number: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip: string | null
+          avatar_url: string | null
+          birth_date: string | null
+          cpf: string | null
+          created_at: string | null
+          employment_type: Database["public"]["Enums"]["employment_type"]
+          full_name: string
+          function: Database["public"]["Enums"]["user_function"]
+          id: string
+          must_change_password: boolean | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          address_city?: string | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          avatar_url?: string | null
+          birth_date?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          employment_type?: Database["public"]["Enums"]["employment_type"]
+          full_name: string
+          function?: Database["public"]["Enums"]["user_function"]
+          id: string
+          must_change_password?: boolean | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          address_city?: string | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          avatar_url?: string | null
+          birth_date?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          employment_type?: Database["public"]["Enums"]["employment_type"]
+          full_name?: string
+          function?: Database["public"]["Enums"]["user_function"]
+          id?: string
+          must_change_password?: boolean | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       project_deliveries: {
         Row: {
@@ -875,9 +1390,12 @@ export type Database = {
       receivables: {
         Row: {
           amount: number
-          client_id: string
+          category_id: string | null
+          client_id: string | null
+          client_name: string | null
           contract_id: string | null
           created_at: string
+          description: string | null
           due_date: string
           id: string
           installment_number: number | null
@@ -889,9 +1407,12 @@ export type Database = {
         }
         Insert: {
           amount: number
-          client_id: string
+          category_id?: string | null
+          client_id?: string | null
+          client_name?: string | null
           contract_id?: string | null
           created_at?: string
+          description?: string | null
           due_date: string
           id?: string
           installment_number?: number | null
@@ -903,9 +1424,12 @@ export type Database = {
         }
         Update: {
           amount?: number
-          client_id?: string
+          category_id?: string | null
+          client_id?: string | null
+          client_name?: string | null
           contract_id?: string | null
           created_at?: string
+          description?: string | null
           due_date?: string
           id?: string
           installment_number?: number | null
@@ -916,6 +1440,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "receivables_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "revenue_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "receivables_client_id_fkey"
             columns: ["client_id"]
@@ -931,6 +1462,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      revenue_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       sales_channels: {
         Row: {
@@ -1042,6 +1594,7 @@ export type Database = {
           id: string
           leader_id: string | null
           name: string
+          type: string
           updated_at: string | null
         }
         Insert: {
@@ -1051,6 +1604,7 @@ export type Database = {
           id?: string
           leader_id?: string | null
           name: string
+          type?: string
           updated_at?: string | null
         }
         Update: {
@@ -1060,6 +1614,7 @@ export type Database = {
           id?: string
           leader_id?: string | null
           name?: string
+          type?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -1259,6 +1814,33 @@ export type Database = {
           },
         ]
       }
+      task_stages: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_done_stage: boolean
+          name: string
+          position: number
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id: string
+          is_done_stage?: boolean
+          name: string
+          position?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_done_stage?: boolean
+          name?: string
+          position?: number
+        }
+        Relationships: []
+      }
       task_tags: {
         Row: {
           tag_id: string
@@ -1301,10 +1883,14 @@ export type Database = {
           description: string | null
           estimated_minutes: number | null
           id: string
+          internal_target_id: string | null
+          is_internal: boolean
+          parent_task_id: string | null
           position: number | null
           priority: Database["public"]["Enums"]["task_priority"]
           sku_reference: string | null
-          stage: Database["public"]["Enums"]["task_stage"]
+          stage: string
+          start_date: string | null
           time_tracked_seconds: number | null
           timer_started_at: string | null
           title: string
@@ -1321,10 +1907,14 @@ export type Database = {
           description?: string | null
           estimated_minutes?: number | null
           id?: string
+          internal_target_id?: string | null
+          is_internal?: boolean
+          parent_task_id?: string | null
           position?: number | null
           priority?: Database["public"]["Enums"]["task_priority"]
           sku_reference?: string | null
-          stage?: Database["public"]["Enums"]["task_stage"]
+          stage?: string
+          start_date?: string | null
           time_tracked_seconds?: number | null
           timer_started_at?: string | null
           title: string
@@ -1341,10 +1931,14 @@ export type Database = {
           description?: string | null
           estimated_minutes?: number | null
           id?: string
+          internal_target_id?: string | null
+          is_internal?: boolean
+          parent_task_id?: string | null
           position?: number | null
           priority?: Database["public"]["Enums"]["task_priority"]
           sku_reference?: string | null
-          stage?: Database["public"]["Enums"]["task_stage"]
+          stage?: string
+          start_date?: string | null
           time_tracked_seconds?: number | null
           timer_started_at?: string | null
           title?: string
@@ -1372,6 +1966,27 @@ export type Database = {
             referencedRelation: "deliverable_types"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tasks_internal_target_id_fkey"
+            columns: ["internal_target_id"]
+            isOneToOne: false
+            referencedRelation: "internal_targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_stage_fkey"
+            columns: ["stage"]
+            isOneToOne: false
+            referencedRelation: "task_stages"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_roles: {
@@ -1397,10 +2012,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_sofia_task: {
+        Args: {
+          p_account_name: string
+          p_assignee_name: string
+          p_client_name: string
+          p_description: string
+          p_sku_reference: string
+          p_title: string
+        }
+        Returns: string
+      }
+      process_contract_renewals: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "leader" | "collaborator"
+      client_lifecycle_status:
+        | "onboarding"
+        | "ativo"
+        | "em_aviso"
+        | "pausado"
+        | "inativo"
       client_status: "active" | "inactive" | "churn"
       content_status:
         | "internally_approved"
@@ -1414,7 +2046,6 @@ export type Database = {
       payable_status: "pendente" | "pago" | "atrasado"
       risk_level: "low" | "medium" | "high"
       task_priority: "low" | "medium" | "high"
-      task_stage: "todo" | "doing" | "review" | "done"
       user_function:
         | "Designer"
         | "Copywriter"
@@ -1550,6 +2181,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "leader", "collaborator"],
+      client_lifecycle_status: [
+        "onboarding",
+        "ativo",
+        "em_aviso",
+        "pausado",
+        "inativo",
+      ],
       client_status: ["active", "inactive", "churn"],
       content_status: [
         "internally_approved",
@@ -1564,7 +2202,6 @@ export const Constants = {
       payable_status: ["pendente", "pago", "atrasado"],
       risk_level: ["low", "medium", "high"],
       task_priority: ["low", "medium", "high"],
-      task_stage: ["todo", "doing", "review", "done"],
       user_function: [
         "Designer",
         "Copywriter",

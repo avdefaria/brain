@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSquads, getCollaborators } from "@/lib/squads.functions";
-import { createSpecialProject } from "@/lib/projects.functions";
+import { createSpecialProject, updateSpecialProject, deleteSpecialProject } from "@/lib/projects.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -27,20 +27,32 @@ import { useServerFn } from "@tanstack/react-start";
 interface SpecialProjectModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Quando informado, o modal abre em modo edição já preenchido com esse projeto. */
+  project?: {
+    id: string;
+    name: string;
+    client_id: string;
+    squad_id: string | null;
+    start_date: string;
+    end_date: string;
+    description: string | null;
+    color: string | null;
+  } | null;
 }
 
 const COLORS = [
-  "#3D4FE8", // Ongo Indigo
-  "#22C55E", // Green
-  "#F5A524", // Amber
-  "#EF4444", // Red
-  "#8B5CF6", // Purple
-  "#EC4899", // Pink
-  "#06B6D4", // Cyan
+  "var(--violet-500)", // Ongo Indigo
+  "var(--success)", // Green
+  "var(--warning)", // Amber
+  "var(--danger)", // Red
+  "var(--violet-700)", // Purple
+  "var(--chart-2)", // Pink
+  "var(--chart-4)", // Cyan
 ];
 
-export function SpecialProjectModal({ isOpen, onOpenChange }: SpecialProjectModalProps) {
+export function SpecialProjectModal({ isOpen, onOpenChange, project }: SpecialProjectModalProps) {
   const queryClient = useQueryClient();
+  const isEditing = !!project;
   const [name, setName] = React.useState("");
   const [clientId, setClientId] = React.useState("");
   const [squadId, setSquadId] = React.useState("");
@@ -63,22 +75,6 @@ export function SpecialProjectModal({ isOpen, onOpenChange }: SpecialProjectModa
     queryFn: () => getSquads()
   });
 
-  const createFn = useServerFn(createSpecialProject);
-
-  const mutation = useMutation({
-    mutationFn: (data: any) => createFn({ data }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
-      toast.success("Projeto especial criado com sucesso");
-      onOpenChange(false);
-      resetForm();
-    },
-    onError: (err) => {
-      toast.error("Erro ao criar projeto");
-      console.error(err);
-    }
-  });
-
   const resetForm = () => {
     setName("");
     setClientId("");
@@ -88,6 +84,56 @@ export function SpecialProjectModal({ isOpen, onOpenChange }: SpecialProjectModa
     setDescription("");
     setColor(COLORS[0]);
   };
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    if (project) {
+      setName(project.name);
+      setClientId(project.client_id);
+      setSquadId(project.squad_id || "");
+      setStartDate(project.start_date.slice(0, 10));
+      setEndDate(project.end_date.slice(0, 10));
+      setDescription(project.description || "");
+      setColor(project.color || COLORS[0]);
+    } else {
+      resetForm();
+    }
+  }, [isOpen, project]);
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-overview"] });
+  };
+
+  const createFn = useServerFn(createSpecialProject);
+  const updateFn = useServerFn(updateSpecialProject);
+  const deleteFn = useServerFn(deleteSpecialProject);
+
+  const mutation = useMutation({
+    mutationFn: (data: any) => (isEditing ? updateFn({ data: { ...data, id: project!.id } }) : createFn({ data })),
+    onSuccess: () => {
+      invalidateAll();
+      toast.success(isEditing ? "Projeto especial atualizado" : "Projeto especial criado com sucesso");
+      onOpenChange(false);
+    },
+    onError: (err) => {
+      toast.error(isEditing ? "Erro ao atualizar projeto" : "Erro ao criar projeto");
+      console.error(err);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteFn({ data: { id: project!.id } }),
+    onSuccess: () => {
+      invalidateAll();
+      toast.success("Projeto especial excluído");
+      onOpenChange(false);
+    },
+    onError: (err) => {
+      toast.error("Erro ao excluir projeto");
+      console.error(err);
+    }
+  });
 
   const handleSave = () => {
     if (!name || !clientId || !startDate || !endDate) {
@@ -109,7 +155,7 @@ export function SpecialProjectModal({ isOpen, onOpenChange }: SpecialProjectModa
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="font-title">Novo Projeto Especial</DialogTitle>
+          <DialogTitle className="font-title">{isEditing ? "Editar Projeto Especial" : "Novo Projeto Especial"}</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
@@ -170,7 +216,7 @@ export function SpecialProjectModal({ isOpen, onOpenChange }: SpecialProjectModa
                 <button
                   key={c}
                   onClick={() => setColor(c)}
-                  className={`w-6 h-6 rounded-full border-2 ${color === c ? 'border-[#0E0E16]' : 'border-transparent'}`}
+                  className={`w-6 h-6 rounded-full border-2 ${color === c ? 'border-[var(--ink-1)]' : 'border-transparent'}`}
                   style={{ backgroundColor: c }}
                 />
               ))}
@@ -178,11 +224,23 @@ export function SpecialProjectModal({ isOpen, onOpenChange }: SpecialProjectModa
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={mutation.isPending} className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90">
-            {mutation.isPending ? "Criando..." : "Criar projeto"}
-          </Button>
+        <DialogFooter className={isEditing ? "sm:justify-between" : undefined}>
+          {isEditing && (
+            <Button
+              variant="ghost"
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+              className="text-[var(--danger)] hover:text-[var(--danger)] hover:bg-[var(--danger-tint)]"
+            >
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+            </Button>
+          )}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={mutation.isPending} className="bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90">
+              {mutation.isPending ? "Salvando..." : isEditing ? "Salvar alterações" : "Criar projeto"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -44,12 +44,12 @@ export function DeleteSquadDialog({ squad, isOpen, onOpenChange }: DeleteSquadDi
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 mb-2">
+          <div className="w-12 h-12 rounded-full bg-[var(--danger-tint)] flex items-center justify-center text-[var(--danger)] mb-2">
             <AlertTriangle className="h-6 w-6" />
           </div>
           <DialogTitle className="font-title text-xl">Excluir Squad</DialogTitle>
           <DialogDescription className="text-balance pt-2">
-            Tem certeza que deseja excluir o squad <span className="font-bold text-[#0E0E16]">"{squad?.name}"</span>? 
+            Tem certeza que deseja excluir o squad <span className="font-bold text-[var(--ink-1)]">"{squad?.name}"</span>? 
             Esta ação não pode ser desfeita e removerá todos os vínculos com colaboradores e clientes.
           </DialogDescription>
         </DialogHeader>
@@ -61,7 +61,7 @@ export function DeleteSquadDialog({ squad, isOpen, onOpenChange }: DeleteSquadDi
           <Button 
             onClick={handleDelete} 
             variant="destructive"
-            className="rounded-full bg-red-600 hover:bg-red-700 flex-1"
+            className="rounded-full bg-[var(--danger)] hover:bg-[var(--danger)] flex-1"
             disabled={deleteMutation.isPending}
           >
             {deleteMutation.isPending ? "Excluindo..." : "Confirmar Exclusão"}

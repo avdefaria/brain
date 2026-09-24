@@ -130,7 +130,7 @@ export function JobFunctionCombobox({
         <Button
           variant="outline"
           role="combobox"
-          className="w-full justify-between border-[#E4E6F0] rounded-xl h-11 font-normal"
+          className="w-full justify-between border-[var(--line-1)] rounded-xl h-11 font-normal"
         >
           <span className="truncate">
             {selected ? selected.name : (placeholder ?? "Selecione...")}
@@ -169,12 +169,12 @@ export function JobFunctionCombobox({
               ))}
             </CommandGroup>
             {trimmedSearch.length > 0 && !alreadyExists ? (
-              <CommandGroup className="border-t border-[#E4E6F0]">
+              <CommandGroup className="border-t border-[var(--line-1)]">
                 <CommandItem
                   value={`__create__${trimmedSearch}`}
                   onSelect={handleCreate}
                   disabled={isCreating}
-                  className="text-[#3D4FE8] font-medium"
+                  className="text-[var(--violet-500)] font-medium"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   {isCreating

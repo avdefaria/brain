@@ -7,14 +7,14 @@ interface CRMFunnelChartProps {
 }
 
 export const STAGE_COLORS: Record<string, string> = {
-  'novos_leads': "#3D4FE8",
-  'primeiro_contato': "#6373F2",
-  'em_negociacao': "#8A8FA3",
-  'apresentacao_agencia': "#B2B7C8",
-  'proposta_enviada': "#4F5FEF",
-  'follow_up': "#F5A524",
-  'vendas_feitas': "#22C55E",
-  'vendas_perdidas': "#EF4444",
+  'novos_leads': "var(--violet-500)",
+  'primeiro_contato': "var(--violet-400)",
+  'em_negociacao': "var(--ink-3)",
+  'apresentacao_agencia': "var(--ink-4)",
+  'proposta_enviada': "var(--violet-400)",
+  'follow_up': "var(--warning)",
+  'vendas_feitas': "var(--success)",
+  'vendas_perdidas': "var(--danger)",
 };
 
 export function CRMFunnelChart({ leads }: CRMFunnelChartProps) {
@@ -25,7 +25,7 @@ export function CRMFunnelChart({ leads }: CRMFunnelChartProps) {
         id: stage.id,
         name: stage.label,
         value: count,
-        fill: STAGE_COLORS[stage.id] || "#8A8FA3"
+        fill: STAGE_COLORS[stage.id] || "var(--ink-3)"
       };
     });
   }, [leads]);
@@ -33,9 +33,9 @@ export function CRMFunnelChart({ leads }: CRMFunnelChartProps) {
   const total = data.reduce((acc, curr) => acc + curr.value, 0);
 
   return (
-    <Card className="border-[#E4E6F0] shadow-sm overflow-hidden">
+    <Card className="border-[var(--line-1)] shadow-sm overflow-hidden">
       <CardHeader className="pb-6">
-        <CardTitle className="text-lg font-title font-bold text-[#0E0E16]">Funil de Vendas</CardTitle>
+        <CardTitle className="text-lg font-title font-bold text-[var(--ink-1)]">Funil de Vendas</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="relative w-full">
@@ -89,7 +89,7 @@ export function CRMFunnelChart({ leads }: CRMFunnelChartProps) {
                   className="w-3 h-3 rounded-full shrink-0" 
                   style={{ backgroundColor: stage.fill }}
                 />
-                <span className="text-[11px] font-medium text-[#8A8FA3]">{stage.name}</span>
+                <span className="text-[11px] font-medium text-[var(--ink-3)]">{stage.name}</span>
               </div>
             ))}
           </div>

@@ -2,30 +2,41 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-export const getFinanceSummary = createServerFn({ method: "GET" })
+export const getFinanceSummary = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .validator((data: { startDate?: string | null; endDate?: string | null } | undefined) =>
+    z.object({
+      startDate: z.string().nullable().optional(),
+      endDate: z.string().nullable().optional(),
+    }).parse(data || {})
+  )
+  .handler(async ({ data, context }) => {
     const supabase = context.supabase;
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
     const today = now.toISOString().split('T')[0];
 
-    // Total a Receber (Todos Pendentes)
-    const { data: pending, error: pendingErr } = await supabase
-      .from('receivables')
-      .select('amount')
-      .eq('status', 'pendente');
+    // Total a Receber: sem período selecionado = todos pendentes (comportamento
+    // padrão de sempre); com período, escopado por vencimento dentro da janela.
+    let pendingQuery = supabase.from('receivables').select('amount').eq('status', 'pendente');
+    if (data.startDate) pendingQuery = pendingQuery.gte('due_date', data.startDate);
+    if (data.endDate) pendingQuery = pendingQuery.lte('due_date', data.endDate);
+    const { data: pending, error: pendingErr } = await pendingQuery;
 
-    // Recebido no Mês
-    const { data: paidMonth, error: paidErr } = await supabase
-      .from('receivables')
-      .select('amount')
-      .eq('status', 'pago')
-      .gte('paid_at', firstDayOfMonth)
-      .lte('paid_at', lastDayOfMonth + 'T23:59:59');
+    // Recebido: sem período = mês corrente (comportamento padrão de sempre);
+    // com período, escopado por data de pagamento dentro da janela escolhida.
+    let paidQuery = supabase.from('receivables').select('amount').eq('status', 'pago');
+    if (data.startDate || data.endDate) {
+      if (data.startDate) paidQuery = paidQuery.gte('paid_at', data.startDate);
+      if (data.endDate) paidQuery = paidQuery.lte('paid_at', data.endDate + 'T23:59:59');
+    } else {
+      paidQuery = paidQuery.gte('paid_at', firstDayOfMonth).lte('paid_at', lastDayOfMonth + 'T23:59:59');
+    }
+    const { data: paidMonth, error: paidErr } = await paidQuery;
 
-    // Atrasados (Vencidos e Pendentes)
+    // Atrasados: sempre o total real em atraso agora — não faz sentido escopar
+    // por período (uma conta vencida não some por estar olhando "hoje").
     const { data: overdue, error: overdueErr } = await supabase
       .from('receivables')
       .select('amount')
@@ -44,6 +55,95 @@ export const getFinanceSummary = createServerFn({ method: "GET" })
       totalPending,
       totalPaidMonth,
       totalOverdue
+    };
+  });
+
+const receivablesTrendsSchema = z.object({
+  granularity: z.enum(["day", "week", "month"]).optional(),
+});
+
+export const getReceivablesSummaryTrends = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { granularity?: "day" | "week" | "month" } | undefined) => receivablesTrendsSchema.parse(data || {}))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
+    const granularity = data.granularity || "month";
+    const now = new Date();
+    const n = granularity === "day" ? 7 : 6;
+    const buckets: { key: string; start: Date; end: Date }[] = [];
+
+    if (granularity === "day") {
+      for (let i = n - 1; i >= 0; i--) {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 23, 59, 59, 999);
+        buckets.push({ key: start.toISOString().split("T")[0] as string, start, end });
+      }
+    } else if (granularity === "week") {
+      const day = now.getDay();
+      const diffToMonday = day === 0 ? -6 : 1 - day;
+      const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, 0, 0, 0, 0);
+      for (let i = n - 1; i >= 0; i--) {
+        const start = new Date(thisMonday); start.setDate(thisMonday.getDate() - i * 7);
+        const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23, 59, 59, 999);
+        buckets.push({ key: start.toISOString().split("T")[0] as string, start, end });
+      }
+    } else {
+      for (let i = n - 1; i >= 0; i--) {
+        const start = new Date(now.getFullYear(), now.getMonth() - i, 1, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+        buckets.push({ key: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`, start, end });
+      }
+    }
+
+    const windowStart = buckets[0]!.start;
+    const windowEnd = buckets[buckets.length - 1]!.end;
+
+    const bucketIdxOf = (iso: string | null) => {
+      if (!iso) return -1;
+      const t = new Date(iso).getTime();
+      for (let i = 0; i < buckets.length; i++) {
+        const b = buckets[i]!;
+        if (t >= b.start.getTime() && t <= b.end.getTime()) return i;
+      }
+      return -1;
+    };
+
+    const { data: pendingRows } = await supabase
+      .from("receivables")
+      .select("amount, due_date")
+      .eq("status", "pendente")
+      .gte("due_date", windowStart.toISOString().split("T")[0])
+      .lte("due_date", windowEnd.toISOString().split("T")[0]);
+
+    const { data: paidRows } = await supabase
+      .from("receivables")
+      .select("amount, paid_at")
+      .eq("status", "pago")
+      .gte("paid_at", windowStart.toISOString())
+      .lte("paid_at", windowEnd.toISOString());
+
+    const pendingSeries = buckets.map(() => 0);
+    const paidSeries = buckets.map(() => 0);
+
+    for (const r of (pendingRows as any[]) || []) {
+      const idx = bucketIdxOf(r.due_date ? `${r.due_date}T12:00:00` : null);
+      if (idx >= 0) pendingSeries[idx] += Number(r.amount) || 0;
+    }
+    for (const r of (paidRows as any[]) || []) {
+      const idx = bucketIdxOf(r.paid_at);
+      if (idx >= 0) paidSeries[idx] += Number(r.amount) || 0;
+    }
+
+    const delta = (series: number[]) => {
+      const c = series[series.length - 1] || 0;
+      const p = series[series.length - 2] || 0;
+      if (p === 0) return c > 0 ? 100 : 0;
+      return Math.round(((c - p) / p) * 100);
+    };
+
+    return {
+      trends: { pending: pendingSeries, paid: paidSeries },
+      deltas: { pending: delta(pendingSeries), paid: delta(paidSeries) },
     };
   });
 
@@ -208,8 +308,9 @@ export const getRecurringClients = createServerFn({ method: "GET" })
       const remainingMonths = mrrMonths != null ? Math.max(0, mrrMonths - paidCount) : null;
 
       const hasOverdue = clientRecs.some((r: any) => {
+        if (r.status === 'pago' || r.status === 'cancelado') return false;
         if (r.status === 'atrasado') return true;
-        if (r.status !== 'pago' && r.due_date && r.due_date < today) return true;
+        if (r.due_date && r.due_date < today) return true;
         return false;
       });
 
@@ -384,6 +485,7 @@ export const getFinanceDashboard = createServerFn({ method: "GET" })
     );
 
     const monthlyTotals = new Map<string, number>();
+    const receivablesCountMonthly = new Map<string, number>();
     let annualRevenue = 0;
     let annualCount = 0;
     let monthlyRevenue = 0;
@@ -395,6 +497,7 @@ export const getFinanceDashboard = createServerFn({ method: "GET" })
       const year = key ? Number(key.slice(0, 4)) : NaN;
       if (key && monthKeys.has(key)) {
         monthlyTotals.set(key, (monthlyTotals.get(key) || 0) + amt);
+        receivablesCountMonthly.set(key, (receivablesCountMonthly.get(key) || 0) + 1);
       }
       if (key === currentMonthKey) monthlyRevenue += amt;
       if (year === currentYear) {
@@ -448,6 +551,34 @@ export const getFinanceDashboard = createServerFn({ method: "GET" })
       custo: Math.round((costMonthly.get(m.key) || 0) * 100) / 100,
     }));
 
+    // Séries dos últimos 6 meses pra alimentar sparkline + delta dos cards de
+    // KPI (mesmo padrão de getReceivablesSummaryTrends: compara os 2 últimos
+    // pontos da série real, nunca um número inventado).
+    const revenueTrend = last6.map((m) => Math.round((monthlyTotals.get(m.key) || 0) * 100) / 100);
+    const costTrend = last6.map((m) => Math.round((costMonthly.get(m.key) || 0) * 100) / 100);
+    const ticketTrend = last6.map((m) => {
+      const rev = monthlyTotals.get(m.key) || 0;
+      const cnt = receivablesCountMonthly.get(m.key) || 0;
+      return cnt > 0 ? Math.round((rev / cnt) * 100) / 100 : 0;
+    });
+    const marginTrend = revenueTrend.map((rev, i) => (rev > 0 ? Math.round(((rev - costTrend[i]!) / rev) * 1000) / 10 : 0));
+    // Faturamento anual não tem "mês a mês" próprio — é acumulado, então o
+    // trend dele é a soma corrida dentro do ano atual (real, só que cumulativa).
+    let runningAnnual = 0;
+    const annualCumulativeTrend = months
+      .map((m) => {
+        if (Number(m.key.slice(0, 4)) === currentYear) runningAnnual += monthlyTotals.get(m.key) || 0;
+        return Math.round(runningAnnual * 100) / 100;
+      })
+      .slice(-6);
+
+    const deltaOf = (series: number[]) => {
+      const c = series[series.length - 1] || 0;
+      const p = series[series.length - 2] || 0;
+      if (p === 0) return c > 0 ? 100 : 0;
+      return Math.round(((c - p) / p) * 100);
+    };
+
     return {
       kpis: {
         monthlyRevenue,
@@ -455,6 +586,20 @@ export const getFinanceDashboard = createServerFn({ method: "GET" })
         ticketMedio,
         totalCost,
         profitMargin,
+      },
+      kpiTrends: {
+        monthlyRevenue: revenueTrend,
+        annualRevenue: annualCumulativeTrend,
+        ticketMedio: ticketTrend,
+        totalCost: costTrend,
+        profitMargin: marginTrend,
+      },
+      kpiDeltas: {
+        monthlyRevenue: deltaOf(revenueTrend),
+        annualRevenue: deltaOf(annualCumulativeTrend),
+        ticketMedio: deltaOf(ticketTrend),
+        totalCost: deltaOf(costTrend),
+        profitMargin: deltaOf(marginTrend),
       },
       charts: {
         monthlyRevenue: monthlyRevenueChart,

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { 
-  Rocket, 
-  Users, 
-  UserPlus, 
-  ChevronRight, 
-  CheckCircle2, 
+import { useServerFn } from "@tanstack/react-start";
+import {
+  Rocket,
+  Users,
+  UserPlus,
+  ChevronRight,
+  CheckCircle2,
   Circle,
   X
 } from "lucide-react";
@@ -17,17 +18,29 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { getOnboardingStatus } from "@/lib/squads.functions";
 
 export function OnboardingModal() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
+  const fetchOnboardingStatus = useServerFn(getOnboardingStatus);
 
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem("ongo_onboarding_seen");
-    if (!hasSeenOnboarding) {
+    if (hasSeenOnboarding) return;
+
+    fetchOnboardingStatus().then((status) => {
+      if (status.hasSquad && status.hasCollaborator && status.hasClient) {
+        // Agência já configurada (dados criados fora do fluxo de onboarding) —
+        // marca como visto e nunca mais mostra, em qualquer navegador/dispositivo.
+        localStorage.setItem("ongo_onboarding_seen", "true");
+        return;
+      }
       setOpen(true);
-    }
-  }, []);
+    }).catch(() => {
+      // Se a checagem falhar, não bloqueia o usuário com o modal.
+    });
+  }, [fetchOnboardingStatus]);
 
   const handleComplete = () => {
     try {
@@ -72,35 +85,35 @@ export function OnboardingModal() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[500px] border-[#E4E6F0] p-0 overflow-hidden rounded-2xl">
+      <DialogContent className="sm:max-w-[500px] border-[var(--line-1)] p-0 overflow-hidden rounded-2xl">
         <div className="p-8 space-y-6">
           <div className="flex items-center justify-between">
-            <div className="w-10 h-6 bg-[#3D4FE8] rounded-full flex items-center justify-center relative">
-              <div className="w-2 h-2 bg-white rounded-full"></div>
+            <div className="w-10 h-6 bg-[var(--violet-500)] rounded-full flex items-center justify-center relative">
+              <div className="w-2 h-2 bg-[var(--surface-1)] rounded-full"></div>
             </div>
             <button 
               onClick={handleSkip}
-              className="text-[#8A8FA3] hover:text-[#0E0E16] transition-colors"
+              className="text-[var(--ink-3)] hover:text-[var(--ink-1)] transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           <div className="space-y-2">
-            <DialogTitle className="text-2xl font-title font-bold text-[#0E0E16]">
+            <DialogTitle className="text-2xl font-title font-bold text-[var(--ink-1)]">
               Bem-vindo ao Brain!
             </DialogTitle>
-            <p className="text-[#8A8FA3]">
+            <p className="text-[var(--ink-3)]">
               Vamos configurar sua agência em apenas 3 passos rápidos.
             </p>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="font-medium text-[#0E0E16]">Passo {step} de {steps.length}</span>
-              <span className="text-[#3D4FE8] font-bold">{Math.round(progressValue)}%</span>
+              <span className="font-medium text-[var(--ink-1)]">Passo {step} de {steps.length}</span>
+              <span className="text-[var(--violet-500)] font-bold">{Math.round(progressValue)}%</span>
             </div>
-            <Progress value={progressValue} className="h-2 bg-[#E4E6F0]" />
+            <Progress value={progressValue} className="h-2 bg-[var(--line-1)]" />
           </div>
 
           <div className="py-6 space-y-6">
@@ -114,24 +127,24 @@ export function OnboardingModal() {
                   key={s.id}
                   className={cn(
                     "flex items-start gap-4 p-4 rounded-xl border transition-all duration-300",
-                    isCurrent ? "border-[#3D4FE8] bg-[#3D4FE8]/5 shadow-sm" : "border-transparent opacity-60"
+                    isCurrent ? "border-[var(--violet-500)] bg-[var(--violet-500)]/5 shadow-sm" : "border-transparent opacity-60"
                   )}
                 >
                   <div className={cn(
                     "h-8 w-8 rounded-full flex items-center justify-center shrink-0",
-                    isCompleted ? "bg-[#22C55E] text-white" : isCurrent ? "bg-[#3D4FE8] text-white" : "bg-[#F7F8FC] text-[#8A8FA3]"
+                    isCompleted ? "bg-[var(--success)] text-white" : isCurrent ? "bg-[var(--violet-500)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-3)]"
                   )}>
                     {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-4 w-4" />}
                   </div>
                   <div className="space-y-1">
                     <h4 className={cn(
                       "text-sm font-bold",
-                      isCurrent ? "text-[#0E0E16]" : "text-[#8A8FA3]"
+                      isCurrent ? "text-[var(--ink-1)]" : "text-[var(--ink-3)]"
                     )}>
                       {s.title}
                     </h4>
                     {isCurrent && (
-                      <p className="text-xs text-[#8A8FA3] leading-relaxed animate-in fade-in slide-in-from-top-1 duration-500">
+                      <p className="text-xs text-[var(--ink-3)] leading-relaxed animate-in fade-in slide-in-from-top-1 duration-500">
                         {s.description}
                       </p>
                     )}
@@ -144,13 +157,13 @@ export function OnboardingModal() {
           <div className="flex items-center justify-between pt-4">
             <Button 
               variant="ghost" 
-              className="text-[#8A8FA3] hover:text-[#0E0E16]"
+              className="text-[var(--ink-3)] hover:text-[var(--ink-1)]"
               onClick={handleSkip}
             >
               Pular tudo
             </Button>
             <Button 
-              className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full px-8"
+              className="bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90 rounded-full px-8"
               onClick={() => step < steps.length ? setStep(step + 1) : handleComplete()}
             >
               {step === steps.length ? "Finalizar" : "Próximo passo"}

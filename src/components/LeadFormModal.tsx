@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -47,9 +46,11 @@ import {
   ChevronsUpDown,
   Plus
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCalendarDatePtBr } from "@/lib/utils";
 import { toast } from "sonner";
-import { createLead, updateLead, deleteLead, getFunnelTypes, addFunnelType, deleteFunnelType, STAGES } from "@/lib/leads.functions";
+import { createLead, updateLead, deleteLead, getFunnelTypes, addFunnelType, deleteFunnelType, registerLeadContact, STAGES } from "@/lib/leads.functions";
+import { Badge } from "@/components/ui/badge";
+import { PhoneCall } from "lucide-react";
 import { getNiches } from "@/lib/niches.functions";
 import { getCollaborators } from "@/lib/squads.functions";
 import { getSalesChannels, addSalesChannel } from "@/lib/sales-channels.functions";
@@ -60,6 +61,7 @@ import { useQueryClient } from "@tanstack/react-query";
 const leadSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
   company: z.string().nullable().optional(),
+  account_name: z.string().nullable().optional(),
   email: z.string().email("E-mail inválido").or(z.literal("")).nullable().optional(),
   phone: z.string().nullable().optional(),
   recurring_revenue: z.number(),
@@ -89,7 +91,8 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
   const createLeadFn = useServerFn(createLead);
   const updateLeadFn = useServerFn(updateLead);
   const deleteLeadFn = useServerFn(deleteLead);
-  
+  const registerLeadContactFn = useServerFn(registerLeadContact);
+
   const [niches, setNiches] = useState<any[]>([]);
   const [collaborators, setCollaborators] = useState<any[]>([]);
   const [salesChannelOptions, setSalesChannelOptions] = useState<any[]>([]);
@@ -97,6 +100,10 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isFunnelPopoverOpen, setIsFunnelPopoverOpen] = useState(false);
   const [funnelSearch, setFunnelSearch] = useState("");
+  const [contactAttempts, setContactAttempts] = useState(0);
+  const [nextContactAt, setNextContactAt] = useState<string | null>(null);
+  const [nextContactDraft, setNextContactDraft] = useState("");
+  const [isRegisteringContact, setIsRegisteringContact] = useState(false);
 
   const fetchNiches = useServerFn(getNiches);
   const fetchCollaborators = useServerFn(getCollaborators);
@@ -106,7 +113,6 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
   const addFunnelTypeFn = useServerFn(addFunnelType);
   const deleteFunnelTypeFn = useServerFn(deleteFunnelType);
   const [funnelToDelete, setFunnelToDelete] = useState<any>(null);
-  const [dbSalesChannels, setDbSalesChannels] = useState<{ count: number, ids: string[] }>({ count: 0, ids: [] });
 
   useEffect(() => {
     if (isOpen) {
@@ -116,27 +122,6 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
       fetchFunnelTypes().then(setFunnelTypes);
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen && lead?.id) {
-      const fetchDbChannels = async () => {
-        const { data, error } = await supabase
-          .from('lead_sales_channels')
-          .select('sales_channel_id')
-          .eq('lead_id', lead.id);
-        
-        if (!error && data) {
-          setDbSalesChannels({
-            count: data.length,
-            ids: data.map(d => d.sales_channel_id)
-          });
-        }
-      };
-      fetchDbChannels();
-    } else {
-      setDbSalesChannels({ count: 0, ids: [] });
-    }
-  }, [isOpen, lead?.id]);
 
   const handleDelete = async () => {
     if (!lead?.id) return;
@@ -199,6 +184,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
     defaultValues: {
       name: "",
       company: null,
+      account_name: null,
       email: null,
       phone: null,
       recurring_revenue: 0,
@@ -223,6 +209,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
       form.reset({
         name: lead.name || "",
         company: lead.company || null,
+        account_name: lead.account_name || null,
         email: lead.email || null,
         phone: lead.phone || null,
         recurring_revenue: Number(lead.recurring_revenue) || 0,
@@ -238,10 +225,14 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         sales_channels: channels,
         funnel_type_id: lead.funnel_type_id || null,
       });
+      setContactAttempts(Number(lead.contact_attempts) || 0);
+      setNextContactAt(lead.next_contact_at || null);
+      setNextContactDraft(lead.next_contact_at ? lead.next_contact_at.slice(0, 10) : "");
     } else if (!lead && isOpen) {
       form.reset({
         name: "",
         company: null,
+        account_name: null,
         email: null,
         phone: null,
         recurring_revenue: 0,
@@ -277,6 +268,28 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
     }
   };
 
+  const handleRegisterContact = async () => {
+    if (!lead?.id || isRegisteringContact) return;
+    setIsRegisteringContact(true);
+    try {
+      const updated = await registerLeadContactFn({
+        data: {
+          leadId: lead.id,
+          nextContactAt: nextContactDraft ? new Date(nextContactDraft).toISOString() : null,
+        },
+      }) as any;
+      setContactAttempts(Number(updated.contact_attempts) || 0);
+      setNextContactAt(updated.next_contact_at || null);
+      toast.success("Contato registrado!");
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["lead-stats"] });
+    } catch (error) {
+      toast.error("Erro ao registrar contato");
+    } finally {
+      setIsRegisteringContact(false);
+    }
+  };
+
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -289,7 +302,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="text-[#8A8FA3] hover:text-red-500 mr-8"
+                className="text-[var(--ink-3)] hover:text-[var(--danger)] mr-8"
                 onClick={() => setIsDeleteDialogOpen(true)}
               >
                 <Trash2 className="h-4 w-4" />
@@ -299,44 +312,37 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-          {import.meta.env.DEV && (
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2 text-xs font-mono mb-4">
-              <p className="font-bold text-amber-800">DEBUG DE SINCRONIA</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="underline mb-1">Banco de dados mostra: {dbSalesChannels.count} canais</p>
-                  <pre className="overflow-x-auto">{JSON.stringify(dbSalesChannels.ids, null, 2)}</pre>
-                  <p className="mt-2 text-[10px] text-slate-500">Lead ID: {lead?.id || 'Novo'}</p>
-                </div>
-                <div>
-                  <p className="underline mb-1">Formulário está exibindo: {form.watch("sales_channels")?.length || 0} canais</p>
-                  <pre className="overflow-x-auto">{JSON.stringify(form.watch("sales_channels"), null, 2)}</pre>
-                </div>
-              </div>
-            </div>
-          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Nome do contato *</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ink-3)]" />
                 <Input {...form.register("name")} className="pl-10" placeholder="Nome completo" />
               </div>
-              {form.formState.errors.name && <p className="text-xs text-red-500">{form.formState.errors.name.message}</p>}
+              {form.formState.errors.name && <p className="text-xs text-[var(--danger)]">{form.formState.errors.name.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label>Empresa</Label>
               <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ink-3)]" />
                 <Input {...form.register("company")} className="pl-10" placeholder="Nome da empresa" />
               </div>
             </div>
 
             <div className="space-y-2">
+              <Label>Conta</Label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ink-3)]" />
+                <Input {...form.register("account_name")} className="pl-10" placeholder="Ex: Unidade Norte, Marca X..." />
+              </div>
+              <p className="text-[10px] text-[var(--ink-3)]">Se a empresa já tem outras contas cadastradas, dê um nome que identifique esta.</p>
+            </div>
+
+            <div className="space-y-2">
               <Label>E-mail</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ink-3)]" />
                 <Input {...form.register("email")} className="pl-10" placeholder="email@exemplo.com" />
               </div>
             </div>
@@ -344,7 +350,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
             <div className="space-y-2">
               <Label>Telefone</Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ink-3)]" />
                 <Input {...form.register("phone")} className="pl-10" placeholder="(00) 00000-0000" />
               </div>
             </div>
@@ -353,7 +359,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
               <Label>Receita Recorrente (MRR)</Label>
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2 relative">
-                  <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
+                  <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ink-3)]" />
                   <Input 
                     type="number" 
                     step="0.01" 
@@ -376,12 +382,12 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
             <div className="space-y-2">
               <Label>Receita Total Recorrente (Estimada)</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ink-3)]" />
                 <Input 
                   readOnly
                   disabled
                   value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((form.watch("recurring_revenue") || 0) * (form.watch("mrr_months") || 0))}
-                  className="pl-10 bg-slate-50 border-slate-200"
+                  className="pl-10 bg-[var(--surface-2)] border-[var(--line-1)]"
                 />
               </div>
             </div>
@@ -389,7 +395,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
             <div className="space-y-2">
               <Label>Receita Única</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ink-3)]" />
                 <Input 
                   type="number" 
                   step="0.01" 
@@ -403,7 +409,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
             <div className="space-y-2">
               <Label>Expectativa de Fechamento</Label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8FA3]" />
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ink-3)]" />
                 <Input type="date" {...form.register("expected_close_date")} className="pl-10" />
               </div>
             </div>
@@ -524,7 +530,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 opacity-0 group-hover/item:opacity-100 hover:text-red-500 transition-opacity"
+                              className="h-6 w-6 opacity-0 group-hover/item:opacity-100 hover:text-[var(--danger)] transition-opacity"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setFunnelToDelete(f);
@@ -536,10 +542,10 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
                         ))}
                       </CommandGroup>
                       {funnelSearch && !funnelTypes.some(f => f.name.toLowerCase() === funnelSearch.toLowerCase()) && (
-                        <CommandGroup className="border-t border-[#E4E6F0]">
+                        <CommandGroup className="border-t border-[var(--line-1)]">
                           <CommandItem
                             onSelect={() => handleCreateFunnelType(funnelSearch)}
-                            className="text-[#3D4FE8] font-medium"
+                            className="text-[var(--violet-500)] font-medium"
                           >
                             <Plus className="mr-2 h-4 w-4" />
                             Criar "{funnelSearch}"
@@ -559,8 +565,50 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
           </div>
 
           {lead && (
-            <div className="space-y-4 pt-4 border-t border-[#E4E6F0]">
-              <h3 className="font-title font-bold text-lg text-[#0E0E16]">Histórico de Estágios</h3>
+            <div className="space-y-3 rounded-xl border border-[var(--line-1)] p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-title font-bold text-[var(--ink-1)] flex items-center gap-2">
+                  <PhoneCall className="h-4 w-4 text-[var(--violet-500)]" /> Contato
+                </h3>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "rounded-full font-bold",
+                    contactAttempts >= 3 ? "border-[var(--danger)]/40 bg-[var(--danger-tint)] text-[var(--danger)]" : "border-[var(--line-1)] text-[var(--ink-3)]"
+                  )}
+                >
+                  {contactAttempts}/3 tentativas
+                </Badge>
+              </div>
+              <p className="text-xs text-[var(--ink-3)]">
+                {nextContactAt
+                  ? `Próximo contato agendado: ${formatCalendarDatePtBr(nextContactAt)}`
+                  : "Nenhum próximo contato agendado."}
+              </p>
+              <div className="flex flex-col sm:flex-row sm:items-end gap-2">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs">Próxima data de contato</Label>
+                  <Input
+                    type="date"
+                    value={nextContactDraft}
+                    onChange={(e) => setNextContactDraft(e.target.value)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleRegisterContact}
+                  disabled={isRegisteringContact}
+                  className="bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90"
+                >
+                  {isRegisteringContact ? "Registrando..." : "Registrar contato"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {lead && (
+            <div className="space-y-4 pt-4 border-t border-[var(--line-1)]">
+              <h3 className="font-title font-bold text-lg text-[var(--ink-1)]">Histórico de Estágios</h3>
               <div className="space-y-3">
                 {(() => {
                   const history = Array.isArray(lead.lead_stage_history) 
@@ -568,11 +616,11 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
                     : [];
 
                   if (history.length === 0) {
-                    return <p className="text-sm text-[#8A8FA3] italic text-center py-4">Nenhum histórico registrado.</p>;
+                    return <p className="text-sm text-[var(--ink-3)] italic text-center py-4">Nenhum histórico registrado.</p>;
                   }
 
                   return (
-                    <div className="relative pl-6 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-[#E4E6F0]">
+                    <div className="relative pl-6 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-[var(--line-1)]">
                       {history.map((h: any, idx: number) => {
                         const entered = new Date(h.entered_at);
                         const exited = h.exited_at ? new Date(h.exited_at) : new Date();
@@ -591,18 +639,18 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
 
                         return (
                           <div key={h.id || idx} className="relative">
-                            <div className={`absolute -left-[23px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${h.exited_at ? 'bg-[#8A8FA3]' : 'bg-[#3D4FE8]'}`} />
+                            <div className={`absolute -left-[23px] top-1.5 w-3 h-3 rounded-full border-2 border-[var(--surface-1)] ${h.exited_at ? 'bg-[var(--ink-3)]' : 'bg-[var(--violet-500)]'}`} />
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                               <div>
-                                <p className={`text-sm font-semibold ${h.exited_at ? 'text-[#8A8FA3]' : 'text-[#3D4FE8]'}`}>
+                                <p className={`text-sm font-semibold ${h.exited_at ? 'text-[var(--ink-3)]' : 'text-[var(--violet-500)]'}`}>
                                   {stageLabel}
                                 </p>
-                                <p className="text-xs text-[#8A8FA3]">
+                                <p className="text-xs text-[var(--ink-3)]">
                                   Entrou em {entered.toLocaleDateString('pt-BR')} às {entered.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                               </div>
                               <div className="text-right">
-                                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${h.exited_at ? 'bg-slate-100 text-[#8A8FA3]' : 'bg-indigo-50 text-[#3D4FE8]'}`}>
+                                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${h.exited_at ? 'bg-[var(--surface-2)] text-[var(--ink-3)]' : 'bg-indigo-50 text-[var(--violet-500)]'}`}>
                                   {h.exited_at ? timeDisplay : 'Em andamento'}
                                 </span>
                               </div>
@@ -621,7 +669,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90">
+            <Button type="submit" className="bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90">
               {lead ? "Salvar Alterações" : "Criar Lead"}
             </Button>
           </DialogFooter>
@@ -635,7 +683,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
           <DialogTitle className="text-lg font-bold">Confirmar exclusão</DialogTitle>
         </DialogHeader>
         <div className="py-4">
-          <p className="text-sm text-[#8A8FA3]">
+          <p className="text-sm text-[var(--ink-3)]">
             Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita.
           </p>
         </div>
@@ -643,7 +691,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
           <Button variant="ghost" onClick={() => setIsDeleteDialogOpen(false)} className="rounded-full">
             Cancelar
           </Button>
-          <Button onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white rounded-full">
+          <Button onClick={handleDelete} className="bg-[var(--danger)] hover:bg-[var(--danger)] text-white rounded-full">
             Excluir
           </Button>
         </DialogFooter>
@@ -656,7 +704,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
           <DialogTitle className="text-lg font-bold">Excluir tipo de funil</DialogTitle>
         </DialogHeader>
         <div className="py-4">
-          <p className="text-sm text-[#8A8FA3]">
+          <p className="text-sm text-[var(--ink-3)]">
             Excluir tipo de funil '{funnelToDelete?.name}'? Esta ação removerá o tipo do catálogo.
           </p>
         </div>
@@ -666,7 +714,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
           </Button>
           <Button 
             onClick={() => funnelToDelete && handleDeleteFunnelType(funnelToDelete.id)} 
-            className="bg-red-500 hover:bg-red-600 text-white rounded-full"
+            className="bg-[var(--danger)] hover:bg-[var(--danger)] text-white rounded-full"
           >
             Excluir
           </Button>

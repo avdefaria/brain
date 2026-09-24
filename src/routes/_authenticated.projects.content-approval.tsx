@@ -25,11 +25,11 @@ function ContentApprovalPage() {
 
 
   const statusColors = {
-    pending_internal_approval: 'bg-amber-100 text-amber-700 border-amber-200',
+    pending_internal_approval: 'bg-[var(--warning-tint)] text-[var(--warning)] border-[var(--warning)]/30',
     internally_approved: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-    client_approved: 'bg-green-100 text-green-700 border-green-200',
-    internal_changes_requested: 'bg-red-100 text-red-700 border-red-200',
-    client_changes_requested: 'bg-orange-100 text-orange-700 border-orange-200',
+    client_approved: 'bg-[var(--success-tint)] text-[var(--success)] border-[var(--success)]/30',
+    internal_changes_requested: 'bg-[var(--danger-tint)] text-[var(--danger)] border-[var(--danger)]/30',
+    client_changes_requested: 'bg-[var(--warning-tint)] text-[var(--warning)] border-[var(--warning)]/30',
   };
 
   const statusLabels = {
@@ -47,17 +47,17 @@ function ContentApprovalPage() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-title font-bold text-[#0E0E16]">Aprovação de Conteúdo</h1>
-              <p className="text-[#8A8FA3] mt-1">Gerencie, pré-visualize e aprove publicações para redes sociais.</p>
+              <h1 className="text-3xl font-title font-bold text-[var(--ink-1)]">Aprovação de Conteúdo</h1>
+              <p className="text-[var(--ink-3)] mt-1">Gerencie, pré-visualize e aprove publicações para redes sociais.</p>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" className="rounded-full border-[#E4E6F0] text-[#8A8FA3] hover:text-[#0E0E16]">
+              <Button variant="outline" className="rounded-full border-[var(--line-1)] text-[var(--ink-3)] hover:text-[var(--ink-1)]">
                 <Share2 className="h-4 w-4 mr-2" />
                 Link Público
               </Button>
               <Button 
                 onClick={() => setIsCreateModalOpen(true)}
-                className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 text-white rounded-full px-6"
+                className="bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90 text-white rounded-full px-6"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Post
@@ -71,12 +71,12 @@ function ContentApprovalPage() {
           />
 
           {/* Filters & View Toggle */}
-          <div className="flex items-center justify-between bg-white dark:bg-[#1A1A24] p-4 rounded-2xl border border-[#E4E6F0] dark:border-[#2A2A36]">
+          <div className="flex items-center justify-between bg-[var(--surface-1)] p-4 rounded-2xl border border-[var(--line-1)]">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-[#8A8FA3]" />
+                <Filter className="h-4 w-4 text-[var(--ink-3)]" />
                 <Select defaultValue="all">
-                  <SelectTrigger className="w-[180px] border-none bg-[#F7F8FC] dark:bg-[#2A2A36] rounded-full focus:ring-0">
+                  <SelectTrigger className="w-[180px] border-none bg-[var(--surface-2)] rounded-full focus:ring-0">
                     <SelectValue placeholder="Todos os Clientes" />
                   </SelectTrigger>
                   <SelectContent>
@@ -86,7 +86,7 @@ function ContentApprovalPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Select defaultValue="all">
-                  <SelectTrigger className="w-[160px] border-none bg-[#F7F8FC] dark:bg-[#2A2A36] rounded-full focus:ring-0">
+                  <SelectTrigger className="w-[160px] border-none bg-[var(--surface-2)] rounded-full focus:ring-0">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -96,12 +96,12 @@ function ContentApprovalPage() {
               </div>
             </div>
 
-            <div className="flex items-center bg-[#F7F8FC] dark:bg-[#2A2A36] p-1 rounded-full">
+            <div className="flex items-center bg-[var(--surface-2)] p-1 rounded-full">
               <button 
                 onClick={() => setView('calendar')}
                 className={cn(
                   "p-2 rounded-full transition-all",
-                  view === 'calendar' ? "bg-white dark:bg-[#3D4FE8] shadow-sm text-[#3D4FE8] dark:text-white" : "text-[#8A8FA3]"
+                  view === 'calendar' ? "bg-[var(--surface-1)] shadow-sm text-[var(--violet-500)]" : "text-[var(--ink-3)]"
                 )}
               >
                 <Calendar className="h-4 w-4" />
@@ -110,7 +110,7 @@ function ContentApprovalPage() {
                 onClick={() => setView('grid')}
                 className={cn(
                   "p-2 rounded-full transition-all",
-                  view === 'grid' ? "bg-white dark:bg-[#3D4FE8] shadow-sm text-[#3D4FE8] dark:text-white" : "text-[#8A8FA3]"
+                  view === 'grid' ? "bg-[var(--surface-1)] shadow-sm text-[var(--violet-500)]" : "text-[var(--ink-3)]"
                 )}
               >
                 <LayoutGrid className="h-4 w-4" />
@@ -120,7 +120,7 @@ function ContentApprovalPage() {
 
           {/* Content */}
           {view === 'calendar' ? (
-            <div className="bg-white dark:bg-[#1A1A24] rounded-3xl border border-[#E4E6F0] dark:border-[#2A2A36] p-6 shadow-sm min-h-[600px]">
+            <div className="bg-[var(--surface-1)] rounded-3xl border border-[var(--line-1)] p-6 shadow-sm min-h-[600px]">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl font-bold">Agosto 2026</h2>
                 <div className="flex items-center gap-2">
@@ -133,23 +133,23 @@ function ContentApprovalPage() {
               </div>
               
               {/* Simplified Calendar Grid */}
-              <div className="grid grid-cols-7 gap-px bg-[#E4E6F0] dark:bg-[#2A2A36] rounded-xl overflow-hidden border border-[#E4E6F0] dark:border-[#2A2A36]">
+              <div className="grid grid-cols-7 gap-px bg-[var(--line-1)] rounded-xl overflow-hidden border border-[var(--line-1)]">
                 {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
-                  <div key={day} className="bg-[#F7F8FC] dark:bg-[#1A1A24] p-3 text-center text-xs font-semibold text-[#8A8FA3] uppercase tracking-wider">
+                  <div key={day} className="bg-[var(--surface-2)] p-3 text-center text-xs font-semibold text-[var(--ink-3)] uppercase tracking-wider">
                     {day}
                   </div>
                 ))}
                 {Array.from({ length: 31 }).map((_, i) => (
-                  <div key={i} className="bg-white dark:bg-[#1A1A24] min-h-[120px] p-2 hover:bg-[#F7F8FC] dark:hover:bg-[#252530] transition-colors cursor-pointer group">
-                    <span className="text-sm font-medium text-[#8A8FA3]">{i + 1}</span>
+                  <div key={i} className="bg-[var(--surface-1)] min-h-[120px] p-2 hover:bg-[var(--surface-2)] transition-colors cursor-pointer group">
+                    <span className="text-sm font-medium text-[var(--ink-3)]">{i + 1}</span>
                     {i === 18 && (
-                      <div className="mt-2 p-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/30 rounded-lg shadow-sm">
+                      <div className="mt-2 p-2 bg-indigo-50 border border-indigo-100 rounded-lg shadow-sm">
                         <div className="flex items-center gap-1 mb-1">
                           <Clock className="h-3 w-3 text-indigo-500" />
-                          <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">14:00</span>
+                          <span className="text-[10px] font-bold text-indigo-600">14:00</span>
                         </div>
-                        <p className="text-[10px] font-semibold text-[#0E0E16] dark:text-white truncate">Lançamento Verão</p>
-                        <Badge className="mt-1 h-4 text-[8px] bg-amber-100 text-amber-700 border-amber-200 rounded-full">Pendente</Badge>
+                        <p className="text-[10px] font-semibold text-[var(--ink-1)] truncate">Lançamento Verão</p>
+                        <Badge className="mt-1 h-4 text-[8px] bg-[var(--warning-tint)] text-[var(--warning)] border-[var(--warning)]/30 rounded-full">Pendente</Badge>
                       </div>
                     )}
                   </div>
@@ -157,23 +157,23 @@ function ContentApprovalPage() {
               </div>
 
               {/* Legend */}
-              <div className="mt-8 flex flex-wrap items-center gap-6 p-4 bg-[#F7F8FC] dark:bg-[#2A2A36] rounded-2xl">
+              <div className="mt-8 flex flex-wrap items-center gap-6 p-4 bg-[var(--surface-2)] rounded-2xl">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-[#8A8FA3]">Status:</span>
+                  <span className="text-xs font-semibold text-[var(--ink-3)]">Status:</span>
                   {Object.entries(statusLabels).map(([key, label]) => (
                     <div key={key} className="flex items-center gap-1.5">
                       <div className={cn("w-2 h-2 rounded-full", statusColors[key as keyof typeof statusColors].split(' ')[0])}></div>
-                      <span className="text-[10px] text-[#8A8FA3]">{label}</span>
+                      <span className="text-[10px] text-[var(--ink-3)]">{label}</span>
                     </div>
                   ))}
                 </div>
-                <div className="h-4 w-px bg-[#E4E6F0] dark:bg-[#3A3A46]"></div>
+                <div className="h-4 w-px bg-[var(--line-1)]"></div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-[#8A8FA3]">Etapa:</span>
+                  <span className="text-xs font-semibold text-[var(--ink-3)]">Etapa:</span>
                   {['Atração', 'Educação', 'Conversão'].map((stage) => (
                     <div key={stage} className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-slate-300"></div>
-                      <span className="text-[10px] text-[#8A8FA3]">{stage}</span>
+                      <div className="w-2 h-2 rounded-full bg-[var(--ink-4)]"></div>
+                      <span className="text-[10px] text-[var(--ink-3)]">{stage}</span>
                     </div>
                   ))}
                 </div>

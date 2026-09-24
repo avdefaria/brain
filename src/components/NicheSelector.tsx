@@ -28,6 +28,8 @@ interface NicheSelectorProps {
   onChange: (id: string) => void;
   onAddNiche: (name: string) => Promise<void>;
   placeholder?: string;
+  searchPlaceholder?: string;
+  emptyLabel?: string;
 }
 
 export function NicheSelector({
@@ -35,7 +37,9 @@ export function NicheSelector({
   options,
   onChange,
   onAddNiche,
-  placeholder = "Selecionar nicho..."
+  placeholder = "Selecionar nicho...",
+  searchPlaceholder = "Buscar nicho...",
+  emptyLabel = "Nenhum nicho encontrado"
 }: NicheSelectorProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
@@ -53,21 +57,21 @@ export function NicheSelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between bg-white dark:bg-[#1A1A24] border-[#E4E6F0] dark:border-[#2A2A36] h-10 px-3 hover:bg-white"
+          className="w-full justify-between bg-[var(--surface-1)] border-[var(--line-1)] h-10 px-3 hover:bg-[var(--surface-3)]"
         >
           <span className={cn(
             "font-normal",
-            !selectedNiche && "text-[#8A8FA3]"
+            !selectedNiche && "text-[var(--ink-3)]"
           )}>
             {selectedNiche ? selectedNiche.name : placeholder}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-[#E4E6F0] dark:border-[#2A2A36] rounded-xl shadow-xl">
-        <Command className="dark:bg-[#1A1A24]">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-[var(--line-1)] rounded-xl shadow-xl">
+        <Command className="">
           <CommandInput
-            placeholder="Buscar nicho..."
+            placeholder={searchPlaceholder}
             value={inputValue}
             onValueChange={setInputValue}
             className="h-9"
@@ -77,7 +81,7 @@ export function NicheSelector({
               {!isExactMatch && inputValue.trim().length > 0 ? (
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-[#3D4FE8] hover:bg-[#3D4FE8]/5 gap-2 h-8 text-xs font-bold"
+                  className="w-full justify-start text-[var(--violet-500)] hover:bg-[var(--violet-500)]/5 gap-2 h-8 text-xs font-bold"
                   onClick={async () => {
                     await onAddNiche(inputValue);
                     setInputValue("");
@@ -86,7 +90,7 @@ export function NicheSelector({
                   <Plus className="h-3 w-3" /> Adicionar "{inputValue}"
                 </Button>
               ) : (
-                <span className="text-xs text-[#8A8FA3] px-2">Nenhum nicho encontrado</span>
+                <span className="text-xs text-[var(--ink-3)] px-2">{emptyLabel}</span>
               )}
             </CommandEmpty>
             <CommandGroup>
@@ -98,11 +102,11 @@ export function NicheSelector({
                     onChange(option.id);
                     setOpen(false);
                   }}
-                  className="cursor-pointer hover:bg-[#F7F8FC] dark:hover:bg-[#2A2A36] transition-colors"
+                  className="cursor-pointer hover:bg-[var(--surface-2)] transition-colors"
                 >
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4 text-[#3D4FE8]",
+                      "mr-2 h-4 w-4 text-[var(--violet-500)]",
                       selectedId === option.id
                         ? "opacity-100"
                         : "opacity-0"

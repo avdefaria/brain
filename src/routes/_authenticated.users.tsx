@@ -1,18 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn, useServerFn } from "@tanstack/react-start";
+import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { 
-  Users, 
-  Search, 
-  Filter, 
-  Plus, 
-  MoreHorizontal, 
-  Mail, 
-  Briefcase, 
-  Shield,
-  LayoutGrid
+import {
+  Users,
+  Search,
+  Plus,
+  MoreHorizontal,
+  CheckSquare,
+  Gauge,
+  Wifi,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,167 +32,39 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { CreateCollaboratorModal, type CreatedCredential } from "@/components/CreateCollaboratorModal";
 import { EditCollaboratorModal } from "@/components/EditCollaboratorModal";
+import { getTeamOverview } from "@/lib/team.functions";
+import { useTeamOnlineIds } from "@/hooks/use-team-presence";
+import { efficiencyBand, formatTrackedTime, formatElapsedDays } from "@/lib/efficiency";
 
-type CollaboratorRow = {
+type TeamMember = {
   id: string;
   full_name: string;
-  function: string | null;
-  job_function_id: string | null;
-  commercial_roles: string[] | null;
-  squad_id: string | null;
-  squad_name: string | null;
-  role: string | null;
-  active: boolean | null;
-  email: string | null;
   avatar_url: string | null;
+  email: string | null;
+  function: string | null;
+  cargos: { id: string; name: string; department_id: string | null; department_name: string | null }[];
+  job_function_ids: string[];
+  department_ids: string[];
+  cargo: string | null;
+  role: string | null;
   employment_type: string | null;
+  active: boolean;
+  squads: { id: string; name: string; color: string | null; type: string }[];
+  squad_ids: string[];
+  cpf: string | null;
+  phone: string | null;
+  birth_date: string | null;
+  address_zip: string | null;
+  address_street: string | null;
+  address_number: string | null;
+  address_complement: string | null;
+  address_neighborhood: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  activeTasks: number;
+  completedThisWeek: number;
+  efficiency: number | null;
 };
-
-export const listCollaborators = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    let profileList: Array<Record<string, unknown>> = [];
-
-    const { data: profilesFull, error: fullError } = await supabaseAdmin
-      .from("profiles")
-      .select("id, full_name, function, job_function_id, commercial_roles, squad_id, active, avatar_url, employment_type, job_functions:job_function_id(id, name)")
-      .order("full_name");
-
-    if (!fullError) {
-      profileList = (profilesFull ?? []) as Array<Record<string, unknown>>;
-    } else {
-      const msg = (fullError.message ?? "").toLowerCase();
-      const isMissingColumn =
-        msg.includes("commercial_roles") ||
-        msg.includes("active") ||
-        (fullError as { code?: string }).code === "42703" ||
-        msg.includes("does not exist") ||
-        msg.includes("column");
-      if (isMissingColumn) {
-        const { data: profilesBase, error: baseError } = await supabaseAdmin
-          .from("profiles")
-          .select("id, full_name, function, squad_id, avatar_url, employment_type")
-          .order("full_name");
-        if (baseError) {
-          throw new Error(baseError.message);
-        } else {
-          profileList = (profilesBase ?? []) as Array<Record<string, unknown>>;
-        }
-      } else {
-        const msgLower = (fullError.message ?? "").toLowerCase();
-        if (msgLower.includes("job_function") || msgLower.includes("job_functions")) {
-          const { data: profilesLegacy, error: legacyError } = await supabaseAdmin
-            .from("profiles")
-            .select("id, full_name, function, commercial_roles, squad_id, active, avatar_url, employment_type")
-            .order("full_name");
-          if (legacyError) {
-            throw new Error(legacyError.message);
-          } else {
-            profileList = (profilesLegacy ?? []) as Array<Record<string, unknown>>;
-          }
-        } else {
-          throw new Error(fullError.message);
-        }
-      }
-    }
-
-    let rows: CollaboratorRow[] = [];
-
-    if (profileList.length === 0) {
-      rows = [];
-    } else {
-      const ids = profileList
-        .map((p) => p["id"] as string)
-        .filter((id) => typeof id === "string" && id.length > 0);
-      const squadIds = Array.from(
-        new Set(
-          profileList
-            .map((p) => p["squad_id"] as string | null)
-            .filter((sid): sid is string => typeof sid === "string" && sid.length > 0),
-        ),
-      );
-
-      let roleByUser = new Map<string, string>();
-      if (ids.length > 0) {
-        try {
-          const { data: roles } = await supabaseAdmin
-            .from("user_roles")
-            .select("user_id, role")
-            .in("user_id", ids);
-          const roleList = (roles ?? []) as Array<Record<string, unknown>>;
-          roleList.forEach((r) => {
-            const uid = r["user_id"] as string;
-            const role = r["role"] as string;
-            if (typeof uid === "string" && typeof role === "string" && !roleByUser.has(uid)) {
-              roleByUser.set(uid, role);
-            }
-          });
-        } catch (err) {
-          console.warn("[listCollaborators] Falha ao enriquecer user_roles, seguindo sem papel:", err);
-        }
-      }
-
-      let squadNameById = new Map<string, string>();
-      if (squadIds.length > 0) {
-        try {
-          const { data: squads } = await supabaseAdmin
-            .from("squads")
-            .select("id, name")
-            .in("id", squadIds);
-          const squadList = (squads ?? []) as Array<Record<string, unknown>>;
-          squadList.forEach((s) => {
-            const sid = s["id"] as string;
-            const name = s["name"] as string;
-            if (typeof sid === "string" && typeof name === "string") {
-              squadNameById.set(sid, name);
-            }
-          });
-        } catch (err) {
-          console.warn("[listCollaborators] Falha ao enriquecer squads, seguindo sem nome do squad:", err);
-        }
-      }
-
-      let emailById = new Map<string, string>();
-      if (ids.length > 0) {
-        try {
-          const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({
-            page: 1,
-            perPage: 1000,
-          });
-          const users = (usersData?.users ?? []) as Array<{ id: string; email?: string | null }>;
-          users.forEach((u) => {
-            if (u && typeof u.id === "string" && typeof u.email === "string") {
-              emailById.set(u.id, u.email);
-            }
-          });
-        } catch (err) {
-          console.warn("[listCollaborators] Falha ao enriquecer e-mails (auth.admin.listUsers), seguindo sem e-mail:", err);
-        }
-      }
-
-      rows = profileList.map((p) => {
-        const id = p["id"] as string;
-        const squadId = (p["squad_id"] as string | null) ?? null;
-        return {
-          id,
-          full_name: (p["full_name"] as string) ?? "",
-          function: (p["function"] as string | null) ?? null,
-          commercial_roles: (p["commercial_roles"] as string[] | null) ?? null,
-          squad_id: squadId,
-          squad_name: squadId ? (squadNameById.get(squadId) ?? null) : null,
-          role: roleByUser.get(id) ?? null,
-          active: (p["active"] as boolean | null) ?? null,
-          email: emailById.get(id) ?? null,
-          avatar_url: (p["avatar_url"] as string | null) ?? null,
-          employment_type: (p["employment_type"] as string | null) ?? null,
-        } as CollaboratorRow;
-      });
-    }
-
-    return rows;
-  });
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter((p) => p.length > 0);
@@ -208,96 +77,105 @@ function roleLabel(role: string | null): string {
   return role === "admin" ? "Admin" : role === "leader" ? "Líder" : role === "collaborator" ? "Usuário" : "—";
 }
 
+function progressColor(pct: number): string {
+  return pct >= 80 ? "var(--success)" : pct >= 50 ? "var(--warning)" : "var(--danger)";
+}
+
 export const Route = createFileRoute("/_authenticated/users")({
-  component: UsersPage,
+  component: TeamPage,
 });
 
-function UsersPage() {
-  const [view, setView] = useState<"grid" | "list">("grid");
+function TeamPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedCollaborator, setSelectedCollaborator] = useState<CollaboratorRow | null>(null);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [lastCredential, setLastCredential] = useState<CreatedCredential | null>(null);
   const [search, setSearch] = useState("");
   const [squadFilter, setSquadFilter] = useState("all");
-  const [functionFilter, setFunctionFilter] = useState("all");
+  const [cargoFilter, setCargoFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const queryClient = useQueryClient();
-  const fetchCollaborators = useServerFn(listCollaborators);
+  const fetchTeamOverview = useServerFn(getTeamOverview);
+  const onlineIds = useTeamOnlineIds();
+  const location = useLocation();
+  const isExactUsers = location.pathname === "/users" || location.pathname === "/users/";
 
-  const { data: collaborators = [], isLoading, isError } = useQuery({
-    queryKey: ["collaborators-list"],
-    queryFn: () => fetchCollaborators(),
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["team-overview"],
+    queryFn: () => fetchTeamOverview({ data: {} as any }),
   });
 
-  const squadOptions = useMemo(() => {
-    const names = new Set<string>();
-    (collaborators as CollaboratorRow[]).forEach((c) => {
-      if (c.squad_name) {
-        names.add(c.squad_name);
-      }
-    });
-    return Array.from(names).sort((a, b) => a.localeCompare(b));
-  }, [collaborators]);
+  const members = ((data as any)?.members || []) as TeamMember[];
+  const squads = ((data as any)?.squads || []) as { id: string; name: string; type: string }[];
+  const kpis = (data as any)?.kpis || { totalMembers: 0, squadsCount: 0, activeTasksTotal: 0, avgPerformance: 0 };
 
-  const functionOptions = useMemo(() => {
-    const values = new Set<string>();
-    (collaborators as CollaboratorRow[]).forEach((c) => {
-      if (c.function) {
-        values.add(c.function);
-      }
-    });
-    return Array.from(values).sort((a, b) => a.localeCompare(b));
-  }, [collaborators]);
+  const cargoOptions = useMemo(() => {
+    const byId = new Map<string, string>();
+    members.forEach((m) => m.cargos.forEach((c) => byId.set(c.id, c.name)));
+    return Array.from(byId.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [members]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return (collaborators as CollaboratorRow[]).filter((c) => {
+    return members.filter((m) => {
       const matchesSearch =
         term.length === 0 ||
-        c.full_name.toLowerCase().includes(term) ||
-        (c.email ?? "").toLowerCase().includes(term);
-      const matchesSquad = squadFilter === "all" || (c.squad_name ?? "") === squadFilter;
-      const matchesFunction = functionFilter === "all" || (c.function ?? "") === functionFilter;
-      return matchesSearch && matchesSquad && matchesFunction ? true : false;
+        m.full_name.toLowerCase().includes(term) ||
+        (m.email ?? "").toLowerCase().includes(term) ||
+        (m.cargo ?? "").toLowerCase().includes(term);
+      const matchesSquad = squadFilter === "all" || m.squad_ids.includes(squadFilter);
+      const matchesCargo = cargoFilter === "all" || m.job_function_ids.includes(cargoFilter);
+      const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? m.active : !m.active);
+      return matchesSearch && matchesSquad && matchesCargo && matchesStatus;
     });
-  }, [collaborators, search, squadFilter, functionFilter]);
+  }, [members, search, squadFilter, cargoFilter, statusFilter]);
 
   const handleCreated = (credential: CreatedCredential) => {
     setLastCredential(credential);
-    queryClient.invalidateQueries({ queryKey: ["collaborators-list"] });
+    queryClient.invalidateQueries({ queryKey: ["team-overview"] });
   };
 
-  const handleOpenEdit = (collaborator: CollaboratorRow) => {
-    setSelectedCollaborator(collaborator);
+  const handleOpenEdit = (member: TeamMember) => {
+    setSelectedMember(member);
     setEditModalOpen(true);
   };
 
   const handleEditSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ["collaborators-list"] });
+    queryClient.invalidateQueries({ queryKey: ["team-overview"] });
   };
 
+  const kpiCards = [
+    { label: "Total de Membros", value: String(kpis.totalMembers), subtitle: `Em ${kpis.squadsCount} squads`, icon: Users, color: "text-[var(--violet-500)]" },
+    { label: "Online Agora", value: String(onlineIds.size), subtitle: kpis.totalMembers > 0 ? `${Math.round((onlineIds.size / kpis.totalMembers) * 100)}% disponível` : "—", icon: Wifi, color: "text-[var(--success)]" },
+    { label: "Tarefas Ativas", value: String(kpis.activeTasksTotal), subtitle: "Atribuídas no time", icon: CheckSquare, color: "text-[var(--warning)]" },
+    { label: "AVG Performance", value: `${kpis.avgPerformance}%`, subtitle: "Últimos 7 dias", icon: Gauge, color: "text-[var(--success)]" },
+  ];
+
   return (
+    <>
+    {isExactUsers && (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-title font-bold text-[#0E0E16]">
-            Usuários
+          <p className="text-xs font-bold text-[var(--ink-3)] uppercase tracking-widest">Pessoas</p>
+          <h1 className="text-3xl font-title font-bold text-[var(--ink-1)]">
+            Time
           </h1>
-          <p className="text-[#8A8FA3] mt-1">
-            Gerencie os usuários e atribua funções no sistema.
+          <p className="text-[var(--ink-3)] mt-1">
+            Gerencie os membros do time e atribua funções no sistema.
           </p>
         </div>
-        <Button onClick={() => setModalOpen(true)} className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full px-6">
+        <Button onClick={() => setModalOpen(true)} className="bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90 rounded-full px-6">
           <Plus className="h-4 w-4 mr-2" />
-          Cadastrar Usuário
+          Criar Membro
         </Button>
       </div>
 
       {lastCredential ? (
-        <Card className="border-[#D6F0DB] bg-[#F0FAF2] shadow-sm">
-          <CardContent className="p-4 text-sm text-[#0E0E16]">
+        <Card className="border-[var(--success-tint)] bg-[var(--success-tint)] shadow-sm">
+          <CardContent className="p-4 text-sm text-[var(--ink-1)]">
             E-mail: {lastCredential.email} — Senha temporária: {lastCredential.temporaryPassword}
           </CardContent>
         </Card>
@@ -305,225 +183,215 @@ function UsersPage() {
         <div className="hidden" />
       )}
 
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpiCards.map((k) => (
+          <Card key={k.label} className="border-[var(--line-1)] shadow-sm">
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className={cn("h-10 w-10 bg-[var(--surface-1)] border border-[var(--line-1)] rounded-2xl flex items-center justify-center shadow-sm shrink-0", k.color)}>
+                <k.icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase font-bold text-[var(--ink-3)] tracking-widest">{k.label}</p>
+                <h3 className="text-lg font-bold text-[var(--ink-1)] font-jakarta">{isLoading ? "…" : k.value}</h3>
+                <p className="text-[10px] text-[var(--ink-3)] truncate">{k.subtitle}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* Filters Bar */}
-      <Card className="border-[#E4E6F0] shadow-sm">
+      <Card className="border-[var(--line-1)] shadow-sm">
         <CardContent className="p-4 flex flex-col md:flex-row items-center gap-4">
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A8FA3]" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-3)]" />
             <Input
-              placeholder="Buscar por nome ou e-mail..."
+              placeholder="Buscar por nome, cargo ou e-mail..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 border-[#E4E6F0] bg-[#F7F8FC]"
+              className="pl-10 border-[var(--line-1)] bg-[var(--surface-2)]"
             />
           </div>
-          <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
             <Select value={squadFilter} onValueChange={setSquadFilter}>
-              <SelectTrigger className="w-full md:w-[160px] border-[#E4E6F0] bg-white rounded-full">
+              <SelectTrigger className="w-full md:w-[160px] border-[var(--line-1)] bg-[var(--surface-1)] rounded-full">
                 <SelectValue placeholder="Squad" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os Squads</SelectItem>
-                {squadOptions.map((name) => (
-                  <SelectItem key={name} value={name}>{name}</SelectItem>
+                {squads.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.name} {s.type === "comercial" ? "(Comercial)" : ""}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select value={functionFilter} onValueChange={setFunctionFilter}>
-              <SelectTrigger className="w-full md:w-[160px] border-[#E4E6F0] bg-white rounded-full">
-                <SelectValue placeholder="Função" />
+            <Select value={cargoFilter} onValueChange={setCargoFilter}>
+              <SelectTrigger className="w-full md:w-[160px] border-[var(--line-1)] bg-[var(--surface-1)] rounded-full">
+                <SelectValue placeholder="Cargo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas as Funções</SelectItem>
-                {functionOptions.map((fn) => (
-                  <SelectItem key={fn} value={fn}>{fn}</SelectItem>
+                <SelectItem value="all">Todos os cargos</SelectItem>
+                {cargoOptions.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex border border-[#E4E6F0] rounded-full p-1 bg-white">
-              <button
-                onClick={() => setView("grid")}
-                className={cn(
-                  "p-1.5 rounded-full transition-colors",
-                  view === "grid" ? "bg-[#3D4FE8] text-white" : "text-[#8A8FA3]"
-                )}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setView("list")}
-                className={cn(
-                  "p-1.5 rounded-full transition-colors",
-                  view === "list" ? "bg-[#3D4FE8] text-white" : "text-[#8A8FA3]"
-                )}
-              >
-                <MoreHorizontal className="h-4 w-4 rotate-90" />
-              </button>
-            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full md:w-[140px] border-[var(--line-1)] bg-[var(--surface-1)] rounded-full">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Qualquer status</SelectItem>
+                <SelectItem value="active">Ativo</SelectItem>
+                <SelectItem value="inactive">Inativo</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
 
       {/* Listing */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white border border-dashed border-[#E4E6F0] rounded-2xl space-y-4">
-          <div className="h-20 w-20 rounded-full bg-[#F7F8FC] flex items-center justify-center text-[#8A8FA3]">
+        <div className="flex flex-col items-center justify-center py-20 bg-[var(--surface-1)] border border-dashed border-[var(--line-1)] rounded-2xl space-y-4">
+          <div className="h-20 w-20 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-[var(--ink-3)]">
             <Users className="h-10 w-10 animate-pulse" />
           </div>
-          <p className="text-sm text-[#8A8FA3]">Carregando usuários...</p>
+          <p className="text-sm text-[var(--ink-3)]">Carregando time...</p>
         </div>
       ) : isError ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white border border-dashed border-[#E4E6F0] rounded-2xl space-y-4">
+        <div className="flex flex-col items-center justify-center py-20 bg-[var(--surface-1)] border border-dashed border-[var(--line-1)] rounded-2xl space-y-4">
           <div className="text-center max-w-sm">
-            <h3 className="text-lg font-bold text-[#0E0E16]">Não foi possível carregar os usuários</h3>
-            <p className="text-sm text-[#8A8FA3] mt-1">
+            <h3 className="text-lg font-bold text-[var(--ink-1)]">Não foi possível carregar o time</h3>
+            <p className="text-sm text-[var(--ink-3)] mt-1">
               Tente recarregar a página.
             </p>
           </div>
         </div>
       ) : filtered.length > 0 ? (
-        view === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((c) => (
-              <Card key={c.id} className="border-[#E4E6F0] shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((m) => {
+            const isOnline = onlineIds.has(m.id);
+            const pct = m.efficiency ?? 0;
+            return (
+              <Card key={m.id} className="border-[var(--line-1)] shadow-sm">
                 <CardContent className="p-5 space-y-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-11 w-11">
-                        <AvatarImage src={c.avatar_url ?? undefined} alt={c.full_name} />
-                        <AvatarFallback className="bg-[#EEF0FF] text-[#3D4FE8] font-bold">
-                          {getInitials(c.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-bold text-[#0E0E16] leading-tight">{c.full_name}</p>
-                        <p className="text-xs text-[#8A8FA3] flex items-center gap-1 mt-1">
-                          <Mail className="h-3 w-3" />
-                          {c.email ?? "—"}
-                        </p>
-                      </div>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="p-1.5 rounded-full text-[#8A8FA3] hover:bg-[#F7F8FC]">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleOpenEdit(c)}>Ver detalhes</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#F7F8FC] border border-[#E4E6F0] px-2.5 py-1 text-[#0E0E16]">
-                      <Briefcase className="h-3 w-3 text-[#8A8FA3]" />
-                      {c.function ?? "—"}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#F7F8FC] border border-[#E4E6F0] px-2.5 py-1 text-[#0E0E16]">
-                      <Shield className="h-3 w-3 text-[#8A8FA3]" />
-                      {roleLabel(c.role)}
-                    </span>
-                    <Badge
-                      variant="secondary"
-                      className={cn(
-                        "rounded-full border",
-                        c.active === false
-                          ? "bg-[#FDECEC] text-[#C03636] border-[#F5C6C6]"
-                          : "bg-[#EAFBEF] text-[#1E7A34] border-[#C9EDD2]"
-                      )}
-                    >
-                      {c.active === false ? "Inativo" : "Ativo"}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-[#8A8FA3]">
-                    <span>Squad: <span className="text-[#0E0E16] font-medium">{c.squad_name ?? "Sem squad"}</span></span>
-                  </div>
-                  {c.commercial_roles && c.commercial_roles.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {c.commercial_roles.map((cr) => (
-                        <Badge key={cr} variant="outline" className="rounded-full border-[#E4E6F0] text-[#0E0E16]">
-                          {cr}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="hidden" />
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="border-[#E4E6F0] shadow-sm">
-            <CardContent className="p-0">
-              <div className="divide-y divide-[#E4E6F0]">
-                {filtered.map((c) => (
-                  <div key={c.id} className="flex flex-col md:flex-row md:items-center gap-3 p-4">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={c.avatar_url ?? undefined} alt={c.full_name} />
-                        <AvatarFallback className="bg-[#EEF0FF] text-[#3D4FE8] font-bold">
-                          {getInitials(c.full_name)}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="h-11 w-11 shrink-0">
+                        <AvatarImage src={m.avatar_url ?? undefined} alt={m.full_name} />
+                        <AvatarFallback className="bg-[var(--violet-tint-16)] text-[var(--violet-500)] font-bold">
+                          {getInitials(m.full_name)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <p className="font-bold text-[#0E0E16] truncate">{c.full_name}</p>
-                        <p className="text-xs text-[#8A8FA3] truncate">{c.email ?? "—"}</p>
+                        <p className="font-bold text-[var(--ink-1)] leading-tight truncate">{m.full_name}</p>
+                        <p className="text-xs text-[var(--ink-3)] truncate">{m.cargo ?? "Sem cargo"}</p>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="text-[#8A8FA3]">{c.function ?? "—"}</span>
-                      {c.commercial_roles && c.commercial_roles.length > 0 ? (
-                        <span className="text-[#8A8FA3]">{c.commercial_roles.join(", ")}</span>
-                      ) : (
-                        <span className="hidden" />
-                      )}
-                      <span className="text-[#0E0E16] font-medium">{c.squad_name ?? "Sem squad"}</span>
-                      <span className="inline-flex items-center gap-1 text-[#0E0E16]">
-                        <Shield className="h-3 w-3 text-[#8A8FA3]" />
-                        {roleLabel(c.role)}
-                      </span>
+                    <div className="flex items-center gap-1 shrink-0">
                       <Badge
                         variant="secondary"
                         className={cn(
-                          "rounded-full border",
-                          c.active === false
-                            ? "bg-[#FDECEC] text-[#C03636] border-[#F5C6C6]"
-                            : "bg-[#EAFBEF] text-[#1E7A34] border-[#C9EDD2]"
+                          "rounded-full border text-[10px] font-bold",
+                          isOnline
+                            ? "bg-[var(--success-tint)] text-[var(--success)] border-[var(--success-tint)]"
+                            : "bg-[var(--surface-2)] text-[var(--ink-3)] border-[var(--line-1)]"
                         )}
                       >
-                        {c.active === false ? "Inativo" : "Ativo"}
+                        {isOnline ? "Online" : "Offline"}
                       </Badge>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="p-1.5 rounded-full text-[#8A8FA3] hover:bg-[#F7F8FC]">
+                          <button className="p-1.5 rounded-full text-[var(--ink-3)] hover:bg-[var(--surface-2)]">
                             <MoreHorizontal className="h-4 w-4" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenEdit(c)}>Ver detalhes</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenEdit(m)}>Ver detalhes</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-bold text-[var(--ink-3)] uppercase tracking-wider">Progresso</span>
+                      <span className="text-xs font-bold text-[var(--ink-1)] tabular">{m.efficiency === null ? "—" : `${pct}%`}</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-2)]">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: progressColor(pct) }} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-xl bg-[var(--surface-2)] p-2 text-center">
+                      <p className="text-sm font-bold text-[var(--ink-1)] tabular">{m.activeTasks}</p>
+                      <p className="text-[9px] text-[var(--ink-3)] uppercase tracking-wider">Tarefas</p>
+                    </div>
+                    <div className="rounded-xl bg-[var(--surface-2)] p-2 text-center">
+                      <p className="text-sm font-bold text-[var(--ink-1)] tabular">{m.completedThisWeek}</p>
+                      <p className="text-[9px] text-[var(--ink-3)] uppercase tracking-wider">Na semana</p>
+                    </div>
+                    <div className="rounded-xl bg-[var(--surface-2)] p-2 text-center">
+                      <p className="text-sm font-bold text-[var(--ink-1)] tabular">{m.efficiency === null ? "—" : `${m.efficiency}%`}</p>
+                      <p className="text-[9px] text-[var(--ink-3)] uppercase tracking-wider">Eficiência</p>
+                    </div>
+                  </div>
+
+                  {m.executionRatioPct !== null && (
+                    <div
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-[10px] font-bold",
+                        efficiencyBand(m.executionRatioPct) === "ok" ? "bg-[var(--success)]/10 text-[var(--success)]" :
+                        efficiencyBand(m.executionRatioPct) === "atencao" ? "bg-[var(--warning)]/10 text-[var(--warning)]" :
+                        "bg-[var(--danger)]/10 text-[var(--danger)]"
+                      )}
+                      title="Tempo trabalhado (cronômetro) vs tempo corrido das tarefas atribuídas"
+                    >
+                      <Gauge className="h-3 w-3" />
+                      Execução: {formatTrackedTime(m.executionTrackedSeconds)} / {formatElapsedDays(m.executionElapsedDays)}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge variant="outline" className="rounded-full border-[var(--line-1)] text-[var(--ink-1)] text-[10px]">
+                      {roleLabel(m.role)}
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "rounded-full border text-[10px]",
+                        m.active === false
+                          ? "bg-[var(--danger-tint)] text-[var(--danger)] border-[var(--danger-tint)]"
+                          : "bg-[var(--success-tint)] text-[var(--success)] border-[var(--success-tint)]"
+                      )}
+                    >
+                      {m.active === false ? "Inativo" : "Ativo"}
+                    </Badge>
+                    {m.squads.map((s) => (
+                      <Badge key={s.id} variant="outline" className="rounded-full border-[var(--line-1)] text-[var(--ink-1)] text-[10px]" style={s.color ? { borderColor: `${s.color}55`, color: s.color } : undefined}>
+                        {s.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 bg-white border border-dashed border-[#E4E6F0] rounded-2xl space-y-4">
-          <div className="h-20 w-20 rounded-full bg-[#F7F8FC] flex items-center justify-center text-[#8A8FA3]">
+        <div className="flex flex-col items-center justify-center py-20 bg-[var(--surface-1)] border border-dashed border-[var(--line-1)] rounded-2xl space-y-4">
+          <div className="h-20 w-20 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-[var(--ink-3)]">
             <Users className="h-10 w-10" />
           </div>
           <div className="text-center max-w-sm">
-            <h3 className="text-lg font-bold text-[#0E0E16]">Nenhum usuário encontrado</h3>
-            <p className="text-sm text-[#8A8FA3] mt-1">
-              Você ainda não cadastrou nenhum membro para a sua equipe no Brain.
+            <h3 className="text-lg font-bold text-[var(--ink-1)]">Nenhum membro encontrado</h3>
+            <p className="text-sm text-[var(--ink-3)] mt-1">
+              Você ainda não cadastrou nenhum membro para o seu time no Brain.
             </p>
           </div>
-          <Button onClick={() => setModalOpen(true)} className="bg-[#3D4FE8] hover:bg-[#3D4FE8]/90 rounded-full">
-            Cadastrar meu primeiro usuário
+          <Button onClick={() => setModalOpen(true)} className="bg-[var(--violet-500)] hover:bg-[var(--violet-500)]/90 rounded-full">
+            Criar meu primeiro membro
           </Button>
         </div>
       )}
@@ -537,9 +405,12 @@ function UsersPage() {
       <EditCollaboratorModal
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-        collaborator={selectedCollaborator}
+        collaborator={selectedMember}
         onSuccess={handleEditSuccess}
       />
     </div>
+    )}
+    <Outlet />
+    </>
   );
 }
