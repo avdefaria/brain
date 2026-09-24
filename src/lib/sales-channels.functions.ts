@@ -65,6 +65,7 @@ export const getClientsWithChannels = createServerFn({ method: "GET" })
         receivables(id, amount, status, due_date),
         accounts(
           id,
+          account_name,
           account_squads(
             squad_id
           ),
