@@ -14,7 +14,10 @@ const sofiaTaskSchema = z.object({
   sku_reference: z.string().trim().nullable().optional(),
   title: z.string().trim().min(1, "title é obrigatório.").max(200),
   description: z.string().trim().max(2000).nullable().optional(),
-  assignee_name: z.string().trim().min(1, "assignee_name é obrigatório."),
+  // Opcional: se a Sofia não conseguir identificar o responsável, a tarefa
+  // é criada mesmo assim (sem travar a solicitação do cliente) e os admins
+  // são notificados dentro do Brain pra alguém assumir.
+  assignee_name: z.string().trim().min(1).nullable().optional(),
 });
 
 function timingSafeEqual(a: string, b: string): boolean {
@@ -87,7 +90,7 @@ export async function handleSofiaCreateTask(request: Request): Promise<Response>
         p_sku_reference: parsed.data.sku_reference ?? null,
         p_title: parsed.data.title,
         p_description: parsed.data.description ?? null,
-        p_assignee_name: parsed.data.assignee_name,
+        p_assignee_name: parsed.data.assignee_name ?? null,
       }),
     });
   } catch (err) {
