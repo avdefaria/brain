@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { handleSofiaCreateTask, SOFIA_CREATE_TASK_PATH } from "./lib/sofia.server";
+import { handleEdithAction, EDITH_ACTIONS_PATH } from "./lib/edith.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -51,6 +52,9 @@ export default {
       const url = new URL(request.url);
       if (url.pathname === SOFIA_CREATE_TASK_PATH) {
         return await handleSofiaCreateTask(request);
+      }
+      if (url.pathname === EDITH_ACTIONS_PATH) {
+        return await handleEdithAction(request);
       }
 
       const handler = await getServerEntry();
