@@ -16,6 +16,27 @@ const ACTIONS = [
   "dashboard_overview",
   "create_task",
   "update_task",
+  "list_leads",
+  "crm_summary",
+  "commercial_summary",
+  "create_lead",
+  "move_lead_stage",
+  "reschedule_lead_contact",
+] as const;
+
+// Etapas do funil que a Edith pode usar. "vendas_feitas" fica de fora de
+// propósito — marcar uma venda como fechada é decisão que só o Alan toma
+// explicitamente na interface, nunca via agente (ver edith_create_lead e
+// edith_move_lead_stage no banco, que bloqueiam isso no próprio SQL, não só
+// aqui — a validação daqui é só pra dar um erro mais cedo/claro).
+const EDITH_ALLOWED_LEAD_STAGES = [
+  "novos_leads",
+  "primeiro_contato",
+  "em_negociacao",
+  "apresentacao_agencia",
+  "proposta_enviada",
+  "follow_up",
+  "vendas_perdidas",
 ] as const;
 
 const requestSchema = z.object({
@@ -87,6 +108,38 @@ const listTasksParamsSchema = z.object({
   stage: z.string().trim().min(1).optional(),
 });
 
+const listLeadsParamsSchema = z.object({
+  stage: z.string().trim().min(1).optional(),
+  responsible_name: z.string().trim().min(1).optional(),
+  show_converted: z.boolean().optional(),
+});
+
+const createLeadParamsSchema = z.object({
+  name: z.string().trim().min(1, "name é obrigatório."),
+  company: z.string().trim().min(1).nullable().optional(),
+  email: z.string().trim().min(1).nullable().optional(),
+  phone: z.string().trim().min(1).nullable().optional(),
+  recurring_revenue: z.number().nonnegative().nullable().optional(),
+  one_time_revenue: z.number().nonnegative().nullable().optional(),
+  responsible_name: z.string().trim().min(1).nullable().optional(),
+  niche_name: z.string().trim().min(1).nullable().optional(),
+  // "vendas_feitas" é rejeitado no banco mesmo que venha aqui — ver
+  // EDITH_ALLOWED_LEAD_STAGES acima.
+  funnel_stage: z.enum(EDITH_ALLOWED_LEAD_STAGES).nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
+  origin: z.string().trim().min(1).nullable().optional(),
+});
+
+const moveLeadStageParamsSchema = z.object({
+  lead_id: z.string().uuid(),
+  funnel_stage: z.enum(EDITH_ALLOWED_LEAD_STAGES),
+});
+
+const rescheduleLeadContactParamsSchema = z.object({
+  lead_id: z.string().uuid(),
+  next_contact_at: z.string().trim().min(1).nullable().optional(),
+});
+
 export async function handleEdithAction(request: Request): Promise<Response> {
   if (request.method !== "POST") {
     return json({ error: "Method not allowed." }, 405);
@@ -139,6 +192,18 @@ export async function handleEdithAction(request: Request): Promise<Response> {
         return await handleCreateTask(supabaseUrl, serviceRoleKey, params);
       case "update_task":
         return await handleUpdateTask(supabaseUrl, serviceRoleKey, params);
+      case "list_leads":
+        return await handleListLeads(supabaseUrl, serviceRoleKey, params);
+      case "crm_summary":
+        return await handleCrmSummary(supabaseUrl, serviceRoleKey);
+      case "commercial_summary":
+        return await handleCommercialSummary(supabaseUrl, serviceRoleKey);
+      case "create_lead":
+        return await handleCreateLead(supabaseUrl, serviceRoleKey, params);
+      case "move_lead_stage":
+        return await handleMoveLeadStage(supabaseUrl, serviceRoleKey, params);
+      case "reschedule_lead_contact":
+        return await handleRescheduleLeadContact(supabaseUrl, serviceRoleKey, params);
     }
   } catch (err) {
     console.error(`[edith] Erro inesperado na ação ${action}:`, err);
@@ -329,6 +394,204 @@ async function handleUpdateTask(
   if (!res.ok) {
     const errBody: unknown = await res.json().catch(() => null);
     const message = (errBody as { message?: string } | null)?.message ?? "Erro ao atualizar tarefa.";
+    return json({ error: message }, 422);
+  }
+
+  return json({ success: true }, 200);
+}
+
+async function handleListLeads(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  rawParams: Record<string, unknown>,
+): Promise<Response> {
+  const parsed = listLeadsParamsSchema.safeParse(rawParams);
+  if (!parsed.success) {
+    return json({ error: "Parâmetros inválidos.", details: parsed.error.flatten() }, 400);
+  }
+  const p = parsed.data;
+
+  const res = await postgrest(
+    supabaseUrl,
+    serviceRoleKey,
+    "/leads?select=id,name,company,funnel_stage,recurring_revenue,one_time_revenue,next_contact_at,converted_at,responsible:profiles!leads_responsible_id_fkey(full_name)&order=created_at.desc",
+  );
+  if (!res.ok) return json({ error: "Erro ao consultar leads." }, 502);
+  const rows: any[] = await res.json();
+
+  const mapped = rows
+    .map((l) => ({
+      id: l.id,
+      name: l.name,
+      company: l.company,
+      stage: l.funnel_stage,
+      recurring_revenue: l.recurring_revenue,
+      one_time_revenue: l.one_time_revenue,
+      next_contact_at: l.next_contact_at,
+      responsible_name: l.responsible?.full_name ?? null,
+      converted: l.converted_at != null,
+    }))
+    .filter((l) => {
+      if (!p.show_converted && l.converted) return false;
+      if (p.stage && l.stage !== p.stage) return false;
+      if (p.responsible_name && l.responsible_name?.toLowerCase() !== p.responsible_name.toLowerCase()) return false;
+      return true;
+    });
+
+  return json({ leads: mapped }, 200);
+}
+
+async function handleCrmSummary(supabaseUrl: string, serviceRoleKey: string): Promise<Response> {
+  const res = await postgrest(
+    supabaseUrl,
+    serviceRoleKey,
+    "/leads?select=recurring_revenue,one_time_revenue,mrr_months,funnel_stage,converted_at&converted_at=is.null",
+  );
+  if (!res.ok) return json({ error: "Erro ao consultar o funil." }, 502);
+  const leads: any[] = await res.json();
+
+  const openLeads = leads.filter((l) => l.funnel_stage && !["vendas_feitas", "vendas_perdidas"].includes(l.funnel_stage));
+
+  return json(
+    {
+      total: leads.length,
+      proposals: leads.filter((l) => l.funnel_stage === "proposta_enviada").length,
+      pipeline: openLeads.reduce((acc, l) => acc + (Number(l.recurring_revenue) || 0) + (Number(l.one_time_revenue) || 0), 0),
+      pipeline_mrr: openLeads.reduce((acc, l) => acc + (Number(l.recurring_revenue) || 0) * (Number(l.mrr_months) || 1), 0),
+      sales: leads.filter((l) => l.funnel_stage === "vendas_feitas").length,
+      lost: leads.filter((l) => l.funnel_stage === "vendas_perdidas").length,
+    },
+    200,
+  );
+}
+
+async function handleCommercialSummary(supabaseUrl: string, serviceRoleKey: string): Promise<Response> {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const firstDay = new Date(year, month - 1, 1).toISOString();
+  const lastDay = new Date(year, month, 0);
+  const lastISO = new Date(year, month - 1, lastDay.getDate(), 23, 59, 59).toISOString();
+  const firstDate = firstDay.slice(0, 10);
+  const lastDateTime = lastDay.toISOString().slice(0, 10) + "T23:59:59";
+
+  const [goalRes, leadsRes, dealsRes, revenueRes] = await Promise.all([
+    postgrest(supabaseUrl, serviceRoleKey, `/commercial_goals?select=*&month=eq.${month}&year=eq.${year}`),
+    postgrest(supabaseUrl, serviceRoleKey, `/leads?select=id,funnel_stage&created_at=gte.${firstDay}&created_at=lte.${lastISO}`),
+    postgrest(supabaseUrl, serviceRoleKey, `/leads?select=id&converted_at=gte.${firstDay}&converted_at=lte.${lastISO}`),
+    postgrest(
+      supabaseUrl,
+      serviceRoleKey,
+      `/receivables?select=amount&status=eq.pago&paid_at=gte.${firstDate}&paid_at=lte.${lastDateTime}`,
+    ),
+  ]);
+  if (!goalRes.ok || !leadsRes.ok || !dealsRes.ok || !revenueRes.ok) {
+    return json({ error: "Erro ao consultar o Comercial." }, 502);
+  }
+
+  const goalRows: any[] = await goalRes.json();
+  const leadsRows: any[] = await leadsRes.json();
+  const dealsRows: any[] = await dealsRes.json();
+  const revenueRows: any[] = await revenueRes.json();
+
+  return json(
+    {
+      month,
+      year,
+      goal: goalRows[0] ?? null,
+      actual: {
+        leads: leadsRows.length,
+        proposals: leadsRows.filter((l) => l.funnel_stage === "proposta_enviada").length,
+        deals: dealsRows.length,
+        revenue: revenueRows.reduce((acc, r) => acc + (Number(r.amount) || 0), 0),
+      },
+    },
+    200,
+  );
+}
+
+async function handleCreateLead(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  rawParams: Record<string, unknown>,
+): Promise<Response> {
+  const parsed = createLeadParamsSchema.safeParse(rawParams);
+  if (!parsed.success) {
+    return json({ error: "Parâmetros inválidos.", details: parsed.error.flatten() }, 400);
+  }
+  const p = parsed.data;
+
+  const res = await postgrest(supabaseUrl, serviceRoleKey, "/rpc/edith_create_lead", {
+    method: "POST",
+    body: JSON.stringify({
+      p_name: p.name,
+      p_company: p.company ?? null,
+      p_email: p.email ?? null,
+      p_phone: p.phone ?? null,
+      p_recurring_revenue: p.recurring_revenue ?? null,
+      p_one_time_revenue: p.one_time_revenue ?? null,
+      p_responsible_name: p.responsible_name ?? null,
+      p_niche_name: p.niche_name ?? null,
+      p_funnel_stage: p.funnel_stage ?? null,
+      p_notes: p.notes ?? null,
+      p_origin: p.origin ?? null,
+    }),
+  });
+
+  if (!res.ok) {
+    const errBody: unknown = await res.json().catch(() => null);
+    const message = (errBody as { message?: string } | null)?.message ?? "Erro ao criar lead.";
+    return json({ error: message }, 422);
+  }
+
+  const leadId = await res.json();
+  return json({ lead_id: leadId }, 200);
+}
+
+async function handleMoveLeadStage(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  rawParams: Record<string, unknown>,
+): Promise<Response> {
+  const parsed = moveLeadStageParamsSchema.safeParse(rawParams);
+  if (!parsed.success) {
+    return json({ error: "Parâmetros inválidos.", details: parsed.error.flatten() }, 400);
+  }
+  const p = parsed.data;
+
+  const res = await postgrest(supabaseUrl, serviceRoleKey, "/rpc/edith_move_lead_stage", {
+    method: "POST",
+    body: JSON.stringify({ p_lead_id: p.lead_id, p_funnel_stage: p.funnel_stage }),
+  });
+
+  if (!res.ok) {
+    const errBody: unknown = await res.json().catch(() => null);
+    const message = (errBody as { message?: string } | null)?.message ?? "Erro ao mover lead.";
+    return json({ error: message }, 422);
+  }
+
+  return json({ success: true }, 200);
+}
+
+async function handleRescheduleLeadContact(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  rawParams: Record<string, unknown>,
+): Promise<Response> {
+  const parsed = rescheduleLeadContactParamsSchema.safeParse(rawParams);
+  if (!parsed.success) {
+    return json({ error: "Parâmetros inválidos.", details: parsed.error.flatten() }, 400);
+  }
+  const p = parsed.data;
+
+  const res = await postgrest(supabaseUrl, serviceRoleKey, "/rpc/edith_reschedule_lead_contact", {
+    method: "POST",
+    body: JSON.stringify({ p_lead_id: p.lead_id, p_next_contact_at: p.next_contact_at ?? null }),
+  });
+
+  if (!res.ok) {
+    const errBody: unknown = await res.json().catch(() => null);
+    const message = (errBody as { message?: string } | null)?.message ?? "Erro ao reagendar contato.";
     return json({ error: message }, 422);
   }
 
