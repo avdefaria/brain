@@ -247,13 +247,26 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
     }
   };
 
+  const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      toast.error("Arquivo muito grande (máximo 25MB).");
+      e.target.value = "";
+      return;
+    }
+
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      // Extensão vem do nome do arquivo, que o usuário controla — nunca usar
+      // fora de um contexto de nome de arquivo. Aqui removemos tudo que não
+      // for letra/número antes de montar o path de storage, pra não deixar
+      // "/", ".." ou outro caractere de path passar pro object key.
+      const rawExt = file.name.includes(".") ? file.name.split('.').pop() ?? "" : "";
+      const fileExt = rawExt.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10) || "bin";
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${task.id}/${fileName}`;
 

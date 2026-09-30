@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isRateLimited } from "./rate-limit.server";
 
 // Endpoint dedicado pra Sofia (agente de suporte no WhatsApp, rodando numa VPS
 // externa) criar tarefas no Brain. Não usa createServerFn/RPC do TanStack Start
@@ -49,6 +50,12 @@ export async function handleSofiaCreateTask(request: Request): Promise<Response>
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
   if (!token || !timingSafeEqual(token, expectedKey)) {
     return json({ error: "Não autorizado." }, 401);
+  }
+
+  // Defesa em profundidade: mesmo com a chave certa, limita o dano caso ela
+  // vaze um dia — não é pra tráfego legítimo nunca chegar perto disso.
+  if (isRateLimited("sofia", 60, 60_000)) {
+    return json({ error: "Muitas requisições. Tente novamente em instantes." }, 429);
   }
 
   let rawBody: unknown;

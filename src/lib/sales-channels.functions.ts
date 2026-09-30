@@ -6,6 +6,7 @@ import { computeRiskLevel } from "@/lib/risk-level";
 import { z } from "zod";
 
 export const getSalesChannels = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .handler(async () => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
@@ -21,6 +22,7 @@ export const getSalesChannels = createServerFn({ method: "GET" })
   });
 
 export const addSalesChannel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((name: string) => z.string().parse(name))
   .handler(async ({ data: name }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

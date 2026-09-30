@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isRateLimited } from "./rate-limit.server";
 
 // Endpoint dedicado pra Edith (agente "CEO"/orquestrador, roda no Telegram numa
 // VPS externa) ler e agir sobre dados do Brain, sem precisar mais passar pela
@@ -155,6 +156,14 @@ export async function handleEdithAction(request: Request): Promise<Response> {
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
   if (!token || !timingSafeEqual(token, expectedKey)) {
     return json({ error: "Não autorizado." }, 401);
+  }
+
+  // Defesa em profundidade: mesmo com a chave certa, limita o dano caso ela
+  // vaze um dia — não é pra tráfego legítimo nunca chegar perto disso. Limite
+  // mais alto que o da Sofia porque algumas ações (finance_summary,
+  // dashboard_overview) já fazem várias queries por chamada.
+  if (isRateLimited("edith", 120, 60_000)) {
+    return json({ error: "Muitas requisições. Tente novamente em instantes." }, 429);
   }
 
   let rawBody: unknown;

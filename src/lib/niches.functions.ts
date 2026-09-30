@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 export const getNiches = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .handler(async () => {
     // We use service role to ensure catalogs are always readable in this internal tool
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -19,6 +20,7 @@ export const getNiches = createServerFn({ method: "GET" })
   });
 
 export const addNiche = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((name: string) => z.string().parse(name))
   .handler(async ({ data: name }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
