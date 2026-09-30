@@ -38,6 +38,20 @@ function isBlockedCountry(): boolean {
   return !!country && country !== "BR";
 }
 
+// Mesma regra já aplicada na criação de colaborador (ver ALLOWED_DOMAINS em
+// users.functions.ts): só email de domínio da empresa vira conta — como não
+// existe cadastro público, isso já bastava na prática. Essa checagem aqui é
+// reforço, pro caso de existir (ou vir a existir) alguma conta fora desse
+// fluxo, por edição direta no banco. Alan é a única exceção — conta do dono,
+// criada fora do fluxo de colaborador.
+const ALLOWED_LOGIN_DOMAINS = ["@ongoo.com.br", "@ongoagency.com.br"];
+const OWNER_EMAIL_EXCEPTION = "alan.vieira.faria@gmail.com";
+
+function isAllowedEmail(email: string): boolean {
+  if (email === OWNER_EMAIL_EXCEPTION) return true;
+  return ALLOWED_LOGIN_DOMAINS.some((domain) => email.endsWith(domain));
+}
+
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email("E-mail inválido."),
   password: z.string().min(1, "Informe a senha."),
@@ -48,6 +62,10 @@ export const loginWithRateLimit = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     if (isBlockedCountry()) {
       throw new Error("Acesso não disponível a partir da sua localização.");
+    }
+
+    if (!isAllowedEmail(data.email)) {
+      throw new Error("E-mail ou senha incorretos.");
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
