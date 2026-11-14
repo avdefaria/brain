@@ -13,6 +13,7 @@ import {
   ChevronRight,
   DollarSign,
   Wrench,
+  Clapperboard,
   Target,
   ChevronDown,
   Menu,
@@ -281,6 +282,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 label="Toolkit"
                 href="/em-breve"
                 collapsed={effectiveCollapsed}
+              />
+            )}
+            {canSee("estudio") && (
+              <SidebarItem
+                icon={Clapperboard}
+                label="Estúdio de conteúdo"
+                href="/estudio-de-conteudo"
+                collapsed={effectiveCollapsed}
+                active={location.pathname.startsWith("/estudio-de-conteudo")}
               />
             )}
             {canSee("time") && (

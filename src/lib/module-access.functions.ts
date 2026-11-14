@@ -8,6 +8,7 @@ export const MODULE_DEFS = [
   { key: "comercial", label: "Comercial", pathPrefix: "/comercial" },
   { key: "financas", label: "Finanças", pathPrefix: "/financas" },
   { key: "toolkit", label: "Toolkit", pathPrefix: "/em-breve" },
+  { key: "estudio", label: "Estúdio de conteúdo", pathPrefix: "/estudio-de-conteudo" },
   { key: "time", label: "Time", pathPrefix: "/users" },
 ] as const;
 

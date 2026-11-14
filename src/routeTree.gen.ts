@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedEstudioDeConteudoRouteImport } from './routes/_authenticated.estudio-de-conteudo'
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated.projects'
 import { Route as AuthenticatedSquadsRouteImport } from './routes/_authenticated.squads'
 import { Route as AuthenticatedStructureRouteImport } from './routes/_authenticated.structure'
@@ -47,6 +48,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedEstudioDeConteudoRoute =
+  AuthenticatedEstudioDeConteudoRouteImport.update({
+    id: '/estudio-de-conteudo',
+    path: '/estudio-de-conteudo',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
@@ -165,6 +172,7 @@ const AuthenticatedUsersPermissoesRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/estudio-de-conteudo': typeof AuthenticatedEstudioDeConteudoRoute
   '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/squads': typeof AuthenticatedSquadsRoute
   '/structure': typeof AuthenticatedStructureRoute
@@ -189,6 +197,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/estudio-de-conteudo': typeof AuthenticatedEstudioDeConteudoRoute
   '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/squads': typeof AuthenticatedSquadsRoute
   '/structure': typeof AuthenticatedStructureRoute
@@ -215,6 +224,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/estudio-de-conteudo': typeof AuthenticatedEstudioDeConteudoRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/_authenticated/squads': typeof AuthenticatedSquadsRoute
   '/_authenticated/structure': typeof AuthenticatedStructureRoute
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/estudio-de-conteudo'
     | '/projects'
     | '/squads'
     | '/structure'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/estudio-de-conteudo'
     | '/projects'
     | '/squads'
     | '/structure'
@@ -290,6 +302,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/_authenticated/dashboard'
+    | '/_authenticated/estudio-de-conteudo'
     | '/_authenticated/projects'
     | '/_authenticated/squads'
     | '/_authenticated/structure'
@@ -340,6 +353,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/estudio-de-conteudo': {
+      id: '/_authenticated/estudio-de-conteudo'
+      path: '/estudio-de-conteudo'
+      fullPath: '/estudio-de-conteudo'
+      preLoaderRoute: typeof AuthenticatedEstudioDeConteudoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/projects': {
@@ -514,6 +534,7 @@ const AuthenticatedUsersRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEstudioDeConteudoRoute: typeof AuthenticatedEstudioDeConteudoRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRouteWithChildren
   AuthenticatedSquadsRoute: typeof AuthenticatedSquadsRoute
   AuthenticatedStructureRoute: typeof AuthenticatedStructureRoute
@@ -533,6 +554,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEstudioDeConteudoRoute: AuthenticatedEstudioDeConteudoRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRouteWithChildren,
   AuthenticatedSquadsRoute: AuthenticatedSquadsRoute,
   AuthenticatedStructureRoute: AuthenticatedStructureRoute,
