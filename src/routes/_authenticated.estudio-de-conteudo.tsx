@@ -28,12 +28,13 @@ function EstudioDeConteudoPage() {
   }, []);
 
   return (
-    <iframe
-      ref={iframeRef}
-      src="/estudio/"
-      title="Estúdio de conteúdo"
-      className="block w-full border-0"
-      style={{ height: "calc(100vh - 60px)" }}
-    />
+    <div className="overflow-hidden bg-[var(--bg-1)]" style={{ height: "calc(100vh - 60px)" }}>
+      <iframe
+        ref={iframeRef}
+        src="/estudio/"
+        title="Estúdio de conteúdo"
+        className="block h-full w-full border-0"
+      />
+    </div>
   );
 }
