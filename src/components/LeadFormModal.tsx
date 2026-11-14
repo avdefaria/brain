@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { formatDateTimePtBr } from "@/lib/utils";
 import { 
   Select, 
   SelectContent, 
@@ -646,7 +647,7 @@ export function LeadFormModal({ isOpen, onOpenChange, lead }: LeadFormModalProps
                                   {stageLabel}
                                 </p>
                                 <p className="text-xs text-[var(--ink-3)]">
-                                  Entrou em {entered.toLocaleDateString('pt-BR')} às {entered.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                  Entrou em {formatDateTimePtBr(h.entered_at)}
                                 </p>
                               </div>
                               <div className="text-right">

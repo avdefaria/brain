@@ -144,8 +144,8 @@ function ProjectsPage() {
           <p className="text-sm text-[var(--ink-3)]">Acompanhe o desempenho de todos os squads</p>
         </div>
         <div className="text-right">
-          <p className="text-sm font-bold text-[var(--ink-1)]">{new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-          <p className="text-xs text-[var(--ink-3)]">{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} GMT-3</p>
+          <p className="text-sm font-bold text-[var(--ink-1)]">{new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' })}</p>
+          <p className="text-xs text-[var(--ink-3)]">{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })} GMT-3</p>
         </div>
       </div>
 

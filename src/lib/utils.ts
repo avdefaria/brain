@@ -14,6 +14,30 @@ export function formatCalendarDatePtBr(isoDateOrTimestamp: string): string {
   return `${day}/${month}/${year}`;
 }
 
+// Formata um timestamp (com hora) no fuso de Brasília, sempre — sem isso,
+// toLocaleString/toLocaleTimeString sem timeZone explícito usa o fuso de
+// onde o código roda: no servidor (container Docker, UTC por padrão) dá
+// hora errada mesmo pra quem está no Brasil. Usar sempre isto em vez de
+// chamar toLocaleString/toLocaleTimeString direto num timestamp do banco.
+export function formatDateTimePtBr(isoTimestamp: string): string {
+  return new Date(isoTimestamp).toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function formatTimePtBr(isoTimestamp: string): string {
+  return new Date(isoTimestamp).toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 // Strips HTML tags from rich-text content (e.g. Tiptap output) for display
 // in plain-text contexts. Also normalizes the "empty editor" HTML (`<p></p>`)
 // down to an empty string instead of leaking markup to the user.

@@ -28,7 +28,7 @@ import {
 import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn, stripHtml } from "@/lib/utils";
+import { cn, stripHtml, formatDateTimePtBr } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import {
   updateTask,
@@ -703,7 +703,7 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
                     <div className="flex-1 bg-[var(--surface-2)] rounded-xl px-3 py-2">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-bold text-[var(--ink-1)]">{c.user_name}</span>
-                        <span className="text-[9px] text-[var(--ink-3)]">{new Date(c.created_at).toLocaleString('pt-BR')}</span>
+                        <span className="text-[9px] text-[var(--ink-3)]">{formatDateTimePtBr(c.created_at)}</span>
                       </div>
                       <p className="text-sm text-[var(--ink-1)] whitespace-pre-wrap break-words">{renderCommentContent(c.content)}</p>
                     </div>
@@ -775,7 +775,7 @@ export function TaskDetailPanel({ task, isOpen, onOpenChange }: TaskDetailPanelP
                 <div key={entry.id} className="text-[10px] flex flex-col gap-0.5 border-l-2 border-[var(--line-1)] pl-3 py-1">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-[var(--ink-1)]">{entry.user_name}</span>
-                    <span className="text-[var(--ink-3)]">{new Date(entry.created_at).toLocaleString('pt-BR')}</span>
+                    <span className="text-[var(--ink-3)]">{formatDateTimePtBr(entry.created_at)}</span>
                   </div>
                   <span className="text-[var(--ink-3)]">
                     {entry.action.charAt(0).toUpperCase() + entry.action.slice(1)}

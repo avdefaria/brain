@@ -38,7 +38,7 @@ function ClockDisplay() {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-  return <span className="text-sm text-[var(--ink-3)]">{time.toLocaleDateString()} • {time.toLocaleTimeString()} (GMT-3)</span>;
+  return <span className="text-sm text-[var(--ink-3)]">{time.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })} • {time.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' })} (GMT-3)</span>;
 }
 
 function ClientsOverviewPage() {
