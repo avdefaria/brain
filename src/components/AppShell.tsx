@@ -246,7 +246,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 children={[
                   { label: "Tarefas", href: "/projects/tasks" },
                   { label: "Gestão de Entregas", href: "/projects/deliverables" },
-                  { label: "Aprovação de Conteúdo", href: "/projects/content-approval" },
                 ]}
               />
             )}

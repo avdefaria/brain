@@ -29,11 +29,9 @@ import { Route as AuthenticatedFinancasIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedFinancasContasAPagarRouteImport } from './routes/_authenticated.financas.contas-a-pagar'
 import { Route as AuthenticatedFinancasInadimplenciaRouteImport } from './routes/_authenticated.financas.inadimplencia'
 import { Route as AuthenticatedFinancasRecebimentosRouteImport } from './routes/_authenticated.financas.recebimentos'
-import { Route as AuthenticatedProjectsContentApprovalRouteImport } from './routes/_authenticated.projects.content-approval'
 import { Route as AuthenticatedProjectsDeliverablesRouteImport } from './routes/_authenticated.projects.deliverables'
 import { Route as AuthenticatedProjectsTasksRouteImport } from './routes/_authenticated.projects.tasks'
 import { Route as AuthenticatedUsersPermissoesRouteImport } from './routes/_authenticated.users.permissoes'
-import { Route as PublicApprovalTokenRouteImport } from './routes/public.approval.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -145,12 +143,6 @@ const AuthenticatedFinancasRecebimentosRoute =
     path: '/financas/recebimentos',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedProjectsContentApprovalRoute =
-  AuthenticatedProjectsContentApprovalRouteImport.update({
-    id: '/content-approval',
-    path: '/content-approval',
-    getParentRoute: () => AuthenticatedProjectsRoute,
-  } as any)
 const AuthenticatedProjectsDeliverablesRoute =
   AuthenticatedProjectsDeliverablesRouteImport.update({
     id: '/deliverables',
@@ -169,11 +161,6 @@ const AuthenticatedUsersPermissoesRoute =
     path: '/permissoes',
     getParentRoute: () => AuthenticatedUsersRoute,
   } as any)
-const PublicApprovalTokenRoute = PublicApprovalTokenRouteImport.update({
-  id: '/public/approval/$token',
-  path: '/public/approval/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -192,11 +179,9 @@ export interface FileRoutesByFullPath {
   '/financas/contas-a-pagar': typeof AuthenticatedFinancasContasAPagarRoute
   '/financas/inadimplencia': typeof AuthenticatedFinancasInadimplenciaRoute
   '/financas/recebimentos': typeof AuthenticatedFinancasRecebimentosRoute
-  '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
   '/users/permissoes': typeof AuthenticatedUsersPermissoesRoute
-  '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
   '/comercial/': typeof AuthenticatedComercialIndexRoute
   '/financas/': typeof AuthenticatedFinancasIndexRoute
@@ -218,11 +203,9 @@ export interface FileRoutesByTo {
   '/financas/contas-a-pagar': typeof AuthenticatedFinancasContasAPagarRoute
   '/financas/inadimplencia': typeof AuthenticatedFinancasInadimplenciaRoute
   '/financas/recebimentos': typeof AuthenticatedFinancasRecebimentosRoute
-  '/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
   '/projects/tasks': typeof AuthenticatedProjectsTasksRoute
   '/users/permissoes': typeof AuthenticatedUsersPermissoesRoute
-  '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
   '/comercial': typeof AuthenticatedComercialIndexRoute
   '/financas': typeof AuthenticatedFinancasIndexRoute
@@ -246,11 +229,9 @@ export interface FileRoutesById {
   '/_authenticated/financas/contas-a-pagar': typeof AuthenticatedFinancasContasAPagarRoute
   '/_authenticated/financas/inadimplencia': typeof AuthenticatedFinancasInadimplenciaRoute
   '/_authenticated/financas/recebimentos': typeof AuthenticatedFinancasRecebimentosRoute
-  '/_authenticated/projects/content-approval': typeof AuthenticatedProjectsContentApprovalRoute
   '/_authenticated/projects/deliverables': typeof AuthenticatedProjectsDeliverablesRoute
   '/_authenticated/projects/tasks': typeof AuthenticatedProjectsTasksRoute
   '/_authenticated/users/permissoes': typeof AuthenticatedUsersPermissoesRoute
-  '/public/approval/$token': typeof PublicApprovalTokenRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
   '/_authenticated/comercial/': typeof AuthenticatedComercialIndexRoute
   '/_authenticated/financas/': typeof AuthenticatedFinancasIndexRoute
@@ -274,11 +255,9 @@ export interface FileRouteTypes {
     | '/financas/contas-a-pagar'
     | '/financas/inadimplencia'
     | '/financas/recebimentos'
-    | '/projects/content-approval'
     | '/projects/deliverables'
     | '/projects/tasks'
     | '/users/permissoes'
-    | '/public/approval/$token'
     | '/clients/'
     | '/comercial/'
     | '/financas/'
@@ -300,11 +279,9 @@ export interface FileRouteTypes {
     | '/financas/contas-a-pagar'
     | '/financas/inadimplencia'
     | '/financas/recebimentos'
-    | '/projects/content-approval'
     | '/projects/deliverables'
     | '/projects/tasks'
     | '/users/permissoes'
-    | '/public/approval/$token'
     | '/clients'
     | '/comercial'
     | '/financas'
@@ -327,11 +304,9 @@ export interface FileRouteTypes {
     | '/_authenticated/financas/contas-a-pagar'
     | '/_authenticated/financas/inadimplencia'
     | '/_authenticated/financas/recebimentos'
-    | '/_authenticated/projects/content-approval'
     | '/_authenticated/projects/deliverables'
     | '/_authenticated/projects/tasks'
     | '/_authenticated/users/permissoes'
-    | '/public/approval/$token'
     | '/_authenticated/clients/'
     | '/_authenticated/comercial/'
     | '/_authenticated/financas/'
@@ -342,7 +317,6 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthLoginRoute: typeof AuthLoginRoute
   EmBreveIndexRoute: typeof EmBreveIndexRoute
-  PublicApprovalTokenRoute: typeof PublicApprovalTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -487,13 +461,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinancasRecebimentosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/projects/content-approval': {
-      id: '/_authenticated/projects/content-approval'
-      path: '/content-approval'
-      fullPath: '/projects/content-approval'
-      preLoaderRoute: typeof AuthenticatedProjectsContentApprovalRouteImport
-      parentRoute: typeof AuthenticatedProjectsRoute
-    }
     '/_authenticated/projects/deliverables': {
       id: '/_authenticated/projects/deliverables'
       path: '/deliverables'
@@ -515,25 +482,15 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersPermissoesRouteImport
       parentRoute: typeof AuthenticatedUsersRoute
     }
-    '/public/approval/$token': {
-      id: '/public/approval/$token'
-      path: '/public/approval/$token'
-      fullPath: '/public/approval/$token'
-      preLoaderRoute: typeof PublicApprovalTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 interface AuthenticatedProjectsRouteChildren {
-  AuthenticatedProjectsContentApprovalRoute: typeof AuthenticatedProjectsContentApprovalRoute
   AuthenticatedProjectsDeliverablesRoute: typeof AuthenticatedProjectsDeliverablesRoute
   AuthenticatedProjectsTasksRoute: typeof AuthenticatedProjectsTasksRoute
 }
 
 const AuthenticatedProjectsRouteChildren: AuthenticatedProjectsRouteChildren = {
-  AuthenticatedProjectsContentApprovalRoute:
-    AuthenticatedProjectsContentApprovalRoute,
   AuthenticatedProjectsDeliverablesRoute:
     AuthenticatedProjectsDeliverablesRoute,
   AuthenticatedProjectsTasksRoute: AuthenticatedProjectsTasksRoute,
@@ -605,7 +562,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthLoginRoute: AuthLoginRoute,
   EmBreveIndexRoute: EmBreveIndexRoute,
-  PublicApprovalTokenRoute: PublicApprovalTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
