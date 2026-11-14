@@ -261,38 +261,6 @@ export type Database = {
           },
         ]
       }
-      client_public_access: {
-        Row: {
-          client_id: string
-          created_at: string
-          expires_at: string | null
-          id: string
-          token: string
-        }
-        Insert: {
-          client_id: string
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          token?: string
-        }
-        Update: {
-          client_id?: string
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          token?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "client_public_access_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       client_sales_channels: {
         Row: {
           client_id: string
@@ -548,94 +516,6 @@ export type Database = {
           type?: string
         }
         Relationships: []
-      }
-      content_comments: {
-        Row: {
-          author_name: string | null
-          content: string
-          created_at: string
-          id: string
-          is_internal: boolean | null
-          post_id: string
-          user_id: string | null
-        }
-        Insert: {
-          author_name?: string | null
-          content: string
-          created_at?: string
-          id?: string
-          is_internal?: boolean | null
-          post_id: string
-          user_id?: string | null
-        }
-        Update: {
-          author_name?: string | null
-          content?: string
-          created_at?: string
-          id?: string
-          is_internal?: boolean | null
-          post_id?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "content_comments_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "content_posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      content_posts: {
-        Row: {
-          caption: string | null
-          client_id: string
-          created_at: string
-          created_by: string | null
-          funnel_stage: Database["public"]["Enums"]["funnel_stage"] | null
-          id: string
-          media_urls: string[] | null
-          scheduled_at: string
-          status: Database["public"]["Enums"]["content_status"] | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          caption?: string | null
-          client_id: string
-          created_at?: string
-          created_by?: string | null
-          funnel_stage?: Database["public"]["Enums"]["funnel_stage"] | null
-          id?: string
-          media_urls?: string[] | null
-          scheduled_at: string
-          status?: Database["public"]["Enums"]["content_status"] | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          caption?: string | null
-          client_id?: string
-          created_at?: string
-          created_by?: string | null
-          funnel_stage?: Database["public"]["Enums"]["funnel_stage"] | null
-          id?: string
-          media_urls?: string[] | null
-          scheduled_at?: string
-          status?: Database["public"]["Enums"]["content_status"] | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "content_posts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       contracts: {
         Row: {
