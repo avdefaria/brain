@@ -33,6 +33,7 @@ import { Route as AuthenticatedFinancasRecebimentosRouteImport } from './routes/
 import { Route as AuthenticatedProjectsDeliverablesRouteImport } from './routes/_authenticated.projects.deliverables'
 import { Route as AuthenticatedProjectsTasksRouteImport } from './routes/_authenticated.projects.tasks'
 import { Route as AuthenticatedUsersPermissoesRouteImport } from './routes/_authenticated.users.permissoes'
+import { Route as AuthenticatedProjectsPerformanceAccountIdRouteImport } from './routes/_authenticated.projects.performance.$accountId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -168,6 +169,12 @@ const AuthenticatedUsersPermissoesRoute =
     path: '/permissoes',
     getParentRoute: () => AuthenticatedUsersRoute,
   } as any)
+const AuthenticatedProjectsPerformanceAccountIdRoute =
+  AuthenticatedProjectsPerformanceAccountIdRouteImport.update({
+    id: '/performance/$accountId',
+    path: '/performance/$accountId',
+    getParentRoute: () => AuthenticatedProjectsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/clients/': typeof AuthenticatedClientsIndexRoute
   '/comercial/': typeof AuthenticatedComercialIndexRoute
   '/financas/': typeof AuthenticatedFinancasIndexRoute
+  '/projects/performance/$accountId': typeof AuthenticatedProjectsPerformanceAccountIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -218,6 +226,7 @@ export interface FileRoutesByTo {
   '/clients': typeof AuthenticatedClientsIndexRoute
   '/comercial': typeof AuthenticatedComercialIndexRoute
   '/financas': typeof AuthenticatedFinancasIndexRoute
+  '/projects/performance/$accountId': typeof AuthenticatedProjectsPerformanceAccountIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -245,6 +254,7 @@ export interface FileRoutesById {
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
   '/_authenticated/comercial/': typeof AuthenticatedComercialIndexRoute
   '/_authenticated/financas/': typeof AuthenticatedFinancasIndexRoute
+  '/_authenticated/projects/performance/$accountId': typeof AuthenticatedProjectsPerformanceAccountIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/clients/'
     | '/comercial/'
     | '/financas/'
+    | '/projects/performance/$accountId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/clients'
     | '/comercial'
     | '/financas'
+    | '/projects/performance/$accountId'
   id:
     | '__root__'
     | '/'
@@ -323,6 +335,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clients/'
     | '/_authenticated/comercial/'
     | '/_authenticated/financas/'
+    | '/_authenticated/projects/performance/$accountId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -502,18 +515,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersPermissoesRouteImport
       parentRoute: typeof AuthenticatedUsersRoute
     }
+    '/_authenticated/projects/performance/$accountId': {
+      id: '/_authenticated/projects/performance/$accountId'
+      path: '/performance/$accountId'
+      fullPath: '/projects/performance/$accountId'
+      preLoaderRoute: typeof AuthenticatedProjectsPerformanceAccountIdRouteImport
+      parentRoute: typeof AuthenticatedProjectsRoute
+    }
   }
 }
 
 interface AuthenticatedProjectsRouteChildren {
   AuthenticatedProjectsDeliverablesRoute: typeof AuthenticatedProjectsDeliverablesRoute
   AuthenticatedProjectsTasksRoute: typeof AuthenticatedProjectsTasksRoute
+  AuthenticatedProjectsPerformanceAccountIdRoute: typeof AuthenticatedProjectsPerformanceAccountIdRoute
 }
 
 const AuthenticatedProjectsRouteChildren: AuthenticatedProjectsRouteChildren = {
   AuthenticatedProjectsDeliverablesRoute:
     AuthenticatedProjectsDeliverablesRoute,
   AuthenticatedProjectsTasksRoute: AuthenticatedProjectsTasksRoute,
+  AuthenticatedProjectsPerformanceAccountIdRoute:
+    AuthenticatedProjectsPerformanceAccountIdRoute,
 }
 
 const AuthenticatedProjectsRouteWithChildren =

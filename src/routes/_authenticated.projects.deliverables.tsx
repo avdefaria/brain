@@ -16,8 +16,10 @@ import {
   ChevronDown,
   Calendar,
   Shield,
-  Activity
+  Activity,
+  BarChart3
 } from "lucide-react";
+import { PerformanceView } from "@/components/PerformanceView";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -41,11 +43,15 @@ import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/_authenticated/projects/deliverables")({
+  // Permite voltar da tela de detalhe de uma conta já na aba Performance.
+  validateSearch: (search: Record<string, unknown>): { view?: "performance" } =>
+    search["view"] === "performance" ? { view: "performance" } : {},
   component: DeliveriesPage,
 });
 
 function DeliveriesPage() {
-  const [view, setView] = useState<"account" | "type">("account");
+  const { view: initialView } = Route.useSearch();
+  const [view, setView] = useState<"account" | "type" | "performance">(initialView ?? "account");
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [squadFilter, setSquadFilter] = useState("all");
@@ -122,6 +128,13 @@ function DeliveriesPage() {
               <Layers className="h-3.5 w-3.5 mr-2" />
               Por Tipo
             </TabsTrigger>
+            <TabsTrigger
+              value="performance"
+              className="data-[state=active]:bg-[var(--violet-500)] data-[state=active]:text-white rounded-md text-xs font-bold"
+            >
+              <BarChart3 className="h-3.5 w-3.5 mr-2" />
+              Performance
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -176,7 +189,15 @@ function DeliveriesPage() {
         </Select>
       </div>
 
-      {view === "account" ? (
+      {view === "performance" ? (
+        loadingAccounts ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 text-[var(--violet-500)] animate-spin" />
+          </div>
+        ) : (
+          <PerformanceView accounts={filteredAccounts} />
+        )
+      ) : view === "account" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loadingAccounts ? (
             <div className="col-span-full flex items-center justify-center h-64">
