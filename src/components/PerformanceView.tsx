@@ -52,6 +52,7 @@ export function PerformanceView({ accounts }: PerformanceViewProps) {
       gmvToday: sum((p) => p.gmvToday),
       gmvYesterday: sum((p) => p.gmvYesterday),
       gmvMonth,
+      gmvPrevSame,
       growth: gmvPrevSame > 0 ? gmvMonth / gmvPrevSame - 1 : 0,
       gmvPrevMonthTotal: sum((p) => p.gmvPrevMonthTotal),
       adsSpend,
@@ -82,7 +83,11 @@ export function PerformanceView({ accounts }: PerformanceViewProps) {
           delta={totals.growth}
           sub="vs mesmo período do mês anterior"
         />
-        <TotalTile label="Mês anterior" value={brl.format(totals.gmvPrevMonthTotal)} sub="fechado" />
+        <TotalTile
+          label="Mês anterior"
+          value={brl.format(totals.gmvPrevMonthTotal)}
+          sub={`fechado · até o dia ${day}: ${brl.format(totals.gmvPrevSame)}`}
+        />
         <TotalTile
           label="Investimento Ads"
           value={brl.format(totals.adsSpend)}
