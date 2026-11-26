@@ -23,6 +23,8 @@ const ACTIONS = [
   "create_lead",
   "move_lead_stage",
   "reschedule_lead_contact",
+  "overdue_receivables",
+  "churn_analysis",
 ] as const;
 
 // Etapas do funil que a Edith pode usar. "vendas_feitas" fica de fora de
@@ -213,6 +215,10 @@ export async function handleEdithAction(request: Request): Promise<Response> {
         return await handleMoveLeadStage(supabaseUrl, serviceRoleKey, params);
       case "reschedule_lead_contact":
         return await handleRescheduleLeadContact(supabaseUrl, serviceRoleKey, params);
+      case "overdue_receivables":
+        return await handleOverdueReceivables(supabaseUrl, serviceRoleKey, params);
+      case "churn_analysis":
+        return await handleChurnAnalysis(supabaseUrl, serviceRoleKey);
     }
   } catch (err) {
     console.error(`[edith] Erro inesperado na ação ${action}:`, err);
@@ -605,4 +611,278 @@ async function handleRescheduleLeadContact(
   }
 
   return json({ success: true }, 200);
+}
+
+// ---------------------------------------------------------------------------
+// Inadimplência detalhada e análise de churn.
+// Só leitura, dados 100% reais do banco (receivables, clients, contracts).
+// As contas são feitas por funções puras (exportadas) para serem testáveis.
+// ---------------------------------------------------------------------------
+
+const overdueParamsSchema = z.object({
+  client_name: z.string().trim().min(1).optional(),
+  min_days_overdue: z.number().int().min(0).optional(),
+});
+
+// "Hoje" no fuso de São Paulo: vencimento é uma data (sem hora), e perto da
+// meia-noite UTC o dia já virou lá antes de virar aqui.
+function todayInSaoPaulo(now: Date = new Date()): string {
+  return now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+}
+
+function daysBetween(fromDate: string, toDate: string): number {
+  const a = Date.parse(`${fromDate.slice(0, 10)}T00:00:00Z`);
+  const b = Date.parse(`${toDate.slice(0, 10)}T00:00:00Z`);
+  return Math.round((b - a) / 86_400_000);
+}
+
+function monthsBetween(fromDate: string, toDate: string): number {
+  return Math.max(0, Math.round((daysBetween(fromDate, toDate) / 30.4375) * 10) / 10);
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+export type OverdueRow = {
+  id: string;
+  amount: number | string | null;
+  due_date: string;
+  installment_number: number | null;
+  description: string | null;
+  client_id: string | null;
+  clients: { name: string | null; status: string | null } | null;
+  contracts: { contract_number: string | null } | null;
+};
+
+export function buildOverdueReport(
+  rows: OverdueRow[],
+  today: string,
+  filters: { client_name?: string | undefined; min_days_overdue?: number | undefined } = {},
+) {
+  const byClient = new Map<string, any>();
+  const aging = {
+    "1-15": { installments: 0, amount: 0 },
+    "16-30": { installments: 0, amount: 0 },
+    "31-60": { installments: 0, amount: 0 },
+    "61+": { installments: 0, amount: 0 },
+  };
+  let totalAmount = 0;
+  let totalInstallments = 0;
+
+  for (const r of rows) {
+    const days = daysBetween(r.due_date, today);
+    if (days < 1) continue; // vence hoje ou depois: ainda não é atraso
+    if (filters.min_days_overdue !== undefined && days < filters.min_days_overdue) continue;
+    const clientName = r.clients?.name ?? "(cliente não identificado)";
+    if (filters.client_name && clientName.toLowerCase() !== filters.client_name.toLowerCase()) continue;
+
+    const amount = Number(r.amount) || 0;
+    const key = r.client_id ?? clientName;
+    let entry = byClient.get(key);
+    if (!entry) {
+      entry = {
+        client_id: r.client_id,
+        client_name: clientName,
+        client_status: r.clients?.status ?? null,
+        total_overdue: 0,
+        installments_count: 0,
+        oldest_due_date: r.due_date,
+        max_days_overdue: 0,
+        installments: [],
+      };
+      byClient.set(key, entry);
+    }
+    entry.total_overdue = round2(entry.total_overdue + amount);
+    entry.installments_count += 1;
+    if (r.due_date < entry.oldest_due_date) entry.oldest_due_date = r.due_date;
+    entry.max_days_overdue = Math.max(entry.max_days_overdue, days);
+    entry.installments.push({
+      receivable_id: r.id,
+      due_date: r.due_date,
+      days_overdue: days,
+      amount: round2(amount),
+      installment_number: r.installment_number,
+      description: r.description,
+      contract_number: r.contracts?.contract_number ?? null,
+    });
+
+    const bucket = days <= 15 ? "1-15" : days <= 30 ? "16-30" : days <= 60 ? "31-60" : "61+";
+    aging[bucket].installments += 1;
+    aging[bucket].amount = round2(aging[bucket].amount + amount);
+    totalAmount = round2(totalAmount + amount);
+    totalInstallments += 1;
+  }
+
+  const clients = [...byClient.values()]
+    .map((c) => ({ ...c, installments: c.installments.sort((a: any, b: any) => b.days_overdue - a.days_overdue) }))
+    .sort((a, b) => b.total_overdue - a.total_overdue);
+
+  return {
+    as_of: today,
+    totals: { amount: totalAmount, installments: totalInstallments, clients: clients.length },
+    aging,
+    clients,
+  };
+}
+
+async function handleOverdueReceivables(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  rawParams: Record<string, unknown>,
+): Promise<Response> {
+  const parsed = overdueParamsSchema.safeParse(rawParams);
+  if (!parsed.success) {
+    return json({ error: "Parâmetros inválidos.", details: parsed.error.flatten() }, 400);
+  }
+  const today = todayInSaoPaulo();
+
+  const res = await postgrest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/receivables?select=id,amount,due_date,installment_number,description,client_id,clients(name,status),contracts(contract_number)&status=eq.pendente&due_date=lt.${today}&order=due_date.asc`,
+  );
+  if (!res.ok) return json({ error: "Erro ao consultar inadimplência." }, 502);
+  const rows: OverdueRow[] = await res.json();
+
+  return json(buildOverdueReport(rows, today, parsed.data), 200);
+}
+
+export type ChurnClientRow = {
+  id: string;
+  name: string;
+  status: string | null;
+  risk_level: string | null;
+  health_score: number | null;
+  start_date: string | null;
+  cancelled_at: string | null;
+  notice_date: string | null;
+  expected_exit_date: string | null;
+  revenue_at_risk: number | string | null;
+  churn_reasons: { name: string | null } | null;
+};
+
+export type ChurnContractRow = {
+  client_id: string;
+  monthly_value: number | string | null;
+  mrr_months: number | null;
+  status: string | null;
+};
+
+// Mesma conta do MRR do finance_summary: valor mensal x meses de recorrência.
+const contractMrr = (c: ChurnContractRow) => (Number(c.monthly_value) || 0) * (Number(c.mrr_months) || 1);
+
+// Mesma régua de cores do Brain para Health Score: >=80 verde, >=50 amarelo,
+// abaixo de 50 vermelho. "Em risco" = risco alto ou Health Score vermelho.
+export const AT_RISK_HEALTH_BELOW = 50;
+
+export function buildChurnReport(clients: ChurnClientRow[], contracts: ChurnContractRow[], today: string) {
+  const activeMrr = new Map<string, number>();
+  const lostMrr = new Map<string, number>();
+  for (const ct of contracts) {
+    const target = ct.status === "cancelled" ? lostMrr : activeMrr;
+    target.set(ct.client_id, (target.get(ct.client_id) ?? 0) + contractMrr(ct));
+  }
+
+  const churned: any[] = [];
+  const inNotice: any[] = [];
+  const atRisk: any[] = [];
+  let base = 0;
+  let baseMrr = 0;
+
+  for (const c of clients) {
+    const isChurned = c.status === "inativo" || c.cancelled_at != null;
+
+    if (isChurned) {
+      churned.push({
+        client_id: c.id,
+        client_name: c.name,
+        cancelled_at: c.cancelled_at,
+        reason: c.churn_reasons?.name ?? null,
+        tenure_months: c.start_date && c.cancelled_at ? monthsBetween(c.start_date, c.cancelled_at) : null,
+        mrr_lost: round2(lostMrr.get(c.id) ?? 0),
+        health_score: c.health_score,
+      });
+      continue;
+    }
+
+    const mrr = round2(activeMrr.get(c.id) ?? 0);
+    base += 1;
+    baseMrr += mrr;
+
+    if (c.notice_date) {
+      inNotice.push({
+        client_id: c.id,
+        client_name: c.name,
+        status: c.status,
+        notice_date: c.notice_date,
+        expected_exit_date: c.expected_exit_date,
+        days_until_exit: c.expected_exit_date ? daysBetween(today, c.expected_exit_date) : null,
+        mrr,
+        revenue_at_risk: c.revenue_at_risk == null ? null : Number(c.revenue_at_risk),
+      });
+      continue;
+    }
+
+    const lowHealth = c.health_score != null && c.health_score < AT_RISK_HEALTH_BELOW;
+    if (c.risk_level === "high" || lowHealth) {
+      atRisk.push({
+        client_id: c.id,
+        client_name: c.name,
+        status: c.status,
+        risk_level: c.risk_level,
+        health_score: c.health_score,
+        mrr,
+      });
+    }
+  }
+
+  const reasons: Record<string, { clients: number; mrr_lost: number }> = {};
+  for (const ch of churned) {
+    const key = ch.reason ?? "(sem motivo registrado)";
+    reasons[key] ??= { clients: 0, mrr_lost: 0 };
+    reasons[key].clients += 1;
+    reasons[key].mrr_lost = round2(reasons[key].mrr_lost + ch.mrr_lost);
+  }
+
+  const sumBy = (rows: any[], field: string) => round2(rows.reduce((acc, r) => acc + (Number(r[field]) || 0), 0));
+
+  return {
+    as_of: today,
+    summary: {
+      clients_in_base: base,
+      mrr_in_base: round2(baseMrr),
+      churned_clients: churned.length,
+      mrr_lost: sumBy(churned, "mrr_lost"),
+      in_notice_clients: inNotice.length,
+      mrr_in_notice: sumBy(inNotice, "mrr"),
+      at_risk_clients: atRisk.length,
+      mrr_at_risk: sumBy(atRisk, "mrr"),
+    },
+    definitions: {
+      churned: "cliente com status 'inativo' ou data de cancelamento preenchida",
+      in_notice: "cliente ainda na base com data de aviso prévio preenchida",
+      at_risk: `cliente na base, sem aviso prévio, com risco 'high' ou Health Score abaixo de ${AT_RISK_HEALTH_BELOW}`,
+      mrr: "soma de valor mensal x meses de recorrência dos contratos não cancelados",
+      days_until_exit: "dias até a saída prevista; negativo = a data prevista já passou e o cliente continua na base",
+    },
+    churn_by_reason: reasons,
+    churned,
+    in_notice: inNotice.sort((a, b) => (a.expected_exit_date ?? "9999").localeCompare(b.expected_exit_date ?? "9999")),
+    at_risk: atRisk.sort((a, b) => (a.health_score ?? 101) - (b.health_score ?? 101)),
+  };
+}
+
+async function handleChurnAnalysis(supabaseUrl: string, serviceRoleKey: string): Promise<Response> {
+  const [clientsRes, contractsRes] = await Promise.all([
+    postgrest(
+      supabaseUrl,
+      serviceRoleKey,
+      "/clients?select=id,name,status,risk_level,health_score,start_date,cancelled_at,notice_date,expected_exit_date,revenue_at_risk,churn_reasons(name)&order=name",
+    ),
+    postgrest(supabaseUrl, serviceRoleKey, "/contracts?select=client_id,monthly_value,mrr_months,status"),
+  ]);
+  if (!clientsRes.ok || !contractsRes.ok) return json({ error: "Erro ao consultar dados de churn." }, 502);
+
+  const clients: ChurnClientRow[] = await clientsRes.json();
+  const contracts: ChurnContractRow[] = await contractsRes.json();
+  return json(buildChurnReport(clients, contracts, todayInSaoPaulo()), 200);
 }
