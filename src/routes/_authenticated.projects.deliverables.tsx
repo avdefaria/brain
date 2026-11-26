@@ -24,12 +24,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -49,9 +43,17 @@ export const Route = createFileRoute("/_authenticated/projects/deliverables")({
   component: DeliveriesPage,
 });
 
+type DeliveryView = "performance" | "account" | "type";
+
+const VIEWS: { key: DeliveryView; label: string; icon: typeof BarChart3; subtitle: string }[] = [
+  { key: "performance", label: "Performance", icon: BarChart3, subtitle: "Faturamento e Ads por conta, comparado ao período anterior" },
+  { key: "account", label: "Por Conta", icon: Briefcase, subtitle: "Acompanhamento de progresso real por conta" },
+  { key: "type", label: "Por Tipo", icon: Layers, subtitle: "Acompanhamento de progresso real por tipo de trabalho" },
+];
+
 function DeliveriesPage() {
   const { view: initialView } = Route.useSearch();
-  const [view, setView] = useState<"account" | "type" | "performance">(initialView ?? "account");
+  const [view, setView] = useState<DeliveryView>(initialView ?? "performance");
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [squadFilter, setSquadFilter] = useState("all");
@@ -109,34 +111,27 @@ function DeliveriesPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-title font-bold text-[var(--ink-1)]">Gestão de Entregas</h1>
-          <p className="text-sm text-[var(--ink-3)]">Acompanhamento de progresso real por conta e tipo de trabalho</p>
+          <p className="text-sm text-[var(--ink-3)]">
+            <span className="font-semibold text-[var(--ink-2)]">{VIEWS.find((v) => v.key === view)?.label}</span>
+            {" · "}
+            {VIEWS.find((v) => v.key === view)?.subtitle}
+          </p>
         </div>
 
-        <Tabs value={view} onValueChange={(v: any) => setView(v)} className="w-auto">
-          <TabsList className="bg-[var(--surface-1)] border border-[var(--line-1)] h-10 p-1">
-            <TabsTrigger 
-              value="account" 
-              className="data-[state=active]:bg-[var(--violet-500)] data-[state=active]:text-white rounded-md text-xs font-bold"
+        {/* Mostra as outras duas visões: a atual não aparece no seletor. */}
+        <div className="inline-flex h-10 items-center gap-1 rounded-lg border border-[var(--line-1)] bg-[var(--surface-1)] p-1">
+          {VIEWS.filter((v) => v.key !== view).map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setView(key)}
+              className="flex h-8 items-center rounded-md px-3 text-xs font-bold text-[var(--ink-2)] transition-colors hover:bg-[var(--violet-500)] hover:text-white"
             >
-              <Briefcase className="h-3.5 w-3.5 mr-2" />
-              Por Conta
-            </TabsTrigger>
-            <TabsTrigger 
-              value="type" 
-              className="data-[state=active]:bg-[var(--violet-500)] data-[state=active]:text-white rounded-md text-xs font-bold"
-            >
-              <Layers className="h-3.5 w-3.5 mr-2" />
-              Por Tipo
-            </TabsTrigger>
-            <TabsTrigger
-              value="performance"
-              className="data-[state=active]:bg-[var(--violet-500)] data-[state=active]:text-white rounded-md text-xs font-bold"
-            >
-              <BarChart3 className="h-3.5 w-3.5 mr-2" />
-              Performance
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+              <Icon className="mr-2 h-3.5 w-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Filters Bar */}
