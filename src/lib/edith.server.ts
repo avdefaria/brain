@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isRateLimited } from "./rate-limit.server";
+import { getSaoPauloMonthInfo, mockAccountDetail, mockPerformance, ATTENTION_DROP_THRESHOLD } from "./performance-mock";
 
 // Endpoint dedicado pra Edith (agente "CEO"/orquestrador, roda no Telegram numa
 // VPS externa) ler e agir sobre dados do Brain, sem precisar mais passar pela
@@ -25,6 +26,9 @@ const ACTIONS = [
   "reschedule_lead_contact",
   "overdue_receivables",
   "churn_analysis",
+  "performance_summary",
+  "performance_by_account",
+  "list_records",
 ] as const;
 
 // Etapas do funil que a Edith pode usar. "vendas_feitas" fica de fora de
@@ -238,6 +242,12 @@ export async function handleEdithAction(request: Request): Promise<Response> {
         return await markTestData(handleOverdueReceivables(supabaseUrl, serviceRoleKey, params));
       case "churn_analysis":
         return await markTestData(handleChurnAnalysis(supabaseUrl, serviceRoleKey));
+      case "performance_summary":
+        return await handlePerformance(supabaseUrl, serviceRoleKey, params, "summary");
+      case "performance_by_account":
+        return await handlePerformance(supabaseUrl, serviceRoleKey, params, "by_account");
+      case "list_records":
+        return await handleListRecords(supabaseUrl, serviceRoleKey, params);
     }
   } catch (err) {
     console.error(`[edith] Erro inesperado na ação ${action}:`, err);
@@ -904,4 +914,220 @@ async function handleChurnAnalysis(supabaseUrl: string, serviceRoleKey: string):
   const clients: ChurnClientRow[] = await clientsRes.json();
   const contracts: ChurnContractRow[] = await contractsRes.json();
   return json(buildChurnReport(clients, contracts, todayInSaoPaulo()), 200);
+}
+
+// ---------------------------------------------------------------------------
+// Performance (Gestão de Entregas > Performance).
+// ATENÇÃO: ainda NÃO existe dado real de GMV/Ads (nem planilha, nem API da
+// Shopee). Os números vêm do mesmo gerador de exemplo que a tela usa e saem
+// SEMPRE marcados como simulados. Quando houver dado real, trocar a origem aqui
+// e mudar PERFORMANCE_IS_SIMULATED para false.
+// ---------------------------------------------------------------------------
+
+const PERFORMANCE_IS_SIMULATED = true;
+const PERFORMANCE_NOTICE =
+  "ATENÇÃO: estes números de performance são SIMULADOS (dados de exemplo gerados pelo Brain). NÃO vêm da Shopee nem de planilha. Apresente-os normalmente, mas comece com '⚠️ dados simulados' e avise o Alan que ainda não são reais. As contas (nomes) são reais; os valores não.";
+
+const performanceParamsSchema = z.object({
+  client_name: z.string().trim().min(1).optional(),
+  account_name: z.string().trim().min(1).optional(),
+  include_detail: z.boolean().optional(),
+});
+
+export type PerfAccountRow = {
+  id: string;
+  account_name: string | null;
+  status: string | null;
+  clients: { name: string | null } | null;
+};
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+export function buildPerformanceReport(
+  accounts: PerfAccountRow[],
+  mode: "summary" | "by_account",
+  filters: { client_name?: string | undefined; account_name?: string | undefined; include_detail?: boolean | undefined } = {},
+  now: Date = new Date(),
+) {
+  const { day, month, year } = getSaoPauloMonthInfo(now);
+
+  const rows = accounts
+    .map((a) => ({
+      account_id: a.id,
+      account_name: a.account_name ?? a.clients?.name ?? "Sem nome",
+      client_name: a.clients?.name ?? "Sem cliente",
+      status: a.status,
+    }))
+    .filter((a) => !filters.client_name || a.client_name.toLowerCase() === filters.client_name.toLowerCase())
+    .filter((a) => !filters.account_name || a.account_name.toLowerCase() === filters.account_name.toLowerCase())
+    .map((a) => ({ ...a, perf: mockPerformance(a.account_id, day) }))
+    .sort((x, y) => y.perf.gmvMonth - x.perf.gmvMonth);
+
+  const sum = (pick: (p: (typeof rows)[number]["perf"]) => number) => rows.reduce((acc, r) => acc + pick(r.perf), 0);
+  const gmvMonth = sum((p) => p.gmvMonth);
+  const gmvPrevSame = sum((p) => p.gmvPrevSamePeriod);
+  const adsSpend = sum((p) => p.adsSpend);
+  const adsRevenue = sum((p) => p.adsRevenue);
+
+  const meta = {
+    data_is_test: PERFORMANCE_IS_SIMULATED,
+    source: PERFORMANCE_IS_SIMULATED ? "simulado" : "real",
+    data_notice: PERFORMANCE_IS_SIMULATED ? PERFORMANCE_NOTICE : null,
+    period: { month, year, days_elapsed: day },
+    units: "valores em R$; growth/today_vs_yesterday/acos/tacos são frações (0.2 = 20%); roas é razão (4 = R$4 de venda por R$1 em Ads)",
+    definitions: {
+      gmv: "pedidos pagos, independente de cancelados depois",
+      growth: "GMV do mês até hoje contra o mesmo intervalo de dias do mês anterior",
+      attention: `loja com queda de GMV de ${Math.abs(ATTENTION_DROP_THRESHOLD) * 100}% ou mais (regra provisória)`,
+      roas: "receita de Ads / gasto em Ads",
+      acos: "gasto em Ads / receita de Ads (menor é melhor)",
+      tacos: "gasto em Ads / GMV total (menor é melhor)",
+    },
+  };
+
+  const summary = {
+    accounts: rows.length,
+    active_accounts: rows.filter((r) => r.status === "active").length,
+    growing_accounts: rows.filter((r) => r.perf.growth > 0).length,
+    attention_accounts: rows.filter((r) => r.perf.attention).length,
+    gmv_today: r2(sum((p) => p.gmvToday)),
+    gmv_yesterday: r2(sum((p) => p.gmvYesterday)),
+    gmv_month: r2(gmvMonth),
+    gmv_prev_month_same_period: r2(gmvPrevSame),
+    gmv_prev_month_total: r2(sum((p) => p.gmvPrevMonthTotal)),
+    growth: gmvPrevSame > 0 ? Math.round((gmvMonth / gmvPrevSame - 1) * 10_000) / 10_000 : 0,
+    ads_spend: r2(adsSpend),
+    roas: adsSpend > 0 ? r2(adsRevenue / adsSpend) : 0,
+    acos: adsRevenue > 0 ? Math.round((adsSpend / adsRevenue) * 10_000) / 10_000 : 0,
+  };
+
+  if (mode === "summary") return { ...meta, summary };
+
+  return {
+    ...meta,
+    summary,
+    accounts: rows.map((r) => ({
+      account_id: r.account_id,
+      account_name: r.account_name,
+      client_name: r.client_name,
+      status: r.status,
+      platform: r.perf.platform,
+      gmv_today: r2(r.perf.gmvToday),
+      gmv_yesterday: r2(r.perf.gmvYesterday),
+      today_vs_yesterday: Math.round(r.perf.todayVsYesterday * 10_000) / 10_000,
+      gmv_7d: r2(r.perf.gmv7d),
+      gmv_month: r2(r.perf.gmvMonth),
+      gmv_prev_month_same_period: r2(r.perf.gmvPrevSamePeriod),
+      gmv_prev_month_total: r2(r.perf.gmvPrevMonthTotal),
+      growth: Math.round(r.perf.growth * 10_000) / 10_000,
+      ads_spend: r2(r.perf.adsSpend),
+      ads_revenue: r2(r.perf.adsRevenue),
+      roas: r2(r.perf.roas),
+      acos: Math.round(r.perf.acos * 10_000) / 10_000,
+      tacos: Math.round(r.perf.tacos * 10_000) / 10_000,
+      attention: r.perf.attention,
+      ...(filters.include_detail ? { detail: mockAccountDetail(r.account_id, day, month) } : {}),
+    })),
+  };
+}
+
+async function handlePerformance(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  rawParams: Record<string, unknown>,
+  mode: "summary" | "by_account",
+): Promise<Response> {
+  const parsed = performanceParamsSchema.safeParse(rawParams);
+  if (!parsed.success) {
+    return json({ error: "Parâmetros inválidos.", details: parsed.error.flatten() }, 400);
+  }
+  const res = await postgrest(supabaseUrl, serviceRoleKey, "/accounts?select=id,account_name,status,clients(name)&order=account_name");
+  if (!res.ok) return json({ error: "Erro ao consultar contas." }, 502);
+  const accounts: PerfAccountRow[] = await res.json();
+  return json(buildPerformanceReport(accounts, mode, parsed.data), 200);
+}
+
+// ---------------------------------------------------------------------------
+// Leitura geral (somente leitura) das tabelas do Brain.
+// Lista FECHADA: fica de fora o que é segurança/autenticação (login_attempts,
+// security_logs, user_roles, department_module_access). Sem "select" livre: só
+// colunas da própria tabela (select=*), então não dá para atravessar para uma
+// tabela proibida via relacionamento. Só filtros de igualdade, limite máximo.
+// ---------------------------------------------------------------------------
+
+export const READABLE_TABLES = [
+  "account_squads", "accounts", "churn_reasons", "client_calls", "client_offboarding_items",
+  "client_onboarding_items", "client_sales_channels", "clients", "closer_goals", "commercial_goals",
+  "company_events", "contracts", "deliverable_types", "departments", "expense_categories",
+  "funnel_types", "health_score_surveys", "internal_targets", "job_functions", "lead_sales_channels",
+  "lead_stage_history", "leads", "niches", "notifications", "payables", "profile_job_functions",
+  "profile_squads", "profiles", "project_deliveries", "receivables", "revenue_categories",
+  "sales_channels", "special_projects", "squads", "tags", "task_activity", "task_assignees",
+  "task_attachments", "task_comments", "task_history", "task_stages", "task_tags", "tasks",
+] as const;
+
+// Tabelas ligadas a clientes/financeiro: enquanto os dados forem de teste, saem marcadas.
+const TEST_DATA_TABLES = new Set<string>([
+  "accounts", "account_squads", "churn_reasons", "client_calls", "client_offboarding_items",
+  "client_onboarding_items", "client_sales_channels", "clients", "contracts", "health_score_surveys",
+  "payables", "receivables", "project_deliveries", "revenue_categories", "expense_categories",
+]);
+
+const COLUMN_RE = /^[a-z_][a-z0-9_]*$/;
+
+const listRecordsParamsSchema = z.object({
+  table: z.enum(READABLE_TABLES).optional(),
+  filters: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
+  order_by: z.string().regex(COLUMN_RE).optional(),
+  descending: z.boolean().optional(),
+  limit: z.number().int().min(1).max(500).optional(),
+});
+
+export function buildListRecordsQuery(p: z.infer<typeof listRecordsParamsSchema>): string | null {
+  if (!p.table) return null;
+  const parts = ["select=*", `limit=${p.limit ?? 100}`];
+  if (p.order_by) parts.push(`order=${p.order_by}.${p.descending ? "desc" : "asc"}`);
+  for (const [col, value] of Object.entries(p.filters ?? {})) {
+    if (!COLUMN_RE.test(col)) throw new Error(`Coluna inválida no filtro: ${col}`);
+    parts.push(`${col}=eq.${encodeURIComponent(String(value))}`);
+  }
+  return `/${p.table}?${parts.join("&")}`;
+}
+
+async function handleListRecords(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  rawParams: Record<string, unknown>,
+): Promise<Response> {
+  const parsed = listRecordsParamsSchema.safeParse(rawParams);
+  if (!parsed.success) {
+    return json({ error: "Parâmetros inválidos.", details: parsed.error.flatten() }, 400);
+  }
+  const p = parsed.data;
+  if (!p.table) {
+    return json(
+      { tables: READABLE_TABLES, hint: "Chame de novo com params.table para ler uma tabela (filters, order_by, descending, limit opcionais)." },
+      200,
+    );
+  }
+
+  let path: string | null;
+  try {
+    path = buildListRecordsQuery(p);
+  } catch (err) {
+    return json({ error: (err as Error).message }, 400);
+  }
+
+  const run = async (): Promise<Response> => {
+    const res = await postgrest(supabaseUrl, serviceRoleKey, path!);
+    if (!res.ok) {
+      const errBody: unknown = await res.json().catch(() => null);
+      const message = (errBody as { message?: string } | null)?.message ?? "Erro ao consultar a tabela.";
+      return json({ error: message }, res.status === 400 ? 422 : 502);
+    }
+    const rows: unknown[] = await res.json();
+    return json({ table: p.table, count: rows.length, limit: p.limit ?? 100, records: rows }, 200);
+  };
+
+  return TEST_DATA_TABLES.has(p.table) ? await markTestData(run()) : await run();
 }

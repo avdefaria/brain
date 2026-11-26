@@ -108,3 +108,63 @@ describe("buildChurnReport", () => {
     expect(r.churned[0]?.tenure_months).toBeNull();
   });
 });
+
+describe("buildPerformanceReport", () => {
+  const { buildPerformanceReport } = require("../src/lib/edith.server");
+  const accounts = [
+    { id: "a1", account_name: "Loja Um", status: "active", clients: { name: "Cliente A" } },
+    { id: "a2", account_name: "Loja Dois", status: "active", clients: { name: "Cliente A" } },
+    { id: "a3", account_name: "Loja Três", status: "inactive", clients: { name: "Cliente B" } },
+  ];
+  const now = new Date("2026-11-26T15:00:00Z");
+
+  test("sempre marcado como simulado enquanto não há dado real", () => {
+    const r = buildPerformanceReport(accounts, "summary", {}, now);
+    expect(r.data_is_test).toBe(true);
+    expect(r.source).toBe("simulado");
+    expect(r.data_notice).toContain("SIMULADOS");
+  });
+
+  test("totais batem com a soma das contas", () => {
+    const r = buildPerformanceReport(accounts, "by_account", {}, now);
+    const soma = r.accounts.reduce((s: number, a: any) => s + a.gmv_month, 0);
+    expect(Math.abs(r.summary.gmv_month - soma)).toBeLessThan(0.05);
+    expect(r.summary.accounts).toBe(3);
+    expect(r.summary.active_accounts).toBe(2);
+  });
+
+  test("é estável entre chamadas e ordenado por GMV", () => {
+    const a = buildPerformanceReport(accounts, "by_account", {}, now);
+    const b = buildPerformanceReport(accounts, "by_account", {}, now);
+    expect(a).toEqual(b);
+    const g = a.accounts.map((x: any) => x.gmv_month);
+    expect(g).toEqual([...g].sort((x: number, y: number) => y - x));
+  });
+
+  test("filtros e detalhe", () => {
+    const r = buildPerformanceReport(accounts, "by_account", { client_name: "cliente b", include_detail: true }, now);
+    expect(r.accounts.length).toBe(1);
+    expect(r.accounts[0].account_name).toBe("Loja Três");
+    expect(r.accounts[0].detail.topProducts.length).toBeGreaterThan(0);
+  });
+});
+
+describe("list_records", () => {
+  const { buildListRecordsQuery, READABLE_TABLES } = require("../src/lib/edith.server");
+  test("tabelas de segurança não estão na lista", () => {
+    for (const t of ["login_attempts", "security_logs", "user_roles", "department_module_access"]) {
+      expect(READABLE_TABLES).not.toContain(t);
+    }
+  });
+  test("monta consulta só de igualdade, com limite", () => {
+    expect(buildListRecordsQuery({ table: "tasks", filters: { stage: "done", title: "a&b" }, order_by: "created_at", descending: true, limit: 5 })).toBe(
+      "/tasks?select=*&limit=5&order=created_at.desc&stage=eq.done&title=eq.a%26b",
+    );
+  });
+  test("coluna maliciosa no filtro é recusada", () => {
+    expect(() => buildListRecordsQuery({ table: "tasks", filters: { "id=eq.1&select": "x" } })).toThrow();
+  });
+  test("sem tabela não consulta nada", () => {
+    expect(buildListRecordsQuery({})).toBeNull();
+  });
+});
