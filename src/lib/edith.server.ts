@@ -42,6 +42,25 @@ const EDITH_ALLOWED_LEAD_STAGES = [
   "vendas_perdidas",
 ] as const;
 
+// Enquanto os dados de clientes/financeiro do Brain forem de teste, as respostas
+// que dependem deles saem marcadas, para a Edith sempre avisar o Alan "isto é
+// teste". Ao subir os dados reais: trocar para false (e fazer deploy).
+const EDITH_DATA_IS_TEST = true;
+const TEST_DATA_NOTICE =
+  "ATENÇÃO: os dados de clientes e financeiro do Brain ainda são de TESTE (fictícios). Apresente os números normalmente, mas sempre avise o Alan que são dados de teste.";
+
+// Acrescenta o aviso ao corpo JSON de uma resposta de sucesso. Erros passam direto.
+async function markTestData(pending: Promise<Response>): Promise<Response> {
+  const res = await pending;
+  if (!EDITH_DATA_IS_TEST || !res.ok) return res;
+  try {
+    const body = (await res.json()) as Record<string, unknown>;
+    return json({ data_is_test: true, data_notice: TEST_DATA_NOTICE, ...body }, res.status);
+  } catch {
+    return res;
+  }
+}
+
 const requestSchema = z.object({
   action: z.enum(ACTIONS),
   params: z.record(z.unknown()).optional().default({}),
@@ -192,13 +211,13 @@ export async function handleEdithAction(request: Request): Promise<Response> {
   try {
     switch (action) {
       case "list_clients":
-        return await handleListClients(supabaseUrl, serviceRoleKey);
+        return await markTestData(handleListClients(supabaseUrl, serviceRoleKey));
       case "list_tasks":
         return await handleListTasks(supabaseUrl, serviceRoleKey, params);
       case "finance_summary":
-        return await handleFinanceSummary(supabaseUrl, serviceRoleKey);
+        return await markTestData(handleFinanceSummary(supabaseUrl, serviceRoleKey));
       case "dashboard_overview":
-        return await handleDashboardOverview(supabaseUrl, serviceRoleKey);
+        return await markTestData(handleDashboardOverview(supabaseUrl, serviceRoleKey));
       case "create_task":
         return await handleCreateTask(supabaseUrl, serviceRoleKey, params);
       case "update_task":
@@ -216,9 +235,9 @@ export async function handleEdithAction(request: Request): Promise<Response> {
       case "reschedule_lead_contact":
         return await handleRescheduleLeadContact(supabaseUrl, serviceRoleKey, params);
       case "overdue_receivables":
-        return await handleOverdueReceivables(supabaseUrl, serviceRoleKey, params);
+        return await markTestData(handleOverdueReceivables(supabaseUrl, serviceRoleKey, params));
       case "churn_analysis":
-        return await handleChurnAnalysis(supabaseUrl, serviceRoleKey);
+        return await markTestData(handleChurnAnalysis(supabaseUrl, serviceRoleKey));
     }
   } catch (err) {
     console.error(`[edith] Erro inesperado na ação ${action}:`, err);
