@@ -20,6 +20,7 @@ import {
   BarChart3
 } from "lucide-react";
 import { PerformanceView } from "@/components/PerformanceView";
+import { PrivacyToggle, PrivateText } from "@/components/PrivateText";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -118,6 +119,8 @@ function DeliveriesPage() {
           </p>
         </div>
 
+        <div className="flex items-center gap-3">
+        <PrivacyToggle />
         {/* Mostra as outras duas visões: a atual não aparece no seletor. */}
         <div className="inline-flex h-10 items-center gap-1 rounded-lg border border-[var(--line-1)] bg-[var(--surface-1)] p-1">
           {VIEWS.filter((v) => v.key !== view).map(({ key, label, icon: Icon }) => (
@@ -131,6 +134,7 @@ function DeliveriesPage() {
               {label}
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -204,8 +208,8 @@ function DeliveriesPage() {
                 <CardContent className="p-6 space-y-4">
                   <div className="flex justify-between items-start gap-3">
                     <div className="min-w-0">
-                      <p className="brain-eyebrow truncate">{acc.clientName}</p>
-                      <h3 className="text-lg font-bold text-[var(--ink-1)] group-hover:text-[var(--violet-500)] transition-colors mt-0.5 truncate">{acc.name}</h3>
+                      <p className="brain-eyebrow truncate"><PrivateText>{acc.clientName}</PrivateText></p>
+                      <h3 className="text-lg font-bold text-[var(--ink-1)] group-hover:text-[var(--violet-500)] transition-colors mt-0.5 truncate"><PrivateText>{acc.name}</PrivateText></h3>
                       {acc.squads.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {acc.squads.map((s: any) => (

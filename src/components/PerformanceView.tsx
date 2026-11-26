@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Megaphone, ShoppingBag, TrendingDown, TrendingUp, FlaskConical } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { PrivateText } from "@/components/PrivateText";
 import { cn } from "@/lib/utils";
 import {
   ATTENTION_DROP_THRESHOLD,
@@ -212,10 +213,10 @@ function PerformanceCard({
           <div className="min-w-0">
             <p className="brain-eyebrow truncate">
               <span className="mr-2 text-[var(--violet-300)]">{String(rank).padStart(2, "0")}</span>
-              {acc.clientName}
+              <PrivateText>{acc.clientName}</PrivateText>
             </p>
             <h3 className="mt-0.5 truncate text-lg font-bold text-[var(--ink-1)] transition-colors group-hover:text-[var(--violet-500)]">
-              {acc.name}
+              <PrivateText>{acc.name}</PrivateText>
             </h3>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1 rounded bg-[var(--surface-3)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--ink-2)]">

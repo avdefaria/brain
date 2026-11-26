@@ -14,6 +14,7 @@ import { ArrowLeft, Megaphone, ShoppingBag, TrendingDown, TrendingUp, ExternalLi
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { PrivacyToggle, PrivateText } from "@/components/PrivateText";
 import { getSaoPauloMonthInfo, mockAccountDetail, type ProductRow } from "@/lib/performance-mock";
 import {
   DeltaBadge,
@@ -66,8 +67,12 @@ export function AccountPerformanceDetail({ acc }: AccountPerformanceDetailProps)
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="min-w-0">
-            <p className="brain-eyebrow">{acc.clientName}</p>
-            <h1 className="mt-0.5 font-title text-2xl font-bold text-[var(--ink-1)]">{acc.name}</h1>
+            <p className="brain-eyebrow">
+              <PrivateText>{acc.clientName}</PrivateText>
+            </p>
+            <h1 className="mt-0.5 font-title text-2xl font-bold text-[var(--ink-1)]">
+              <PrivateText>{acc.name}</PrivateText>
+            </h1>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1 rounded bg-[var(--surface-3)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--ink-2)]">
                 <ShoppingBag className="h-3 w-3" />
@@ -90,16 +95,19 @@ export function AccountPerformanceDetail({ acc }: AccountPerformanceDetailProps)
             </div>
           </div>
         </div>
-        {acc.client_id && (
-          <Link
-            to="/clients/$clientId"
-            params={{ clientId: String(acc.client_id) }}
-            className="inline-flex h-9 items-center gap-2 self-start rounded-full border border-[var(--line-2)] bg-[var(--surface-1)] px-4 text-xs font-bold !text-[var(--ink-1)] transition-colors hover:bg-[var(--surface-3)]"
-          >
-            Ver cliente
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Link>
-        )}
+        <div className="flex items-center gap-2 self-start">
+          <PrivacyToggle className="h-9 w-9 rounded-full" />
+          {acc.client_id && (
+            <Link
+              to="/clients/$clientId"
+              params={{ clientId: String(acc.client_id) }}
+              className="inline-flex h-9 items-center gap-2 rounded-full border border-[var(--line-2)] bg-[var(--surface-1)] px-4 text-xs font-bold !text-[var(--ink-1)] transition-colors hover:bg-[var(--surface-3)]"
+            >
+              Ver cliente
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          )}
+        </div>
       </div>
 
       <SampleDataNotice />
