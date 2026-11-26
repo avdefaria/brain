@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, useNavigate, useLocation, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
+import { IdleLogoutGuard } from "@/components/IdleLogoutGuard";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -58,6 +59,8 @@ function AuthenticatedLayout() {
   const blocked = requiredModule && access && !access.allowedModules.includes(requiredModule);
 
   return (
+    <>
+    <IdleLogoutGuard enabled />
     <AppShell>
       {blocked ? (
         <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 text-center p-8">
@@ -74,6 +77,7 @@ function AuthenticatedLayout() {
         <Outlet />
       )}
     </AppShell>
+    </>
   );
 }
 
